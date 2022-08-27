@@ -43,11 +43,12 @@ def batch_predict(method):
             for i, x in enumerate(tqdm(batches)):
                 if i <= last_iter and last_iter>0:
                     continue
-                df = method(self, *args, X=x, **other_kwargs)
-                results.append(df)
-                save_checkpoints(checkpoint_path, iteration=i, df=df, parameter_dict=other_kwargs)
+                iter_output = method(self, *args, X=x, **other_kwargs)
+                results.append(iter_output)
+                save_checkpoints(checkpoint_path, iteration=i, df=iter_output, parameter_dict=other_kwargs)
 
             # combine individual batch results into one matrix
+            # TODO: implement a way to combine individual results when function returns multiple values (tuple)
             output = pd.concat(results,
                                axis=0,
                                ignore_index=True)

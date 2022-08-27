@@ -5,19 +5,21 @@ import json
 import pandas as pd
 import numpy as np
 
-import weelex
-
 
 @dataclass
 class Lexicon:
     # TODO: Allow for train_test_split to work
-    def __init__(self, dictionary: Union[dict, str, pd.DataFrame], sep: str=None):
-        self._dictionary_df = self._build_dictionary(dictionary, sep=sep)
+    def __init__(self,
+                 dictionary: Union[dict, str, pd.DataFrame],
+                 sep: str=None,
+                 encoding: str=None):
+        self._dictionary_df = self._build_dictionary(dictionary, sep=sep, encoding=encoding)
 
 
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
-                          sep: str=None
+                          sep: str=None,
+                          encoding: str=None
                           ) -> pd.DataFrame:
         """Processes the input lexicon and returns it in a pandas DataFrame.
 
@@ -38,7 +40,7 @@ class Lexicon:
                     my_dct = json.loads(f.read())
                     dct_df = pd.DataFrame(dict_padding(my_dct))
             else:
-                dct_df = pd.read_csv(dictionary, sep=sep)
+                dct_df = pd.read_csv(dictionary, sep=sep, encoding=encoding)
         elif isinstance(dictionary, pd.DataFrame):
             dct_df = dictionary
         elif isinstance(dictionary, dict):
@@ -154,3 +156,11 @@ def list_padding(lst: list, maxlen: int, filler=np.nan) -> list:
     if len_diff < 0:
         new_lst = new_lst[0:maxlen]
     return new_lst
+
+
+def merge_lexica(lexica: Iterable[Lexicon]) -> Lexicon:
+    lex1 = lexica[0]
+    if len(lexica) > 1:
+        for lex in lexica[1:]:
+            lex1.merge(lex)
+    return lex1
