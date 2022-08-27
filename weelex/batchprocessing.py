@@ -37,14 +37,16 @@ def batch_predict(method):
 
             # execute function for each batch
             for i, x in enumerate(tqdm(batches)):
-                if i < last_iter:
+                if i <= last_iter and last_iter>0:
                     continue
                 df = method(self, *args, X=x, **other_kwargs)
                 results.append(df)
                 save_checkpoints(checkpoint_path, iteration=i, df=df, parameter_dict=other_kwargs)
 
             # combine individual batch results into one matrix
-            output = pd.concat(results, axis=0)
+            output = pd.concat(results,
+                               axis=0,
+                               ignore_index=True)
 
         cleanup_checkpoints(checkpoint_path)
 
@@ -69,7 +71,9 @@ def load_checkpoints(path_base: str, parameter_dict: dict=None):
         print(e)
         print('Checkpoint file not found, starting from beginning')
         cp_found = False
-        checkpoint = 0
+        checkpoint = {'last_iter': 0}
+        if parameter_dict is not None:
+            checkpoint.update(parameter_dict)
 
     if cp_found:
         # check if the different parameters have been used:
@@ -78,8 +82,8 @@ def load_checkpoints(path_base: str, parameter_dict: dict=None):
                 if key in checkpoint.keys() and value != checkpoint[key]:
                     raise ValueError(f'Attempting to continue with different parameters. Loaded value of {key} is {checkpoint[key]} but you passed {value}. Aborting. Manually delete the checkpoint directory or adjust the parameters to continue.')
 
-        for iteration in range(checkpoint['last_iter']):
-            df_list.append(pd.read_csv(os.path.join(path_base, f'cp_{iteration}.gz')))
+        for iteration in range(checkpoint['last_iter']+1):
+            df_list.append(pd.read_csv(os.path.join(path_base, f'cp_{iteration}.csv.gz'), index_col=0))
 
     return df_list, checkpoint['last_iter']
 
@@ -91,14 +95,15 @@ def save_checkpoints(path_base: str,
     check_makedir(path_base)
 
     checkpoint = {'last_iter': iteration}
-    checkpoint.update(parameter_dict)
+    if parameter_dict is not None:
+        checkpoint.update(parameter_dict)
 
     with open(os.path.join(path_base, 'checkpoint.json'), 'w') as f:
         f.write(json.dumps(checkpoint))
 
     # with open(path_base+'.p', 'wb') as f:
     #     pickle.dump(iteration, f)
-    df.to_csv(os.path.join(path_base, f'cp_{iteration}.gz'))
+    df.to_csv(os.path.join(path_base, f'cp_{iteration}.csv.gz'))
 
 
 def check_makedir(path: str) -> None:

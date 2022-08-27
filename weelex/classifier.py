@@ -76,12 +76,12 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         if main_keys and main_keys is not None:
             _main_keys = main_keys
         else:
-            _main_keys = _main_lex.keys
+            _main_keys = _main_lex.keys()
 
         if support_keys and support_keys is not None:
             _support_keys = support_keys
         elif support_lex and support_lex is not None:
-            _support_keys = _support_lex.keys
+            _support_keys = _support_lex.keys()
         else:
             _support_keys = []
 

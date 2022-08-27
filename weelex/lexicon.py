@@ -11,12 +11,13 @@ import weelex
 @dataclass
 class Lexicon:
     # TODO: Allow for train_test_split to work
-    def __init__(self, dictionary: Union[dict, str, pd.DataFrame]):
-        self._dictionary_df = self._build_dictionary(dictionary)
-        self.keys = self._dictionary_df.columns
+    def __init__(self, dictionary: Union[dict, str, pd.DataFrame], sep: str=None):
+        self._dictionary_df = self._build_dictionary(dictionary, sep=sep)
+
 
     def _build_dictionary(self,
-                          dictionary: Union[dict, str, pd.DataFrame]
+                          dictionary: Union[dict, str, pd.DataFrame],
+                          sep: str=None
                           ) -> pd.DataFrame:
         """Processes the input lexicon and returns it in a pandas DataFrame.
 
@@ -26,6 +27,7 @@ class Lexicon:
                 a csv (containing tabular data) or json (containig key-value pairs)
                 file. If the file ends with ".json", it will attempt to read the
                 file with the json module. Otherwise pd.read_csv is attempted.
+            sep (str, optional): separator character when reading csv file
 
         Returns:
             pd.DataFrame: lexicon matrix
@@ -36,7 +38,7 @@ class Lexicon:
                     my_dct = json.loads(f.read())
                     dct_df = pd.DataFrame(dict_padding(my_dct))
             else:
-                dct_df = pd.read_csv(dictionary)
+                dct_df = pd.read_csv(dictionary, sep=sep)
         elif isinstance(dictionary, pd.DataFrame):
             dct_df = dictionary
         elif isinstance(dictionary, dict):
@@ -55,24 +57,29 @@ class Lexicon:
 
     def _merge_one(self, lex: 'Lexicon') -> None:
         old_dct = self._dictionary_df.copy()
-        old_keys = old_dct.keys
-        new_keys = lex.keys
+        old_keys = old_dct.keys()
+        new_keys = lex.keys()
         update_keys = [x for x in new_keys if x in old_keys]
         append_keys = [x for x in new_keys if x not in old_keys]
-        new_dct = pd.concat([old_dct, lex.loc[:, append_keys]])
+        new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
+                            # ignore_index=True,
+                            axis=1)
+        self._dictionary_df = new_dct
         # TODO: allow for merge of existing keys
-
 
     def _append_values(self, lex: 'Lexicon', key: str, values: pd.Series) -> pd.Series:
         maxlen = lex._dictionary_df.shape[0]
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
 
+    def keys(self):
+        return list(self._dictionary_df.columns)
 
     def get_vocabulary(self) -> list:
         vocab = []
         for col in self._dictionary_df:
             vocab += list(self._dictionary_df[col])
+        vocab = [x for x in vocab if isinstance(x, str)]  # remove np.nans
         return sorted(list(set(vocab)))
 
 
