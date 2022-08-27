@@ -21,6 +21,10 @@ def batch_predict(method):
         else:
             checkpoint_path = None
 
+        if checkpoint_path is None:  # use the current working dir
+            checkpoint_path = ''
+
+
         if n_batches is None:
             # no batch processing. Execute method normally.
             output = method(self, *args, **kwargs)
