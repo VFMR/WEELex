@@ -41,6 +41,7 @@ class Embeddings:
         self._keys = keys
         self._vectors = vectors
         self.isfiltered = True
+        self.wv = None
 
 
     def _data_from_dct(dct:dict) -> Tuple[list, np.array]:
