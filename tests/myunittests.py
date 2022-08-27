@@ -86,7 +86,7 @@ class TestClassifier(unittest.TestCase):
 
 class TestLexicon(unittest.TestCase):
     def _setup(self):
-        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'), sep=';')
+        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'), sep=';', encoding='latin1')
         self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
 
     def test_list_padding(self):
@@ -109,6 +109,11 @@ class TestLexicon(unittest.TestCase):
         self._setup()
         assert self.lex2.keys() == ['Space', 'Food']
         assert self.lex2._dictionary_df.shape == (9, 2)
+
+    def test_keys(self):
+        self._setup()
+        assert isinstance(self.lex1.keys(), list)
+        assert isinstance(self.lex2.keys(), list)
 
     def test_merge1(self):
         self._setup()
@@ -136,9 +141,49 @@ class TestLexicon(unittest.TestCase):
 
 
 class TestEmbeddings(unittest.TestCase):
-    def test1(self):
-        pass
+    def _setup(self):
+        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'), sep=';', encoding='latin1')
+        self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
+        self.lex1.merge(self.lex2)
+        self.vocab = self.lex1.get_vocabulary()
+        self.path = os.path.join(TEMPDIR, 'filtered_embeddings')
 
+
+    def test_data_from_dict(self):
+        x = np.random.randn(10)
+        y = np.random.randn(10)
+        my_dct = {'A': x, 'B': y}
+        embeds = embeddings.Embeddings()
+        keys, vectors = embeds._data_from_dct(my_dct)
+        assert vectors.shape == (2, 10)
+        assert np.allclose(vectors[0], x)
+        assert np.allclose(vectors[1], y)
+        assert list(keys) == ['A', 'B']
+
+
+    def test_load_filtered(self):
+        self._setup()
+        embeds = embeddings.Embeddings()
+        embeds.load_filtered(self.path)
+        assert isinstance(embeds.keys(), np.ndarray)
+        assert isinstance(embeds._vectors, np.ndarray)
+        assert embeds._vectors.shape[1] == 300
+        assert sorted(list(embeds.keys())) == sorted(list(self.vocab))
+
+
+    def test_lookup(self):
+        self._setup()
+        terms = [self.vocab[i] for i in [1,3,5]]
+        embeds = embeddings.Embeddings()
+        embeds.load_filtered(self.path)
+        v1 = embeds.lookup(terms[0])
+        v2 = embeds[terms[0]]
+        v3 = embeds.lookup(terms)
+        assert isinstance(v1, np.ndarray)
+        assert isinstance(v2, np.ndarray)
+        assert np.allclose(v1, v2)
+        assert isinstance(v3, np.ndarray)
+        assert v3.shape == (3, 300)
 
 
 if __name__=='__main__':
