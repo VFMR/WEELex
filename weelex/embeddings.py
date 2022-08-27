@@ -21,14 +21,17 @@ class Embeddings:
     # TODO: how do I handle these well?
     def _load_facebook_vectors(self, path):
         wv = load_facebook_vectors(path)
+        self.wv = wv
 
 
     def load_finetuned_fasttext(self, path):
         wv = FastText.load(path).wv
+        self.wv = wv
 
 
     def load_finetuned_word2vec(self, path):
         wv = Word2Vec.load(path).wv
+        self.wv = wv
 
 
     def filter_terms(self, terms: Union[list, np.ndarray, pd.DataFrame, tuple]) -> None:
