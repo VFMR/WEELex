@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Union, Tuple, Iterable, overload
-from functools import singledispatch, singledispathmethod
+# from functools import singledispatch, singledispathmethod
 
 import numpy as np
 import pandas as pd
@@ -134,22 +134,23 @@ class Embeddings:
         return values
 
 
-    @singledispathmethod
-    def lookup2(self, terms: Union[str, list, np.ndarray, pd.Series]) -> np.ndarray:
-        raise TypeError(f'Not supported for objects of type {type(terms)}')
+    # singledispathmethod only supported in python 3.8 and above
+    # @singledispathmethod
+    # def lookup2(self, terms: Union[str, list, np.ndarray, pd.Series]) -> np.ndarray:
+    #     raise TypeError(f'Not supported for objects of type {type(terms)}')
 
-    @lookup2.register(str)
-    def lookup_str(self, terms: str) -> np.ndarray:
-        return self._get_val_from_key(terms)
+    # @lookup2.register(str)
+    # def lookup_str(self, terms: str) -> np.ndarray:
+    #     return self._get_val_from_key(terms)
 
-    @lookup2.register(np.ndarray)
-    def lookup_numpy(self, terms: np.ndarray) -> np.ndarray:
-        return self._get_val_from_key_vectorized(terms)
+    # @lookup2.register(np.ndarray)
+    # def lookup_numpy(self, terms: np.ndarray) -> np.ndarray:
+    #     return self._get_val_from_key_vectorized(terms)
 
-    @lookup2.register(Union[list, pd.Series])
-    def lookup_iterable(self, terms: Union[list, pd.Series]) -> np.ndarray:
-        terms_array = np.array(terms)
-        return self._get_val_from_key_vectorized(terms_array)
+    # @lookup2.register(Union[list, pd.Series])
+    # def lookup_iterable(self, terms: Union[list, pd.Series]) -> np.ndarray:
+    #     terms_array = np.array(terms)
+    #     return self._get_val_from_key_vectorized(terms_array)
 
 
     def __getitem__(self, key: str) -> np.ndarray:

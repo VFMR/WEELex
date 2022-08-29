@@ -70,7 +70,7 @@ class Lexicon:
     def _merge_one(self, lex: 'Lexicon') -> None:
         old_dct = self._dictionary_df.copy()
         old_keys = old_dct.keys()
-        new_keys = lex.keys()
+        new_keys = lex.keys
         update_keys = [x for x in new_keys if x in old_keys]
         append_keys = [x for x in new_keys if x not in old_keys]
         new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
@@ -84,6 +84,7 @@ class Lexicon:
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
 
+    @property
     def keys(self):
         return list(self._dictionary_df.columns)
 
@@ -94,6 +95,9 @@ class Lexicon:
         vocab = [x for x in vocab if isinstance(x, str)]  # remove np.nans
         return sorted(list(set(vocab)))
 
+    @property
+    def vocabulary(self) -> list:
+        return self.get_vocabulary()
 
     def to_dict(self) -> dict:
         """Return the lexicon in dictionary format.
@@ -114,14 +118,15 @@ class Lexicon:
         pass
 
 
-    def load(self, path: str) -> None:
+    @classmethod
+    def load(cls, path: str):
         """Load a previously saved Lexicon instance
 
         Args:
             path (str): Path of saved Lexicon instance
         """
         # TODO: implement load method
-        pass
+        # return cls()
 
 
 def dict_padding(dictionary: dict, filler=np.nan) -> dict:
