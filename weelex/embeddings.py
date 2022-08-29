@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import Union, Tuple
+from typing import Union, Tuple, Iterable, overload
+from functools import singledispatch, singledispathmethod
 
 import numpy as np
 import pandas as pd
 from gensim.models.fasttext import load_facebook_vectors
 from gensim.models import FastText
 from gensim.models import Word2Vec
-
 
 
 @dataclass
@@ -22,17 +22,17 @@ class Embeddings:
 
 
     # TODO: how do I handle these well?
-    def load_facebook_vectors(self, path):
+    def load_facebook_vectors(self, path: str) -> None:
         wv = load_facebook_vectors(path)
         self._wv = wv
 
 
-    def load_finetuned_fasttext(self, path):
+    def load_finetuned_fasttext(self, path: str) -> None:
         wv = FastText.load(path).wv
         self._wv = wv
 
 
-    def load_finetuned_word2vec(self, path):
+    def load_finetuned_word2vec(self, path: str) -> None:
         wv = Word2Vec.load(path).wv
         self._wv = wv
 
@@ -62,7 +62,7 @@ class Embeddings:
         return keys, vectors
 
 
-    def _get_val_from_key(self, key):
+    def _get_val_from_key(self, key: str) -> np.ndarray:
         if self.isfiltered:
             index = self._keys.tolist().index(key)
             result =  self._vectors[index, :]
@@ -71,7 +71,7 @@ class Embeddings:
         return result
 
 
-    def _get_val_from_key_vectorized(self, keys):
+    def _get_val_from_key_vectorized(self, keys: Iterable[str]) -> np.ndarray:
         # TODO: currently only working for filtered embeddings
         # TODO: is not working efficiently right now. Only basic functionality
         # sorter = np.argsort(keys)
@@ -111,11 +111,20 @@ class Embeddings:
         self.isfiltered = True
 
 
+    @property
     def keys(self):
         return self._keys
 
 
-    def lookup(self, terms: Union[str, list, np.ndarray, pd.Series]):
+    @overload
+    def lookup(self, terms: str) -> np.ndarray:
+        ...
+
+    @overload
+    def lookup(self, terms: Union[list, np.ndarray, pd.Series]) -> np.ndarray:
+        ...
+
+    def lookup(self, terms: Union[str, list, np.ndarray, pd.Series]) -> np.ndarray:
         if isinstance(terms, str):
             values =  self._get_val_from_key(terms)
         else:
@@ -125,5 +134,23 @@ class Embeddings:
         return values
 
 
-    def __getitem__(self, key):
+    @singledispathmethod
+    def lookup2(self, terms: Union[str, list, np.ndarray, pd.Series]) -> np.ndarray:
+        raise TypeError(f'Not supported for objects of type {type(terms)}')
+
+    @lookup2.register(str)
+    def lookup_str(self, terms: str) -> np.ndarray:
+        return self._get_val_from_key(terms)
+
+    @lookup2.register(np.ndarray)
+    def lookup_numpy(self, terms: np.ndarray) -> np.ndarray:
+        return self._get_val_from_key_vectorized(terms)
+
+    @lookup2.register(Union[list, pd.Series])
+    def lookup_iterable(self, terms: Union[list, pd.Series]) -> np.ndarray:
+        terms_array = np.array(terms)
+        return self._get_val_from_key_vectorized(terms_array)
+
+
+    def __getitem__(self, key: str) -> np.ndarray:
         return self._get_val_from_key(key)

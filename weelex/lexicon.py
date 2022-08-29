@@ -16,6 +16,16 @@ class Lexicon:
         self._dictionary_df = self._build_dictionary(dictionary, sep=sep, encoding=encoding)
 
 
+    def __getitem__(self, key) -> pd.Series:
+        # TODO: implement getitem method
+        pass
+
+
+    def __setitem__(self, key):
+        # TODO: implement setitem method such that categories can be added easily
+        pass
+
+
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
                           sep: str=None,
