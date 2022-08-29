@@ -5,7 +5,7 @@ import pandas as pd
 
 from weelex import lexicon
 from weelex import embeddings
-from weelex import batchprocessing
+from weelex.batchprocessing import batchprocessing
 
 
 class WEELexClassifier(BaseEstimator, TransformerMixin):

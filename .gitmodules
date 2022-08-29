@@ -1,0 +1,8 @@
+[submodule "batchprocessing"]
+	path = batchprocessing
+	url = git@github.com:VFMR/batchprocessing.git
+	branch = main
+[submodule "weelex/batchprocessing"]
+	path = weelex/batchprocessing
+	url = git@github.com:VFMR/batchprocessing.git
+	branch = main

@@ -7,7 +7,7 @@ import pandas as pd
 from weelex import classifier
 from weelex import lexicon
 from weelex import embeddings
-from weelex import batchprocessing
+from weelex.batchprocessing import batchprocessing
 
 INPUTDIR = 'tests/testfiles/'
 TEMPDIR = os.path.join(INPUTDIR, 'Temp/')
