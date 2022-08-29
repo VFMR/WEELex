@@ -17,13 +17,11 @@ class Lexicon:
 
 
     def __getitem__(self, key) -> pd.Series:
-        # TODO: implement getitem method
-        pass
+        return self._dictionary_df[key]
 
 
-    def __setitem__(self, key):
-        # TODO: implement setitem method such that categories can be added easily
-        pass
+    def __setitem__(self, key, value) -> None:
+        self._dictionrary_df[key] = value
 
 
     def _build_dictionary(self,

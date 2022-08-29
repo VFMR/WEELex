@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Union, Tuple, Iterable, overload
 # from functools import singledispatch, singledispathmethod
 
@@ -9,12 +8,8 @@ from gensim.models import FastText
 from gensim.models import Word2Vec
 
 
-@dataclass
 class Embeddings:
     def __init__(self, inputs=None) -> None:
-        # if isinstance(inputs, dict):
-        #     # TODO: make sure that self._keys and self._vectors would not appear in fields
-        #     self._keys: ClassVar, self._vectors: ClassVar = self._data_from_dct(inputs)
         self.isfiltered = False
         self._keys = None
         self._vectors = None
@@ -74,8 +69,6 @@ class Embeddings:
     def _get_val_from_key_vectorized(self, keys: Iterable[str]) -> np.ndarray:
         # TODO: currently only working for filtered embeddings
         # TODO: is not working efficiently right now. Only basic functionality
-        # sorter = np.argsort(keys)
-        # values = sorter[np.searchsorted(self._vectors, keys, sorter=sorter)]
         lst = [self._get_val_from_key(x) for x in keys]
         values = np.array(lst)
         return values
