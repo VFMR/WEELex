@@ -102,29 +102,29 @@ class TestLexicon(unittest.TestCase):
 
     def test_build_csv(self):
         self._setup()
-        assert self.lex1.keys() == ['PolitikVR', 'AutoVR']
+        assert self.lex1.keys == ['PolitikVR', 'AutoVR']
         assert self.lex1._dictionary_df.shape == (55, 2)
 
     def test_build_json(self):
         self._setup()
-        assert self.lex2.keys() == ['Space', 'Food']
+        assert self.lex2.keys == ['Space', 'Food']
         assert self.lex2._dictionary_df.shape == (9, 2)
 
     def test_keys(self):
         self._setup()
-        assert isinstance(self.lex1.keys(), list)
-        assert isinstance(self.lex2.keys(), list)
+        assert isinstance(self.lex1.keys, list)
+        assert isinstance(self.lex2.keys, list)
 
     def test_merge1(self):
         self._setup()
         self.lex1.merge(self.lex2)
-        assert self.lex1.keys() == ['PolitikVR', 'AutoVR', 'Space', 'Food']
+        assert self.lex1.keys == ['PolitikVR', 'AutoVR', 'Space', 'Food']
         assert self.lex1._dictionary_df.shape == (55, 4)
 
     def test_merge2(self):
         self._setup()
         self.lex2.merge(self.lex1)
-        assert self.lex2.keys() == ['Space', 'Food', 'PolitikVR', 'AutoVR', ]
+        assert self.lex2.keys == ['Space', 'Food', 'PolitikVR', 'AutoVR', ]
         assert self.lex2._dictionary_df.shape == (55, 4)
 
     def test_get_vocabulary(self):
@@ -137,8 +137,12 @@ class TestLexicon(unittest.TestCase):
         self._setup()
         dct = self.lex1.to_dict()
         assert isinstance(dct, dict)
-        assert sorted(dct.keys()) == sorted(self.lex1.keys())
+        assert sorted(dct.keys()) == sorted(self.lex1.keys)
 
+    def test_properties(self):
+        self._setup()
+        assert self.lex1.get_vocabulary() == self.lex1.vocabulary
+        assert isinstance(self.lex1.keys, list)
 
 class TestEmbeddings(unittest.TestCase):
     def _setup(self):
@@ -148,6 +152,11 @@ class TestEmbeddings(unittest.TestCase):
         self.vocab = self.lex1.get_vocabulary()
         self.path = os.path.join(TEMPDIR, 'filtered_embeddings')
 
+    def _setup2(self):
+        self._setup()
+        embeds = embeddings.Embeddings()
+        embeds.load_filtered(self.path)
+        self.embeds = embeds
 
     def test_data_from_dict(self):
         x = np.random.randn(10)
@@ -165,26 +174,44 @@ class TestEmbeddings(unittest.TestCase):
         self._setup()
         embeds = embeddings.Embeddings()
         embeds.load_filtered(self.path)
-        assert isinstance(embeds.keys(), np.ndarray)
+        assert isinstance(embeds.keys, np.ndarray)
         assert isinstance(embeds._vectors, np.ndarray)
         assert embeds._vectors.shape[1] == 300
-        assert sorted(list(embeds.keys())) == sorted(list(self.vocab))
+        assert sorted(list(embeds.keys)) == sorted(list(self.vocab))
 
+
+    # def test_lookup2(self):
+    #     self._setup()
+    #     terms = [self.vocab[i] for i in [1,3,5]]
+    #     embeds = embeddings.Embeddings()
+    #     embeds.load_filtered(self.path)
+    #     v1 = embeds.lookup2(terms[0])
+    #     v2 = embeds[terms[0]]
+    #     v3 = embeds.lookup2(terms)
+    #     v4 = embeds.lookup2(np.array(terms))
+    #     assert isinstance(v1, np.ndarray)
+    #     assert isinstance(v2, np.ndarray)
+    #     assert np.allclose(v1, v2)
+    #     assert isinstance(v3, np.ndarray)
+    #     assert isinstance(v4, np.ndarray)
+    #     assert v3.shape == (3, 300)
+    #     assert v4.shape == (3, 300)
 
     def test_lookup(self):
-        self._setup()
+        self._setup2()
         terms = [self.vocab[i] for i in [1,3,5]]
-        embeds = embeddings.Embeddings()
-        embeds.load_filtered(self.path)
-        v1 = embeds.lookup(terms[0])
-        v2 = embeds[terms[0]]
-        v3 = embeds.lookup(terms)
+        v1 = self.embeds.lookup(terms[0])
+        v2 = self.embeds[terms[0]]
+        v3 = self.embeds.lookup(terms)
         assert isinstance(v1, np.ndarray)
         assert isinstance(v2, np.ndarray)
         assert np.allclose(v1, v2)
         assert isinstance(v3, np.ndarray)
         assert v3.shape == (3, 300)
 
+    def test_properties(self):
+        self._setup2()
+        assert isinstance(self.embeds.keys, np.ndarray)
 
 if __name__=='__main__':
     unittest.main()
