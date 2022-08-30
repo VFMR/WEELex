@@ -6,3 +6,11 @@
 	path = weelex/batchprocessing
 	url = git@github.com:VFMR/batchprocessing.git
 	branch = main
+[submodule "weelex/cluster_tfidf"]
+	path = weelex/cluster_tfidf
+	url = git@github.com:VFMR/cluster_tfidf.git
+	branch = main
+[submodule "clustertfidf"]
+	path = weelex/cluster_tfidf
+	url = git@github.com:VFMR/cluster_tfidf.git
+	branch = main
