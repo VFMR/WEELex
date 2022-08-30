@@ -1,5 +1,6 @@
 import os
 import unittest
+import doctest
 
 import numpy as np
 import pandas as pd
@@ -212,6 +213,7 @@ class TestEmbeddings(unittest.TestCase):
     def test_properties(self):
         self._setup2()
         assert isinstance(self.embeds.keys, np.ndarray)
+
 
 if __name__=='__main__':
     unittest.main()

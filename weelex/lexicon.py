@@ -39,6 +39,14 @@ class Lexicon:
                 file with the json module. Otherwise pd.read_csv is attempted.
             sep (str, optional): separator character when reading csv file
 
+        Example:
+            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
+            >>> l = Lexicon(my_dct)
+            >>> l._build_dictionary(my_dct)
+                 A    B
+            0    a    c
+            1    b    d
+
         Returns:
             pd.DataFrame: lexicon matrix
         """
@@ -87,6 +95,17 @@ class Lexicon:
         return list(self._dictionary_df.columns)
 
     def get_vocabulary(self) -> list:
+        """Returns a sorted list of all the lexicon categories
+
+        Example:
+            >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animals': ['Dog', 'Cat']}
+            >>> l = Lexicon(my_dct)
+            >>> l.get_vocabulary()
+            ['Bread', 'Cat', 'Dog', 'Salad']
+
+        Returns:
+            list: Sorted array of categories
+        """
         vocab = []
         for col in self._dictionary_df:
             vocab += list(self._dictionary_df[col])
@@ -100,10 +119,20 @@ class Lexicon:
     def to_dict(self) -> dict:
         """Return the lexicon in dictionary format.
 
+        Example:
+            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
+            >>> l = Lexicon(my_dct)
+            >>> l.to_dict()
+            {'A': ['a', 'b'], 'B': ['c', 'd']}
+
         Returns:
             dict: dict with the lexicon key-value pairs
         """
-        return self._dictionary_df.to_dict()
+        out_dict = {
+            key: list(
+                self._dictionary_df[key]
+                ) for key in self._dictionary_df.columns}
+        return out_dict
 
 
     def save(self, path: str) -> None:
@@ -130,12 +159,15 @@ class Lexicon:
 def dict_padding(dictionary: dict, filler=np.nan) -> dict:
     """Padding of a dictionary where the values are lists such that these lists
     have the same length.
-    Example: {'A': [1,2,3], 'B': [1,2]} -> {'A': [1,2,3], 'B': [1,2,np.nan]}
 
     Args:
         dictionary (dict): Dictionary where the values are lists,
             e.g. {'A': [1,2,3], 'B': [1,2]}
         filler: Value to pad with. Defaults to np.nan
+
+    Example:
+        >>> dict_padding({'A': [1,2,3], 'B': [1,2]})
+        {'A': [1, 2, 3], 'B': [1, 2, nan]}
 
     Returns:
         dict: Padded dictionary
@@ -157,6 +189,14 @@ def list_padding(lst: list, maxlen: int, filler=np.nan) -> list:
         lst (list): List to fill
         maxlen (int): Desired length
         filler (optional): Value to fill list with. Defaults to np.nan.
+
+    Example:
+        >>> list_padding(lst=[1,2], maxlen=4, filler=0)
+        [1, 2, 0, 0]
+        >>> list_padding(lst=[1,2,3], maxlen=2, filler=0)
+        [1, 2]
+        >>> list_padding(lst=[1,2,3], maxlen=5, filler=np.nan)
+        [1, 2, 3, nan, nan]
 
     Returns:
         list: padded list
