@@ -19,6 +19,7 @@ class Lexicon:
         self._dictionary_df = self._build_dictionary(dictionary, sep=sep, encoding=encoding)
         self.embeddings = None
 
+
     def __getitem__(self, key: str) -> pd.Series:
         """getter for simple data retrieval
 
@@ -56,6 +57,7 @@ class Lexicon:
         """
         self._dictionary_df[key] = value
 
+
     def __repr__(self):
         """repr
 
@@ -70,6 +72,7 @@ class Lexicon:
             pd.DataFrame: Matrix of categories and terms
         """
         return self._dictionary_df.__repr__()
+
 
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
@@ -132,10 +135,12 @@ class Lexicon:
         self._dictionary_df = new_dct
         # TODO: allow for merge of existing keys
 
+
     def _append_values(self, lex: 'Lexicon', key: str, values: pd.Series) -> pd.Series:
         maxlen = lex._dictionary_df.shape[0]
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
+
 
     @staticmethod
     def _clean_strings(array: pd.Series) -> pd.Series:
@@ -160,18 +165,24 @@ class Lexicon:
         """
         return array.str.replace('*', '', regex=False)
 
+
+    @staticmethod
+    def _embed_word(term, embeddings):
+        if term is not None and term is not np.nan:
+            result = embeddings[term]
+        else:
+            empty_array = np.empty(shape=(embeddings.dim))
+            result = empty_array.fill(np.nan)
+        return result
+
+
     def embed(self, embeddings: embeddings.Embeddings) -> None:
         dict_df_shape = self._dictionary_df.shape
-        embedding_shape = embeddings.dim
         embedding_tensor = np.zeros(
             shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
         for j, key in enumerate(self.keys):
             for i, x in enumerate(self[key]):
-                if x is not None and x is not np.nan:
-                    embedding_tensor[i][j] = embeddings[x]
-                else:
-                    empty_array = np.empty(shape=(embedding_shape))
-                    embedding_tensor[i][j] = empty_array.fill(np.nan)
+                embedding_tensor[i][j] = self._embed_word(x, embeddings)
 
         self.embeddings = embedding_tensor
 
