@@ -1,0 +1,3 @@
+from weelex import lexicon
+
+

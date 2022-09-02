@@ -90,6 +90,20 @@ class TestLexicon(unittest.TestCase):
         self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'), sep=';', encoding='latin1')
         self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
 
+    def _setup2(self):
+        self._setup()
+        embeds = embeddings.Embeddings()
+        embeds.load_filtered(os.path.join(TEMPDIR, 'filtered_embeddings'))
+        self.embeds = embeds
+
+    def test_clean_strings(self):
+        self._setup()
+        array = pd.Series(['Apple*', 'Banana cake * is good*', '***', '*Cucumber'])
+        result = pd.Series(['Apple', 'Banana cake  is good', '', 'Cucumber'])
+        print(result)
+        print(self.lex1._clean_strings(array))
+        assert self.lex1._clean_strings(array).equals(result)
+
     def test_list_padding(self):
         testlist = [1,2,3]
         maxlen = 5
@@ -144,6 +158,25 @@ class TestLexicon(unittest.TestCase):
         self._setup()
         assert self.lex1.get_vocabulary() == self.lex1.vocabulary
         assert isinstance(self.lex1.keys, list)
+
+    def test_embedding(self):
+        self._setup2()
+        self.lex1.embed(self.embeds)
+        assert self.lex1.embeddings is not None
+        assert isinstance(self.lex1.embeddings, np.ndarray)
+
+    def test_embedding_shape(self):
+        self._setup2()
+        self.lex1.embed(self.embeds)
+        assert len(self.lex1.embedding_shape) == 3
+        assert self.lex1.embedding_shape[2] == 300
+        assert self.lex1.embedding_shape[1] == len(self.lex1.keys)
+        assert self.lex1.embedding_shape[0] == len(self.lex1[self.lex1.keys[0]])
+
+    def test_getter(self):
+        self._setup()
+        keys = self.lex1.keys
+        assert isinstance(self.lex1[keys[0]], pd.Series)
 
 class TestEmbeddings(unittest.TestCase):
     def _setup(self):
@@ -212,6 +245,7 @@ class TestEmbeddings(unittest.TestCase):
 
     def test_properties(self):
         self._setup2()
+        assert self.embeds.dim == 300
         assert isinstance(self.embeds.keys, np.ndarray)
 
 

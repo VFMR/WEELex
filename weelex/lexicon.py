@@ -1,9 +1,12 @@
 from dataclasses import dataclass
+from re import I
 from typing import Union, Iterable
 import json
 
 import pandas as pd
 import numpy as np
+
+from weelex import embeddings
 
 
 @dataclass
@@ -14,15 +17,59 @@ class Lexicon:
                  sep: str=None,
                  encoding: str=None):
         self._dictionary_df = self._build_dictionary(dictionary, sep=sep, encoding=encoding)
+        self.embeddings = None
 
+    def __getitem__(self, key: str) -> pd.Series:
+        """getter for simple data retrieval
 
-    def __getitem__(self, key) -> pd.Series:
+        Example:
+            >>> lex = Lexicon({'A': ['a', 'b'], 'B': ['c', 'd', 'e']})
+            >>> lex['A']
+            0    a
+            1    b
+            2    NaN
+            Name: A, dtype: object
+
+        Args:
+            key (str): Lexicon key/category
+
+        Returns:
+            pd.Series: Array containing the words
+        """
         return self._dictionary_df[key]
 
 
-    def __setitem__(self, key, value) -> None:
-        self._dictionrary_df[key] = value
+    def __setitem__(self, key: str, value: Iterable[str]) -> None:
+        """setter method to add lexicon keys/categories
 
+        Example:
+            >>> lex = Lexicon({'A': ['a', 'b']})
+            >>> lex['B'] = ['c', 'd']
+            >>> print(lex._dictionary_df)
+                 A    B
+            0    a    c
+            1    b    d
+
+        Args:
+            key (str): Name of the category
+            value (Iterable[str]): Array containing the terms
+        """
+        self._dictionary_df[key] = value
+
+    def __repr__(self):
+        """repr
+
+        Example:
+            >>> lex = Lexicon({'A': ['a', 'b'], 'B': ['c', 'd']})
+            >>> lex
+                 A    B
+            0    a    c
+            1    b    d
+
+        Returns:
+            pd.DataFrame: Matrix of categories and terms
+        """
+        return self._dictionary_df.__repr__()
 
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
@@ -90,9 +137,44 @@ class Lexicon:
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
 
-    @property
-    def keys(self):
-        return list(self._dictionary_df.columns)
+    @staticmethod
+    def _clean_strings(array: pd.Series) -> pd.Series:
+        """Remove the '*'-symbols from terms that may be used for
+        matching different terms. These are not meaningful for the
+        embedding method.
+
+        Example:
+            >>> array = pd.Series(['Test*', 'Te*st', '*test'])
+            >>> lex = Lexicon({'A': ['a', 'b']})
+            >>> lex._clean_strings(array)
+            0    Test
+            1    Test
+            2    test
+            dtype: object
+
+        Args:
+            array (pd.Series): pandas Series containing strings
+
+        Returns:
+            pd.Series: Array with removed stars
+        """
+        return array.str.replace('*', '', regex=False)
+
+    def embed(self, embeddings: embeddings.Embeddings) -> None:
+        dict_df_shape = self._dictionary_df.shape
+        embedding_shape = embeddings.dim
+        embedding_tensor = np.zeros(
+            shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
+        for j, key in enumerate(self.keys):
+            for i, x in enumerate(self[key]):
+                if x is not None and x is not np.nan:
+                    embedding_tensor[i][j] = embeddings[x]
+                else:
+                    empty_array = np.empty(shape=(embedding_shape))
+                    embedding_tensor[i][j] = empty_array.fill(np.nan)
+
+        self.embeddings = embedding_tensor
+
 
     def get_vocabulary(self) -> list:
         """Returns a sorted list of all the lexicon categories
@@ -112,9 +194,6 @@ class Lexicon:
         vocab = [x for x in vocab if isinstance(x, str)]  # remove np.nans
         return sorted(list(set(vocab)))
 
-    @property
-    def vocabulary(self) -> list:
-        return self.get_vocabulary()
 
     def to_dict(self) -> dict:
         """Return the lexicon in dictionary format.
@@ -145,6 +224,21 @@ class Lexicon:
         pass
 
 
+    # ------------------------------- Properties
+    @property
+    def keys(self):
+        return list(self._dictionary_df.columns)
+
+    @property
+    def embedding_shape(self):
+        return self.embeddings.shape
+
+    @property
+    def vocabulary(self) -> list:
+        return self.get_vocabulary()
+
+
+    # ------------------------------ Class methods
     @classmethod
     def load(cls, path: str):
         """Load a previously saved Lexicon instance

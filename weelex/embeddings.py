@@ -14,6 +14,7 @@ class Embeddings:
         self._keys = None
         self._vectors = None
         self._wv = None
+        self.testvalue = 'Test'
 
 
     # TODO: how do I handle these well?
@@ -107,6 +108,14 @@ class Embeddings:
     @property
     def keys(self):
         return self._keys
+
+    @property
+    def dim(self):
+        try:
+            result =  len(self._vectors[0])
+        except:
+            result =  len(self._wv)
+        return result
 
 
     @overload
