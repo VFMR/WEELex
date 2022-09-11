@@ -27,7 +27,6 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         # TODO: Implement fit() method
         pass
 
-
     def predict(self,
                 X: pd.DataFrame,
                 cutoff: float=0.5,
@@ -36,8 +35,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         preds = self.predict_proba(X=X,
                                    n_batches=n_batches,
                                    checkpoint_path=checkpoint_path)
-        return (preds>=cutoff).astype(int)
-
+        return (preds >= cutoff).astype(int)
 
     @batchprocessing.batch_predict
     def predict_proba(self,
@@ -47,20 +45,16 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         # TODO: implement predict_proba() method
         pass
 
-
     def save(self):
         # TODO: Implement save() method
         pass
-
 
     def load(self):
         # TODO: Implement load() method
         pass
 
-
     def __repr__(self, N_CHAR_MAX=700):
         return super().__repr__(N_CHAR_MAX)
-
 
     def _handle_lexica(self,
                        main_lex: Union[lexicon.Lexicon, dict, str],
@@ -86,7 +80,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             _support_keys = []
 
         # Remove any overlapping keys:
-        _support_keys = [x for x  in _support_keys if x not in _main_keys]
+        _support_keys = [x for x in _support_keys if x not in _main_keys]
 
         # Merge lexica:
         _full_lex = self._merge_lexica([_main_lex, _support_lex])
@@ -95,15 +89,17 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._main_keys = _main_keys
         self._support_keys = _support_keys
 
-
-    def _make_lexicon(self, lex: Union[lexicon.Lexicon, dict, str]) -> lexicon.Lexicon:
+    def _make_lexicon(self,
+                      lex: Union[lexicon.Lexicon, dict, str]
+                      ) -> lexicon.Lexicon:
         """Create proper Lexicon instance from the passed input lexicon
 
         Args:
             lexicon (dict, str or pd.DataFrame): The key-value pairs to use
                 for the lexicon. If str is passed, it should be the path to
-                a csv (containing tabular data) or json (containig key-value pairs)
-                file. If the file ends with ".json", it will attempt to read the
+                a csv (containing tabular data) or json
+                (containig key-value pairs) file.
+                If the file ends with ".json", it will attempt to read the
                 file with the json module. Otherwise pd.read_csv is attempted.
 
         Returns:
@@ -115,12 +111,11 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             my_lex = lex
         return my_lex
 
-
-    def _merge_lexica(self, lexica: Iterable[lexicon.Lexicon]) -> lexicon.Lexicon:
+    def _merge_lexica(self,
+                      lexica: Iterable[lexicon.Lexicon]) -> lexicon.Lexicon:
         base_lex = lexica[0]
         full_lex = base_lex.merge(lexica[1:])
         return full_lex
-
 
     def _make_embeddings(self, embeds: Union[embeddings.Embeddings, dict]):
         if not isinstance(embeds, embeddings.Embeddings):
@@ -129,12 +124,10 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             my_embeds = embeds
         return my_embeds
 
-
     def _get_full_vocab(self) -> list:
         v1 = self._lexicon.get_vocabulary()
         v2 = self._support_lexicon.get_vocabulary()
         return sorted(list(set([v1, v2])))
-
 
     def _filter_embeddings(self) -> None:
         vocab = self._get_full_vocab()

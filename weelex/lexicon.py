@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from re import I
 from typing import Union, Iterable
 import json
 
@@ -14,11 +13,13 @@ class Lexicon:
     # TODO: Allow for train_test_split to work
     def __init__(self,
                  dictionary: Union[dict, str, pd.DataFrame],
-                 sep: str=None,
-                 encoding: str=None):
-        self._dictionary_df = self._build_dictionary(dictionary, sep=sep, encoding=encoding)
+                 sep: str = None,
+                 encoding: str = None):
+        self._dictionary_df = self._build_dictionary(
+                dictionary,
+                sep=sep,
+                encoding=encoding)
         self.embeddings = None
-
 
     def __getitem__(self, key: str) -> pd.Series:
         """getter for simple data retrieval
@@ -39,7 +40,6 @@ class Lexicon:
         """
         return self._dictionary_df[key]
 
-
     def __setitem__(self, key: str, value: Iterable[str]) -> None:
         """setter method to add lexicon keys/categories
 
@@ -57,7 +57,6 @@ class Lexicon:
         """
         self._dictionary_df[key] = value
 
-
     def __repr__(self):
         """repr
 
@@ -73,19 +72,19 @@ class Lexicon:
         """
         return self._dictionary_df.__repr__()
 
-
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
-                          sep: str=None,
-                          encoding: str=None
+                          sep: str = None,
+                          encoding: str = None
                           ) -> pd.DataFrame:
         """Processes the input lexicon and returns it in a pandas DataFrame.
 
         Args:
             dictionary (dict, str or pd.DataFrame): The key-value pairs to use
                 for the lexicon. If str is passed, it should be the path to
-                a csv (containing tabular data) or json (containig key-value pairs)
-                file. If the file ends with ".json", it will attempt to read the
+                a csv (containing tabular data) or json (containig key-value
+                pairs) file.
+                If the file ends with ".json", it will attempt to read the
                 file with the json module. Otherwise pd.read_csv is attempted.
             sep (str, optional): separator character when reading csv file
 
@@ -114,14 +113,12 @@ class Lexicon:
 
         return dct_df
 
-
     def merge(self, lexica: Union['Lexicon', Iterable['Lexicon']]) -> None:
         if isinstance(lexica, Lexicon):
             self._merge_one(lexica)
         else:
             for lex in lexica:
                 self._merge_one(lex)
-
 
     def _merge_one(self, lex: 'Lexicon') -> None:
         old_dct = self._dictionary_df.copy()
@@ -135,16 +132,17 @@ class Lexicon:
         self._dictionary_df = new_dct
         # TODO: allow for merge of existing keys
 
-
-    def _append_values(self, lex: 'Lexicon', key: str, values: pd.Series) -> pd.Series:
+    def _append_values(self,
+                       lex: 'Lexicon',
+                       key: str,
+                       values: pd.Series) -> pd.Series:
         maxlen = lex._dictionary_df.shape[0]
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
 
-
     @staticmethod
     def _clean_strings(array: pd.Series) -> pd.Series:
-        """Remove the '*'-symbols from terms that may be used for
+        """Replace the '*'-symbols from terms that may be used for
         matching different terms. These are not meaningful for the
         embedding method.
 
@@ -161,10 +159,9 @@ class Lexicon:
             array (pd.Series): pandas Series containing strings
 
         Returns:
-            pd.Series: Array with removed stars
+            pd.Series: Array without stars
         """
         return array.str.replace('*', '', regex=False)
-
 
     @staticmethod
     def _embed_word(term, embeddings):
@@ -174,7 +171,6 @@ class Lexicon:
             empty_array = np.empty(shape=(embeddings.dim))
             result = empty_array.fill(np.nan)
         return result
-
 
     def embed(self, embeddings: embeddings.Embeddings) -> None:
         dict_df_shape = self._dictionary_df.shape
@@ -186,12 +182,11 @@ class Lexicon:
 
         self.embeddings = embedding_tensor
 
-
     def get_vocabulary(self) -> list:
         """Returns a sorted list of all the lexicon categories
 
         Example:
-            >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animals': ['Dog', 'Cat']}
+            >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animal': ['Dog', 'Cat']}
             >>> l = Lexicon(my_dct)
             >>> l.get_vocabulary()
             ['Bread', 'Cat', 'Dog', 'Salad']
@@ -204,7 +199,6 @@ class Lexicon:
             vocab += list(self._dictionary_df[col])
         vocab = [x for x in vocab if isinstance(x, str)]  # remove np.nans
         return sorted(list(set(vocab)))
-
 
     def to_dict(self) -> dict:
         """Return the lexicon in dictionary format.
@@ -224,7 +218,6 @@ class Lexicon:
                 ) for key in self._dictionary_df.columns}
         return out_dict
 
-
     def save(self, path: str) -> None:
         """Save lexicon to disk
 
@@ -234,8 +227,8 @@ class Lexicon:
         # TODO: implement save method
         pass
 
-
     # ------------------------------- Properties
+
     @property
     def keys(self):
         return list(self._dictionary_df.columns)
@@ -248,8 +241,8 @@ class Lexicon:
     def vocabulary(self) -> list:
         return self.get_vocabulary()
 
-
     # ------------------------------ Class methods
+
     @classmethod
     def load(cls, path: str):
         """Load a previously saved Lexicon instance
