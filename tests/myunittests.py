@@ -1,6 +1,6 @@
 import os
 import unittest
-import doctest
+# import doctest
 
 import numpy as np
 import pandas as pd
@@ -8,20 +8,40 @@ import pandas as pd
 from weelex import classifier
 from weelex import lexicon
 from weelex import embeddings
+from weelex import trainer
 from weelex.batchprocessing import batchprocessing
 
 INPUTDIR = 'tests/testfiles/'
 TEMPDIR = os.path.join(INPUTDIR, 'Temp/')
 
 
+class GenericTest(unittest.TestCase):
+    def _setup(self):
+        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'),
+                                    sep=';',
+                                    encoding='latin1')
+        self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
+
+    def _setup2(self):
+        self._setup()
+        embeds = embeddings.Embeddings()
+        embeds.load_filtered(os.path.join(TEMPDIR, 'filtered_embeddings'))
+        self.embeds = embeds
+
+    def _setup3(self):
+        self._setup()
+        self._setup2()
+        self.lex1.embed(embeddings=self.embeds)
+
+
 class MyMonkeyPatch:
     def __init__(self):
         self.colnames = ['A', 'B']
         self.df = pd.DataFrame(np.zeros((100, 2)))
-        self.rnd_df = pd.DataFrame(np.random.randn(100,2))
+        self.rnd_df = pd.DataFrame(np.random.randn(100, 2))
         self.df.columns = self.colnames
         self.rnd_df.columns = self.colnames
-        self.checkpoint_path=os.path.join(TEMPDIR, 'mytest')
+        self.checkpoint_path = os.path.join(TEMPDIR, 'mytest')
         self.fake_cp_path = os.path.join(TEMPDIR, 'mytest_fake')
 
     @batchprocessing.batch_predict
@@ -71,9 +91,9 @@ class TestBatchProc(unittest.TestCase):
         assertion_df1 = pd.DataFrame(np.ones((100, 2)))
         assertion_df1.columns = self.myobj.colnames
         assertion_df2 = pd.concat(
-            [self.myobj.rnd_df.iloc[:50,:],
-            assertion_df1.iloc[50:,:]],
-            axis=0, ignore_index=True
+            [self.myobj.rnd_df.iloc[:50, :],
+             assertion_df1.iloc[50:, :]],
+             axis=0, ignore_index=True
         )
         assert x.shape == (100, 2)
         assert x.equals(assertion_df1) is False
@@ -85,34 +105,39 @@ class TestClassifier(unittest.TestCase):
         pass
 
 
-class TestLexicon(unittest.TestCase):
-    def _setup(self):
-        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'), sep=';', encoding='latin1')
-        self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
-
-    def _setup2(self):
-        self._setup()
-        embeds = embeddings.Embeddings()
-        embeds.load_filtered(os.path.join(TEMPDIR, 'filtered_embeddings'))
-        self.embeds = embeds
-
+class TestLexicon(GenericTest):
     def test_clean_strings(self):
         self._setup()
-        array = pd.Series(['Apple*', 'Banana cake * is good*', '***', '*Cucumber'])
+        array = pd.Series(
+                ['Apple*', 'Banana cake * is good*', '***', '*Cucumber']
+                )
         result = pd.Series(['Apple', 'Banana cake  is good', '', 'Cucumber'])
         print(result)
         print(self.lex1._clean_strings(array))
         assert self.lex1._clean_strings(array).equals(result)
 
+    def test_copy(self):
+        self._setup()
+        mylex = self.lex1.copy()
+        assert mylex.keys == self.lex1.keys
+        self.lex1.merge(self.lex2)
+        assert mylex.keys != self.lex1.keys
+    
+    def test_copymerge(self):
+        self._setup()
+        mergedlex = self.lex1.merge(self.lex2, inplace=False)
+        assert mergedlex.keys != self.lex1.keys
+        assert sorted(list(mergedlex.keys)) == sorted(list(self.lex1.keys) + list(self.lex2.keys))
+
     def test_list_padding(self):
-        testlist = [1,2,3]
+        testlist = [1, 2, 3]
         maxlen = 5
-        expected_result = [1,2,3, np.nan, np.nan]
+        expected_result = [1, 2, 3, np.nan, np.nan]
         assert lexicon.list_padding(testlist, maxlen=maxlen) == expected_result
 
     def test_dict_padding(self):
-        testdict = {'A': [1,2,3], 'B': [1,2,3,4,5]}
-        expected_result = {'A': [1,2,3,np.nan,np.nan], 'B': [1,2,3,4,5]}
+        testdict = {'A': [1, 2, 3], 'B': [1, 2, 3, 4, 5]}
+        expected_result = {'A': [1, 2, 3, np.nan, np.nan], 'B': [1, 2, 3, 4, 5]}
         assert lexicon.dict_padding(testdict) == expected_result
 
     def test_build_csv(self):
@@ -178,9 +203,12 @@ class TestLexicon(unittest.TestCase):
         keys = self.lex1.keys
         assert isinstance(self.lex1[keys[0]], pd.Series)
 
+
 class TestEmbeddings(unittest.TestCase):
     def _setup(self):
-        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'), sep=';', encoding='latin1')
+        self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'),
+                                    sep=';', 
+                                    encoding='latin1')
         self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
         self.lex1.merge(self.lex2)
         self.vocab = self.lex1.get_vocabulary()
@@ -203,7 +231,6 @@ class TestEmbeddings(unittest.TestCase):
         assert np.allclose(vectors[1], y)
         assert list(keys) == ['A', 'B']
 
-
     def test_load_filtered(self):
         self._setup()
         embeds = embeddings.Embeddings()
@@ -212,7 +239,6 @@ class TestEmbeddings(unittest.TestCase):
         assert isinstance(embeds._vectors, np.ndarray)
         assert embeds._vectors.shape[1] == 300
         assert sorted(list(embeds.keys)) == sorted(list(self.vocab))
-
 
     # def test_lookup2(self):
     #     self._setup()
@@ -233,7 +259,7 @@ class TestEmbeddings(unittest.TestCase):
 
     def test_lookup(self):
         self._setup2()
-        terms = [self.vocab[i] for i in [1,3,5]]
+        terms = [self.vocab[i] for i in [1, 3, 5]]
         v1 = self.embeds.lookup(terms[0])
         v2 = self.embeds[terms[0]]
         v3 = self.embeds.lookup(terms)
@@ -249,5 +275,56 @@ class TestEmbeddings(unittest.TestCase):
         assert isinstance(self.embeds.keys, np.ndarray)
 
 
-if __name__=='__main__':
+class TestTrainer(GenericTest):
+    def _setup4(self):
+        self._setup3()
+        self.tr = trainer.TrainProcessor(lex=self.lex1,
+                                         support_lex=self.lex2,
+                                         embeddings=self.embeds)
+
+    def _setup5(self):
+        self._setup4()
+        self.tr._prepare_inputs()
+
+    def test(self):
+        pass
+
+    def test_embedding_df(self):
+        self._setup4()
+        df = self.tr._get_embedding_df(self.lex1)
+        assert isinstance(df, pd.DataFrame)
+        assert len( df.shape ) == 2
+        assert df.shape[1] == 300
+
+    def test_term_id_mapping(self):
+        self._setup4()
+        df = self.tr._get_embedding_df(self.lex1)
+        term2cat = self.tr._make_id_term_mapping(df)
+        assert isinstance(term2cat, pd.DataFrame) 
+        assert len(term2cat.shape) == 2
+        assert term2cat.shape[1] == 2
+        assert list(term2cat.columns) == ['categories', 'terms']
+
+    def test_make_y(self):
+        self._setup5()
+        y = self.tr._make_y()
+        print(y)
+        assert isinstance(y, dict)
+        print(y.keys(), self.lex1.keys)
+        assert sorted(list(y.keys())) == sorted(list(self.lex1.keys ))
+        
+    def test_make_x(self):
+        self._setup5()
+        y = self.tr._make_y()
+        x = self.tr._make_X(y)
+        assert isinstance(x, dict)
+        assert sorted(list(y.keys())) == sorted(list(self.lex1.keys))
+        
+    def test_make_data(self):
+        self._setup5()
+        x, y = self.tr.transform()
+        assert isinstance(x, dict)
+        assert isinstance(y, dict)
+
+if __name__ == '__main__':
     unittest.main()

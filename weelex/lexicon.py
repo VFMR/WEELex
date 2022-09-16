@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Union, Iterable
 import json
+import copy
 
 import pandas as pd
 import numpy as np
@@ -20,6 +21,11 @@ class Lexicon:
                 sep=sep,
                 encoding=encoding)
         self.embeddings = None
+
+    def __copy__(self):
+        obj = type(self).__new__(self.__class__)
+        obj.__dict__.update(self.__dict__)
+        return obj
 
     def __getitem__(self, key: str) -> pd.Series:
         """getter for simple data retrieval
@@ -72,6 +78,10 @@ class Lexicon:
         """
         return self._dictionary_df.__repr__()
 
+    def copy(self):
+        obj = copy.copy(self)
+        return obj
+
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
                           sep: str = None,
@@ -113,12 +123,22 @@ class Lexicon:
 
         return dct_df
 
-    def merge(self, lexica: Union['Lexicon', Iterable['Lexicon']]) -> None:
+    def merge(self, 
+              lexica: Union['Lexicon', Iterable['Lexicon']],
+              inplace: bool=True) -> None:
+        if inplace:
+            obj = self
+        else:
+            obj = self.copy()
+
         if isinstance(lexica, Lexicon):
-            self._merge_one(lexica)
+            obj._merge_one(lexica)
         else:
             for lex in lexica:
-                self._merge_one(lex)
+                obj._merge_one(lex)
+
+        if not inplace:
+            return obj
 
     def _merge_one(self, lex: 'Lexicon') -> None:
         old_dct = self._dictionary_df.copy()
@@ -182,6 +202,30 @@ class Lexicon:
 
         self.embeddings = embedding_tensor
 
+    @staticmethod
+    def _nonmissarray(array):
+        """
+
+        Example:
+            >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
+            >>> lex = Lexicon({'A': ['a', 'b']})
+            >>> lex._nonmissarray(array)
+            0    one
+            1    two
+            2    three
+            dtype: object
+
+        Args:
+
+            array (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        nonmiss = array[~array.isna()]
+        return nonmiss
+
+
     def get_vocabulary(self) -> list:
         """Returns a sorted list of all the lexicon categories
 
@@ -197,7 +241,7 @@ class Lexicon:
         vocab = []
         for col in self._dictionary_df:
             vocab += list(self._dictionary_df[col])
-        vocab = [x for x in vocab if isinstance(x, str)]  # remove np.nans
+        vocab = [x for x in vocab if isinstance(x, str)]  # removal of np.nans
         return sorted(list(set(vocab)))
 
     def to_dict(self) -> dict:
