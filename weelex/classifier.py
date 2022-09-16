@@ -13,7 +13,7 @@ from weelex.trainer import TrainProcessor
 class WEELexClassifier(BaseEstimator, TransformerMixin):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
-                 test_size: float=None, 
+                 test_size: float=None,
                  random_state=None,
                  **train_params) -> None:
         self._embeddings = self._make_embeddings(embeds)
@@ -27,14 +27,14 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
 
     def set_params(self, params: dict) -> None:
         self._train_params = params
-        
+
     def get_params(self) -> dict:
         return self._train_params
 
     def fit(self, X, y):
         # TODO: make fit method that can handle hyperparameter tuning
         pass
-    
+
     def weelexfit(self,
                   lex: Union[lexicon.Lexicon, dict, str],
                   support_lex: Union[lexicon.Lexicon, dict, str]=None,
@@ -54,7 +54,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         for cat in self._main_keys:
             model = self._model(cat, **self._train_params)
             model.fit(*self._trainprocessor.feed_cat_Xy(cat=cat, train=True))
-            models.append(model) 
+            models.append(model)
         self._models = models
         self._is_fit = True
 
@@ -69,15 +69,15 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
     def predict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
         # TODO: implement predict_proba() method that can handle hyperparam. t. (i.e. for predicting lexicon.Lexicon words)
         pass
-    
+
     @batchprocessing.batch_predict
-    def weelexpredict_proba(self, 
-                            X: pd.DataFrame, 
+    def weelexpredict_proba(self,
+                            X: pd.DataFrame,
                             n_batches: int=None,
                             checkpoint_path: str=None) -> pd.DataFrame:
         # TODO: implement predict method for final text prediction
         pass
-        
+
     def weelexpredict(self,
                       X: pd.DataFrame,
                       cutoff: float=0.5,
@@ -87,7 +87,6 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                                        n_batches=n_batches,
                                        checkpoint_path=checkpoint_path)
         return (preds >= cutoff).astype(int)
-
 
     def save(self):
         # TODO: Implement save() method
