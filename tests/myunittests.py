@@ -29,7 +29,6 @@ class GenericTest(unittest.TestCase):
         self.embeds = embeds
 
     def _setup3(self):
-        self._setup()
         self._setup2()
         self.lex1.embed(embeddings=self.embeds)
 
@@ -93,16 +92,22 @@ class TestBatchProc(unittest.TestCase):
         assertion_df2 = pd.concat(
             [self.myobj.rnd_df.iloc[:50, :],
              assertion_df1.iloc[50:, :]],
-             axis=0, ignore_index=True
+            axis=0, ignore_index=True
         )
         assert x.shape == (100, 2)
         assert x.equals(assertion_df1) is False
         assert np.allclose(x, assertion_df2, rtol=0.0001)
 
 
-class TestClassifier(unittest.TestCase):
-    def test1(self):
-        pass
+class TestClassifier(GenericTest):
+    def test_fit(self):
+        self._setup2()
+        cl = classifier.WEELexClassifier(embeds=self.embeds)
+        cl.weelexfit(lex=self.lex1, support_lex=self.lex2)
+        assert cl._is_fit == True
+        assert isinstance(cl._models, list)
+        assert len(cl._models) > 0
+        assert cl.main_keys == ['PolitikVR', 'AutoVR']
 
 
 class TestLexicon(GenericTest):
@@ -122,7 +127,7 @@ class TestLexicon(GenericTest):
         assert mylex.keys == self.lex1.keys
         self.lex1.merge(self.lex2)
         assert mylex.keys != self.lex1.keys
-    
+
     def test_copymerge(self):
         self._setup()
         mergedlex = self.lex1.merge(self.lex2, inplace=False)
@@ -207,7 +212,7 @@ class TestLexicon(GenericTest):
 class TestEmbeddings(unittest.TestCase):
     def _setup(self):
         self.lex1 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex1.csv'),
-                                    sep=';', 
+                                    sep=';',
                                     encoding='latin1')
         self.lex2 = lexicon.Lexicon(os.path.join(INPUTDIR, 'mylex2.json'))
         self.lex1.merge(self.lex2)
@@ -293,14 +298,14 @@ class TestTrainer(GenericTest):
         self._setup4()
         df = self.tr._get_embedding_df(self.lex1)
         assert isinstance(df, pd.DataFrame)
-        assert len( df.shape ) == 2
+        assert len(df.shape) == 2
         assert df.shape[1] == 300
 
     def test_term_id_mapping(self):
         self._setup4()
         df = self.tr._get_embedding_df(self.lex1)
         term2cat = self.tr._make_id_term_mapping(df)
-        assert isinstance(term2cat, pd.DataFrame) 
+        assert isinstance(term2cat, pd.DataFrame)
         assert len(term2cat.shape) == 2
         assert term2cat.shape[1] == 2
         assert list(term2cat.columns) == ['categories', 'terms']
@@ -311,20 +316,39 @@ class TestTrainer(GenericTest):
         print(y)
         assert isinstance(y, dict)
         print(y.keys(), self.lex1.keys)
-        assert sorted(list(y.keys())) == sorted(list(self.lex1.keys ))
-        
+        assert sorted(list(y.keys())) == sorted(list(self.lex1.keys))
+
     def test_make_x(self):
         self._setup5()
         y = self.tr._make_y()
         x = self.tr._make_X(y)
         assert isinstance(x, dict)
         assert sorted(list(y.keys())) == sorted(list(self.lex1.keys))
-        
+
     def test_make_data(self):
         self._setup5()
         x, y = self.tr.transform()
         assert isinstance(x, dict)
         assert isinstance(y, dict)
+        assert len(x['PolitikVR'].iloc[0, :]) == 300
+
+    def test_make_lexicon(self):
+        dct1 = {'A': ['a', 'b'], 'B': ['c', 'd', 'e']} 
+        dct2 = pd.DataFrame({'C': ['f', 'g'], 'D': ['h', 'i']})
+        tr = trainer.TrainProcessor(lex=dct1)
+        assert tr._main_keys == ['A', 'B']
+        assert isinstance(tr._main_lex, lexicon.Lexicon)
+
+        tr2 = trainer.TrainProcessor(lex=dct1, support_lex=dct2)
+        assert tr2._main_keys == ['A', 'B']
+        assert tr2._support_keys == ['C', 'D']
+        assert isinstance(tr2._main_lex, lexicon.Lexicon)
+        assert isinstance(tr2._support_lex, lexicon.Lexicon)
+        
+        tr3 = trainer.TrainProcessor(lex=dct1, main_keys=['A'], support_keys=['B'])
+        assert tr3._main_keys == ['A']
+        assert tr3._support_keys == ['B']
+
 
 if __name__ == '__main__':
     unittest.main()
