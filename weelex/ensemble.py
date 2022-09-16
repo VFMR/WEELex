@@ -1,4 +1,4 @@
-# import random
+import random
 import pickle
 import glob
 import os
@@ -36,7 +36,7 @@ def make_agg_sample(X, n=3):
 
     # draw random integers to compute weights:
     while error:  # simple way to repeat drawing if all n weights are 0
-        weights = [rng.randint(0, 10) for i in range(n)]
+        weights = [random.randint(0, 10) for i in range(n)]
         if sum(weights) != 0:
             error = False
 
@@ -44,7 +44,7 @@ def make_agg_sample(X, n=3):
     weights = np.array([x/sum(weights) for x in weights])
 
     # draw n random vector indices
-    random_vect_ix = [rng.randint(0, len(X)-1) for _ in range(n)]
+    random_vect_ix = [random.randint(0, len(X)-1) for _ in range(n)]
 
     # combine the random vectors into a matrix
     vects = np.zeros((input_shape[1], n))
@@ -82,6 +82,7 @@ class AugmentedEnsemble(BaseEstimator):
                  progress_bar=False,
                  n_vectors_agg_training=3,
                  run_fast=False,
+                 random_state=None,
                  **modelkwargs):
         """Initialization method
 
@@ -164,6 +165,10 @@ class AugmentedEnsemble(BaseEstimator):
 
         self.run_fast = run_fast
 
+        self.random_state = random_state
+        if random_state and random_state is not None:
+            random.seed(random_state)
+
     def draw_random_samples_classwise(self,
                                       X,
                                       y,
@@ -187,7 +192,7 @@ class AugmentedEnsemble(BaseEstimator):
                 included in the sample. Defaults to True.
 
         Returns:
-            numpy.array, numpy.array: The X and y arrays that can be used
+            numpy.array, numpy. rray: The X and y arrays that can be used
                 for input in Machine Learning models.
         """
         # y might be a matrix -> reduce this to a vector containing the binary
@@ -226,7 +231,7 @@ class AugmentedEnsemble(BaseEstimator):
                 # The "outside" class is made up of multiple LIWC categories.
                 # randomly select a category and make an array that
                 # flags vectors that belong to said category:
-                random_cat = rng.choice(
+                random_cat = random.choice(
                         [x for x in self.outside_categories_all if x != self.category])
                 keep = list(y[:, 1] == random_cat)
 
@@ -245,7 +250,7 @@ class AugmentedEnsemble(BaseEstimator):
                 # for "outside" vectors, using *all* terms would be excessive
                 # hence, randomly draw as many terms as are included in the
                 # inside category
-                random_ix = [rng.randint(0, len(X)-1) for _ in range(n_original_samples)]
+                random_ix = [random.randint(0, len(X)-1) for _ in range(n_original_samples)]
                 new_X = np.concatenate([
                     np.array(new_X),  # the aggregated vectors
                     np.array([X[ix, :] for ix in random_ix])  # non-agg vectors
@@ -442,6 +447,7 @@ class AugmentedEnsemble(BaseEstimator):
         Args:
             filename (str): Name of saved file
         """
+        # TODO: change to loading json
         with open(filename, 'rb') as f:
             parameters = pickle.load(f)
 
@@ -468,6 +474,7 @@ class AugmentedEnsemble(BaseEstimator):
                 # append(keras_load(filename+'_model{}.h5'.format(i)))
                 pass
             else:
+                # TODO: use builtin .save method
                 with open(filename+'_model{}.p'.format(i), 'rb') as f:
                     append(pickle.load(f))
         self.models = models
@@ -479,6 +486,7 @@ class AugmentedEnsemble(BaseEstimator):
         Args:
             filename (str): Path and name of save file.
         """
+        # TODO: Change to saving json
         parameters = {
             'category': self.category,
             'modeltype': self.modeltype,
@@ -501,6 +509,7 @@ class AugmentedEnsemble(BaseEstimator):
             if self.modeltype == 'mlp':
                 self.models[i].save(filename+'_model{}.h5'.format(i))
             else:
+                # use builtin .save method
                 with open(filename+'_model{}.p'.format(i), 'wb') as f:
                     pickle.dump(self.models[i], f)
 
@@ -538,6 +547,9 @@ class FullEnsemble(BaseEnsemble):
 
     def _build_models(self, param_set):
         full_param_set = []
+        if param_set is None:
+            param_set = []
+
         for params in param_set:
             full_param_set.append({**self.fixedparams, **params})
         print('    Sets of parameters:')
@@ -596,8 +608,12 @@ def ensemble_cross_val_score(model, X, y, cv=5):
 
     scores = []
     for i in range(len(X_splits)):
-        X_train = pd.DataFrame(np.concatenate([x for j, x in enumerate(X_splits) if j != i]))
-        y_train = pd.DataFrame(np.concatenate([x for j, x in enumerate(y_splits) if j != i]))
+        X_train = pd.DataFrame(np.concatenate(
+            [x for j, x in enumerate(X_splits) if j != i]
+            ))
+        y_train = pd.DataFrame(np.concatenate(
+            [x for j, x in enumerate(y_splits) if j != i]
+            ))
         X_test = pd.DataFrame(X_splits[i])
         y_test = pd.DataFrame(y_splits[i])
         print(y_test.iloc[:, 0].value_counts())
