@@ -13,7 +13,7 @@ from weelex.trainer import TrainProcessor
 class WEELexClassifier(BaseEstimator, TransformerMixin):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
-                 test_size: float=None,
+                 test_size: float = None,
                  random_state=None,
                  **train_params) -> None:
         self._embeddings = self._make_embeddings(embeds)
@@ -24,6 +24,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._train_params = train_params
         self._main_keys = None
         self._support_keys = None
+        self._models = None
 
     def set_params(self, params: dict) -> None:
         self._train_params = params
@@ -37,9 +38,9 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
 
     def weelexfit(self,
                   lex: Union[lexicon.Lexicon, dict, str],
-                  support_lex: Union[lexicon.Lexicon, dict, str]=None,
-                  main_keys: Iterable[str]=None,
-                  support_keys: Iterable[str]=None,) -> None:
+                  support_lex: Union[lexicon.Lexicon, dict, str] = None,
+                  main_keys: Iterable[str] = None,
+                  support_keys: Iterable[str] = None,) -> None:
         self._trainprocessor = TrainProcessor(lex=lex,
                                               support_lex=support_lex,
                                               embeddings=self._embeddings,
@@ -60,32 +61,33 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
 
     def predict(self,
                 X: pd.DataFrame,
-                cutoff: float=0.5,
-                n_batches: int=None,
-                checkpoint_path: str=None) -> pd.DataFrame:
+                cutoff: float = 0.5,
+                n_batches: int = None,
+                checkpoint_path: str = None) -> pd.DataFrame:
         preds = self.predict_proba(X=X)
         return (preds >= cutoff).astype(int)
 
     def predict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
-        # TODO: implement predict_proba() method that can handle hyperparam. t. (i.e. for predicting lexicon.Lexicon words)
+        # TODO: implement predict_proba() method that can handle hyperparam. t.
+        #       (i.e. for predicting lexicon.Lexicon words)
         pass
 
     @batchprocessing.batch_predict
     def weelexpredict_proba(self,
                             X: pd.DataFrame,
-                            n_batches: int=None,
-                            checkpoint_path: str=None) -> pd.DataFrame:
+                            n_batches: int = None,
+                            checkpoint_path: str = None) -> pd.DataFrame:
         # TODO: implement predict method for final text prediction
         pass
 
     def weelexpredict(self,
                       X: pd.DataFrame,
-                      cutoff: float=0.5,
-                      n_batches: int=None,
-                      checkpoint_path: str=None) -> pd.DataFrame:
-        preds = self.weelpredict_proba(X=X,
-                                       n_batches=n_batches,
-                                       checkpoint_path=checkpoint_path)
+                      cutoff: float = 0.5,
+                      n_batches: int = None,
+                      checkpoint_path: str = None) -> pd.DataFrame:
+        preds = self.weelexpredict_proba(X=X,
+                                         n_batches=n_batches,
+                                         checkpoint_path=checkpoint_path)
         return (preds >= cutoff).astype(int)
 
     def save(self):
