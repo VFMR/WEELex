@@ -28,7 +28,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._n_jobs = n_jobs
         self._train_params = train_params
         self._use_progress_bar = progress_bar
-        
+
         # setting up default objects
         self._main_keys = None
         self._support_keys = None
@@ -117,8 +117,8 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                         new_params.update(dct)
         return new_params
 
-    def _hyperparameter_tuning(self, 
-                               cat, 
+    def _hyperparameter_tuning(self,
+                               cat,
                                n_iter,
                                param_grid,
                                fixed_params,
@@ -127,7 +127,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             raise ValueError('No parameter grid set for tuning.')
 
         search = RandomizedSearchCV(
-                estimator=ensemble.AugmentedEnsemble(cat, **fixed_params)),
+                estimator=ensemble.AugmentedEnsemble(cat, **fixed_params),
                 param_distribution=param_grid,
                 n_iter=n_iter,
                 n_jobs=self._n_jobs,
@@ -138,8 +138,8 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         results = search.cv_results_
         result_params = self._get_best_params(results, n_best_params)
         self._tuned_params.update({cat: result_params})
-        
-    @staticmethod    
+
+    @staticmethod
     def _get_best_params(results, n_best_params):
         """_summary_
 
@@ -147,8 +147,8 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             results (_type_): _description_
         """
         result_params = []
-        for x, y, z in zip(results['rank_test_score'], 
-                           results['params'], 
+        for x, y, z in zip(results['rank_test_score'],
+                           results['params'],
                            results['mean_test_score']):
             if x <= n_best_params:
                 print(y, z)
@@ -176,18 +176,19 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                   'n_batches': n_batches,
                   'checkpoint_path': checkpoint_path}
         if self._use_progress_bar:
-            result = weelexpredict_proba_pb(**kwargs)
+            result = self._weelexpredict_proba_pb(**kwargs)
         else:
-            result = weelexpredict_proba_nopb(X)
+            result = self._weelexpredict_proba_nopb(X)
+        return result
 
     @batchprocessing.batch_predict
-    def weelexpredict_proba_pb(self,
-                            X: pd.DataFrame,
-                            n_batches: int = None,
-                            checkpoint_path: str = None) -> pd.DataFrame:
-        return weelexpredict_proba_nopb(X)
+    def _weelexpredict_proba_pb(self,
+                                X: pd.DataFrame,
+                                n_batches: int = None,
+                                checkpoint_path: str = None) -> pd.DataFrame:
+        return self._weelexpredict_proba_nopb(X)
 
-    def weelexpredict_proba_nopb(self, X: pd.DataFrame) -> pd.DataFrame:
+    def _weelexpredict_proba_nopb(self, X: pd.DataFrame) -> pd.DataFrame:
         # TODO: implement predict method for final text prediction
         pass
 
