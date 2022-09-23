@@ -1,4 +1,5 @@
 import os
+from re import I
 import unittest
 # import doctest
 
@@ -9,6 +10,7 @@ from weelex import classifier
 from weelex import lexicon
 from weelex import embeddings
 from weelex import trainer
+from weelex import ensemble
 from weelex.batchprocessing import batchprocessing
 
 INPUTDIR = 'tests/testfiles/'
@@ -100,15 +102,169 @@ class TestBatchProc(unittest.TestCase):
 
 
 class TestClassifier(GenericTest):
+    def test_setup(self):
+        self._setup2()
+        cl = classifier.WEELexClassifier(embeds=self.embeds)
+
+
     def test_fit(self):
         self._setup2()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.weelexfit(lex=self.lex1, support_lex=self.lex2)
-        assert cl._is_fit == True
+        cl.weelexfit(lex=self.lex1,
+                     support_lex=self.lex2,
+                     hp_tuning=False)
+        assert cl._is_fit is True
+        assert isinstance(cl._models, list)
+        assert len(cl._models) > 0
+        assert cl.main_keys == ['PolitikVR', 'AutoVR']
+        assert cl.support_keys == ['Space', 'Food']
+
+        X, y = cl._trainprocessor.feed_cat_Xy(cat='PolitikVR', train=True)
+        X, y = cl._trainprocessor.feed_cat_Xy(cat='AutoVR', train=True)
+        assert len(X) == len(y)
+
+    def test_fit_pb(self):
+        self._setup2()
+        cl = classifier.WEELexClassifier(embeds=self.embeds)
+        cl.weelexfit(lex=self.lex1,
+                     support_lex=self.lex2,
+                     hp_tuning=False,
+                     progress_bar=True)
+        assert cl._is_fit is True
         assert isinstance(cl._models, list)
         assert len(cl._models) > 0
         assert cl.main_keys == ['PolitikVR', 'AutoVR']
 
+    def test_hp_tuning(self):
+        self._setup2()
+        n_best_params = 4
+        cl = classifier.WEELexClassifier(
+            embeds=self.embeds,
+            test_size=0.5,
+            random_state=1)
+        param_grid = [{'modeltype': ['svm'],
+                       'n_models': [2],
+                       'pca': [10, None],
+                       'svc_c': [0.1, 1, 10]}]
+        cl.weelexfit(lex=self.lex1,
+                     support_lex=self.lex2,
+                     hp_tuning=True,
+                     param_grid=param_grid,
+                     fixed_params={'input_shape': [300]},
+                     progress_bar=True,
+                     n_iter=6,
+                     n_best_params=n_best_params,
+                     cv=3)
+        assert cl._is_fit is True
+        assert isinstance(cl._models, list)
+        assert len(cl._models) > 0
+        assert cl.main_keys == ['PolitikVR', 'AutoVR']
+        print(cl._cv_scores)
+        print(cl._tuned_params)
+        assert list(cl._tuned_params.keys()) == ['PolitikVR', 'AutoVR']
+        assert len(cl._tuned_params['AutoVR']) == n_best_params
+
+
+class TestModels(GenericTest):
+    def _setup_augmented(self):
+        self._setup2()
+        self.cat = 'PolitikVR'
+        self.categories = self.lex1.keys
+        self.support_categories = self.lex2.keys
+        # self.lex1.merge(self.lex2, inplace=True)
+        self.lex1.embed(embeddings=self.embeds)
+        self.data = self.lex1.embeddings
+
+    def _setup_augmented2(self):
+        self._setup_augmented()
+        model = ensemble.AugmentedEnsemble(category=self.cat,
+                                  categories=self.categories,
+                                  outside_categories=self.support_categories)
+        self.model = model
+
+    def test_get_targets(self):
+        self._setup_augmented2()
+        tt = [1,0,0,1,1,1,0,1,0,0]
+        y = pd.DataFrame({'col1': tt,
+                          'col2': [0,0,0,0,0,0,0,0,0,0]})
+        targets = self.model._get_targets(np.array(y))
+        assert targets.shape == (10,)
+        assert pd.DataFrame(targets).equals(pd.DataFrame(tt))
+
+    def test_data_input(self):
+        self._setup_augmented2()
+        tt = [1,0,0,1,1,1,0,1,0,1]
+        y = pd.DataFrame({'col1': tt,
+                          'col2': [0,0,0,0,0,0,0,0,0,0]})
+        targets = self.model._get_targets(np.array(y))
+
+        # numpy array:
+        X_np = np.random.randn(len(tt), 5)
+        y_np = np.array(y.copy())
+        new_X1 = self.model._get_drawclass_data(X_np, targets, classvalue=1)
+        new_X0 = self.model._get_drawclass_data(X_np, targets, classvalue=0)
+        new_y1 = self.model._get_drawclass_data(y_np, targets, classvalue=1)
+        new_y0 = self.model._get_drawclass_data(y_np, targets, classvalue=0)
+        assert len(new_X0)==4
+        assert len(new_X1)==6
+        assert len(new_y1) == len(new_X1)
+        assert len(new_y0) == len(new_X0)
+
+        # pandas df
+        X_df = pd.DataFrame(X_np)
+        y_df = pd.DataFrame(y_np)
+        new_X1 = self.model._get_drawclass_data(X_df, targets, classvalue=1)
+        new_X0 = self.model._get_drawclass_data(X_df, targets, classvalue=0)
+        new_y1 = self.model._get_drawclass_data(y_df, targets, classvalue=1)
+        new_y0 = self.model._get_drawclass_data(y_df, targets, classvalue=0)
+        assert len(new_X0)==4
+        assert len(new_X1)==6
+        assert len(new_y1) == len(new_X1)
+        assert len(new_y0) == len(new_X0)
+
+    def test_random_category(self):
+        self._setup_augmented2()
+        oc = self.model.outside_categories_all
+        cc = self.model.category
+        rc = self.model._random_category(oc,cc)
+        assert rc in self.model.outside_categories_all
+        assert isinstance(rc, str)
+
+    def test_getkeeps(self):
+        self._setup_augmented2()
+        tt = [True,False,False,True,True,True,False,True,False,True]
+        y = pd.DataFrame({'col1': tt,
+                          'col2': ['PolitikVR','Space','AutoVR','PolitikVR','PolitikVR','PolitikVR','Space','PolitikVR','Food','PolitikVR']})
+        X = np.random.randn(len(tt), 5)
+        print('category:', self.model.category)
+        keep1 = self.model._getkeeps(X, y, classvalue=1)
+        print(y)
+        print('category:', self.model.category)
+        print('outside_categories: ', self.model.outside_categories_all)
+        assert isinstance(self.model.category, str)
+        keep0 = self.model._getkeeps(X, y, classvalue=0)
+        spacekeep = [False, True, False, False, False, False, True, False, False, False]
+        foodkeep = [False, False, False, False, False, False, False, False, True, False]
+        autokeep = [False, False, True, False, False, False, False, False, False, False]
+        allkeep = [True, True, True, True, True, True, True, True, True, True]
+        assert isinstance(keep1, list)
+        assert len(keep1) == len(tt)
+        assert len(keep0) == len(tt)
+        assert keep1 == allkeep
+        print(keep0)
+        assert keep0 == spacekeep or keep0==foodkeep or keep0==autokeep
+
+
+    def test_make_agg_sample(self):
+        shape = (100, 10)
+        array = np.random.randn(*shape)
+        n = 3
+        new_array = ensemble.make_agg_sample(X=array, n=n)
+        assert new_array.shape == (shape[1],)
+
+    def test(self):
+        self._setup_augmented2()
+        # self.model.draw_random_samples_classwise()
 
 class TestLexicon(GenericTest):
     def test_clean_strings(self):
@@ -291,8 +447,75 @@ class TestTrainer(GenericTest):
         self._setup4()
         self.tr._prepare_inputs()
 
+    def test_prep(self):
+        self._setup2()
+        lex1 = lexicon.Lexicon({'A1': ['Politik', 'Neuwahl', 'Koalition'], 'A2': ['Brot', 'Kuchen']})
+        lex2 = lexicon.Lexicon({'B1': ['Lenkrad', 'tanken', 'Garage'], 'B2': ['ab', 'an']})
+        cl = trainer.TrainProcessor(lex=lex1, embeddings=self.embeds)
+        cl._handle_lexica(main_lex=lex1)
+        assert isinstance(cl._main_lex, lexicon.Lexicon)
+        assert cl._support_lex is None
+        assert cl._main_keys == ['A1', 'A2']
+        assert cl._support_keys == []
+
+        cl._handle_lexica(main_lex=lex1, support_lex=lex2)
+        assert isinstance(cl._main_lex, lexicon.Lexicon)
+        assert isinstance(cl._support_lex, lexicon.Lexicon)
+        assert cl._main_keys == ['A1', 'A2']
+        assert cl._support_keys == ['B1', 'B2']
+
+        cl._prepare_inputs()
+        result = pd.DataFrame({'categories': ['A1', 'A1', 'A1',
+                                              'A2', 'A2',
+                                              'B1', 'B1', 'B1',
+                                              'B2', 'B2'],
+                                'terms': ['Politik', 'Neuwahl', 'Koalition',
+                                          'Brot', 'Kuchen',
+                                          'Lenkrad', 'tanken', 'Garage',
+                                          'ab', 'an']})
+        assert cl._term2cat.equals(result)
+        assert cl._embedding_df.shape == (len(result), 300)
+        assert list(cl._embedding_df.index.values)[:4] == ['A1:Politik',
+                                                           'A1:Neuwahl',
+                                                           'A1:Koalition',
+                                                           'A2:Brot']
+
+        y_classes =  cl._make_y()
+        check1 = [True, True, True, False, False, False, False, False, False, False]
+        check2 = [True, True, False, False, False, False, False, False, False, False]
+        a1_ix = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        a2_ix = [3, 4, 0, 1, 2, 5, 6, 7, 8, 9]
+        assert list(y_classes.keys()) == ['A1', 'A2']
+        assert list(y_classes['A1']['A1']) == check1
+        assert list(y_classes['A2']['A2']) == check2
+        assert list(y_classes['A1'].index.values) == a1_ix
+        assert list(y_classes['A2'].index.values) == a2_ix
+
+        x, y = cl._make_data()
+        cl._train_test_split(x, y, random_state=1)
+        trains = cl.trains
+        tests = cl.tests
+        print(tests)
+        assert list(trains.keys()) == ['A1', 'A2']
+        assert list(tests.keys()) == ['A1', 'A2']
+        assert len(trains['A1'])==2
+        assert isinstance(trains['A1'][0], pd.DataFrame)
+        assert isinstance(trains['A1'][1], pd.DataFrame)
+
     def test(self):
-        pass
+        self._setup5()
+        self.tr.make_train_test_data()
+        x, y = self.tr.feed_cat_Xy(cat = 'PolitikVR')
+        print(x)
+        print(y)
+        print(y['categories'].unique())
+        assert isinstance(x, pd.DataFrame)
+        assert isinstance(y, pd.DataFrame)
+        assert x.shape[1] == 300
+        assert y.shape[1] == 2
+        assert list(y.columns) == ['PolitikVR', 'categories']
+        uniques = sorted([str(x) for x in y['categories'].unique()])
+        assert sorted([str(x) for x in uniques]) == sorted(['nan', 'AutoVR', 'Space', 'Food'])
 
     def test_embedding_df(self):
         self._setup4()
@@ -317,6 +540,9 @@ class TestTrainer(GenericTest):
         assert isinstance(y, dict)
         print(y.keys(), self.lex1.keys)
         assert sorted(list(y.keys())) == sorted(list(self.lex1.keys))
+        # print(y)
+        # print(y['PolitikVR'])
+        # assert False
 
     def test_make_x(self):
         self._setup5()
@@ -333,7 +559,7 @@ class TestTrainer(GenericTest):
         assert len(x['PolitikVR'].iloc[0, :]) == 300
 
     def test_make_lexicon(self):
-        dct1 = {'A': ['a', 'b'], 'B': ['c', 'd', 'e']} 
+        dct1 = {'A': ['a', 'b'], 'B': ['c', 'd', 'e']}
         dct2 = pd.DataFrame({'C': ['f', 'g'], 'D': ['h', 'i']})
         tr = trainer.TrainProcessor(lex=dct1)
         assert tr._main_keys == ['A', 'B']
@@ -344,8 +570,10 @@ class TestTrainer(GenericTest):
         assert tr2._support_keys == ['C', 'D']
         assert isinstance(tr2._main_lex, lexicon.Lexicon)
         assert isinstance(tr2._support_lex, lexicon.Lexicon)
-        
-        tr3 = trainer.TrainProcessor(lex=dct1, main_keys=['A'], support_keys=['B'])
+
+        tr3 = trainer.TrainProcessor(lex=dct1,
+                                     main_keys=['A'],
+                                     support_keys=['B'])
         assert tr3._main_keys == ['A']
         assert tr3._support_keys == ['B']
 
