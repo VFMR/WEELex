@@ -1,4 +1,4 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, Tuple, Dict
 
 import pandas as pd
 import numpy as np
@@ -28,7 +28,10 @@ class TrainProcessor:
         self._embeddings = embeddings
         self._test_size = test_size
         self._random_state = random_state
-        
+        self._train_test_drawn = False
+        self.trains = None
+        self.tests = None
+
     @staticmethod
     def _make_lexicon(lex: Union[lexicon.Lexicon, dict, str]) -> lexicon.Lexicon:
         """Create proper Lexicon instance from the passed input lexicon
@@ -56,7 +59,7 @@ class TrainProcessor:
     #     base_lex = lexica[0]
     #     full_lex = base_lex.merge(lexica[1:])
     #     return full_lex
-    
+
     def _handle_lexica(self,
                        main_lex: Union[lexicon.Lexicon, dict, str],
                        support_lex: Union[lexicon.Lexicon, dict, str]=None,
@@ -90,6 +93,7 @@ class TrainProcessor:
 
         # self._lexicon = _full_lex
         self._main_lex = _main_lex
+        # self._full_lex = _full_lex
         self._support_lex = _support_lex
         self._main_keys = _main_keys
         self._support_keys = _support_keys
@@ -98,16 +102,17 @@ class TrainProcessor:
         # TODO: make method to remove outliers (usually 2 character abbrevs.)
         pass
 
-    @staticmethod
-    def _prepare_input_data(lex: lexicon.Lexicon):
-        for cat in lex.keys:
-            lex[cat] = lex._clean_strings(lex[cat])
+    # REMOVE
+    # @staticmethod
+    # def _prepare_input_data(lex: lexicon.Lexicon):
+    #     for cat in lex.keys:
+    #         lex[cat] = lex._clean_strings(lex[cat])
 
-        lex.embed()
+    #     lex.embed()
+    #     return lex
 
     def _get_embedding_df(self, lex: lexicon.Lexicon) -> pd.DataFrame:
-        if lex.embeddings is None or lex.embeddings.shape[1] != len(lex.keys):
-            lex.embed(self._embeddings)
+        lex.embed(self._embeddings)
         dfs = []
         for i, cat in enumerate(lex.keys):
             # for j, word in enumerate(self[cat]):
@@ -124,17 +129,18 @@ class TrainProcessor:
         return df_full
 
     @staticmethod
-    def _make_id_term_mapping(embedding_df):
+    def _make_id_term_mapping(embedding_df: pd.DataFrame) -> pd.DataFrame:
         """
         Example:
-            >>> embedding_df = pd.DataFrame(np.zeros((3,10)))
-            >>> embedding_df.index = ['Cars:Vehicle', 'Politics:Politician', 'Food:Bread']
+            >>> A = pd.DataFrame(np.zeros((3,10)))
+            >>> A.index = ['Cars:Vehicle', 'Politics:Politician', 'Food:Bread']
             >>> x = TrainProcessor(lex={'A': ['a', 'b']})
-            >>> x._make_id_term_mapping(embedding_df)
+            >>> x._make_id_term_mapping(A)
               categories       terms
             0       Cars     Vehicle
             1   Politics  Politician
             2       Food       Bread
+
         """
         # terms = embedding_df.index.str.replace(r'[A-Za-z0-9]*\:', '',
         #                                        regex=True)
@@ -147,7 +153,10 @@ class TrainProcessor:
         return term2cat
 
     def _prepare_inputs(self):
-        lex_full = self._main_lex.merge(self._support_lex, inplace=False)
+        if self._support_lex is not None:
+            lex_full = self._main_lex.merge(self._support_lex, inplace=False)
+        else:
+            lex_full = self._main_lex
         embedding_df = self._get_embedding_df(lex_full)
         term2cat = self._make_id_term_mapping(embedding_df)
         # self._lex_full = lex_full
@@ -180,7 +189,7 @@ class TrainProcessor:
 
         return y_classes
 
-    def _make_X(self, y_classes: dict):
+    def _make_X(self, y_classes: dict) -> Dict[str, pd.DataFrame]:
         X_full = self._embedding_df.copy()
         X_full.index = np.arange(len(X_full))
         X_classes = {}
@@ -189,23 +198,24 @@ class TrainProcessor:
             X_classes.update({cat: X_class_this})
         return X_classes
 
-    def _make_data(self):
+    def _make_data(self) -> Tuple[Dict[str, pd.DataFrame],
+                                  Dict[str, pd.DataFrame]]:
         self._prepare_inputs()
         y_classes = self._make_y()
         x_classes = self._make_X(y_classes)
         return x_classes, y_classes
 
     def _train_test_split(self,
-                          X,
-                          y,
-                          test_size:float=0.2, 
-                          random_state:int=None) -> None:
+                          X: pd.DataFrame,
+                          y: pd.DataFrame,
+                          test_size: float = 0.2,
+                          random_state: int = None) -> None:
         trains = {}
         tests = {}
-        for i, cat in enumerate(self._main_keys):
+        for cat in self._main_keys:
             _X = X[cat]
             _y = y[cat]
-            if test_size:
+            if test_size is not None and test_size is not False:
                 X_train, X_test, y_train, y_test = train_test_split(_X, _y,
                                                                     test_size=test_size,
                                                                     random_state=random_state)
@@ -219,32 +229,38 @@ class TrainProcessor:
             tests.update({cat: (X_test, y_test)})
         self.trains = trains
         self.tests = tests
-            
-    def transform(self):
+        self._train_test_drawn = True
+
+    def transform(self) -> Tuple[Dict[str, pd.DataFrame],
+                                 Dict[str, pd.DataFrame]]:
         return self._make_data()
-            
-    def make_train_test_data(self):
+
+    def make_train_test_data(self) -> None:
         X_transf, y_transf = self.transform()
         if self._test_size and self._test_size is not None:
-            self._train_test_split(X_transf, y_transf, 
-                                  test_size=self._test_size, 
+            self._train_test_split(X_transf, y_transf,
+                                  test_size=self._test_size,
                                   random_state=self._random_state)
         else:
-            self._train_test_split(X_transf, y_transf, 
-                                  test_size=False,
+            self._train_test_split(X_transf, y_transf,
+                                  test_size=None,
                                   random_state=self._random_state)
 
-    def feed_cat_Xy(self, cat:str, train:bool=True):
+    def feed_cat_Xy(self, cat: str, train: bool = True) -> Tuple[pd.DataFrame,
+                                                                 pd.DataFrame]:
+        if self._test_size is not None:
+            if self.trains is None:
+                self.make_train_test_data()
         if train:
             X, y = self.trains[cat]
         else:
             X, y = self.tests[cat]
         return X, y
-        
+
     @property
     def main_keys(self) -> list:
         return self._main_keys
-    
+
     @property
     def support_keys(self) -> list:
         return self._support_keys

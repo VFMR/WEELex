@@ -20,7 +20,7 @@ class Lexicon:
                 dictionary,
                 sep=sep,
                 encoding=encoding)
-        self.embeddings = None
+        self._embeddings = None
 
     def __copy__(self):
         obj = type(self).__new__(self.__class__)
@@ -123,7 +123,7 @@ class Lexicon:
 
         return dct_df
 
-    def merge(self, 
+    def merge(self,
               lexica: Union['Lexicon', Iterable['Lexicon']],
               inplace: bool=True) -> None:
         if inplace:
@@ -196,11 +196,11 @@ class Lexicon:
         dict_df_shape = self._dictionary_df.shape
         embedding_tensor = np.zeros(
             shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
-        for j, key in enumerate(self.keys):
+        for j, key in enumerate(self._dictionary_df.columns):
             for i, x in enumerate(self[key]):
                 embedding_tensor[i][j] = self._embed_word(x, embeddings)
 
-        self.embeddings = embedding_tensor
+        self._embeddings = embedding_tensor
 
     @staticmethod
     def _nonmissarray(array):
@@ -279,7 +279,11 @@ class Lexicon:
 
     @property
     def embedding_shape(self):
-        return self.embeddings.shape
+        return self._embeddings.shape
+
+    @property
+    def embeddings(self):
+        return self._embeddings
 
     @property
     def vocabulary(self) -> list:

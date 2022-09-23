@@ -3,6 +3,7 @@ from typing import Union, Iterable
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 
 from weelex import lexicon
@@ -15,7 +16,7 @@ from weelex.trainer import TrainProcessor
 class WEELexClassifier(BaseEstimator, TransformerMixin):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
-                 test_size: float = None,
+                 test_size: float = 0.2,
                  random_state: int = None,
                  n_jobs: int = 1,
                  progress_bar: bool = False,
@@ -35,6 +36,8 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._models = None
         self._best_params = {}
         self._tuned_params = {}
+        self._cv_scores = {}
+        self._results = {}
 
     def set_params(self, **params):
         self._train_params = params
@@ -56,6 +59,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                   support_keys: Iterable[str] = None,
                   hp_tuning: bool = True,
                   n_iter: int = 150,
+                  cv: int = 5,
                   param_grid: dict = None,
                   fixed_params: dict = None,
                   n_best_params: int = 3,
@@ -64,13 +68,15 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
 
         # loop over the categories:
         models = []
-        for cat in self._set_progress_bar(self._main_keys):
+        # for cat in self._set_progress_bar(self._main_keys):
+        for cat in self._main_keys:
             if hp_tuning:
                 self._hyperparameter_tuning(cat=cat,
                                             n_iter=n_iter,
                                             param_grid=param_grid,
                                             fixed_params=fixed_params,
-                                            n_best_params=n_best_params)
+                                            n_best_params=n_best_params,
+                                            cv=cv)
             model_params = self._make_train_params(cat,
                                                    self._train_params,
                                                    self._tuned_params,
@@ -88,6 +94,8 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                               support_keys: Iterable[str] = None,) -> None:
         self._trainprocessor = TrainProcessor(lex=lex,
                                               support_lex=support_lex,
+                                              main_keys=main_keys,
+                                              support_keys=support_keys,
                                               embeddings=self._embeddings,
                                               test_size=self._test_size,
                                               random_state=self._random_state)
@@ -95,11 +103,11 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._main_keys = self._trainprocessor.main_keys
         self._support_keys = self._trainprocessor.support_keys
 
-    def _set_progress_bar(self):
+    def _set_progress_bar(self, array):
         if self._use_progress_bar:
-            return tqdm
+            return tqdm(array)
         else:
-            return self._emptyfunc
+            return self._emptyfunc(array)
 
     @staticmethod
     def _emptyfunc(array):
@@ -111,10 +119,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         if param_sets is not None:
             for dct in param_sets:
                 if dct is not None:
-                    if cat in dct.keys():
-                        new_params.update(dct[cat])
-                    else:
-                        new_params.update(dct)
+                    new_params.update(dct)
         return new_params
 
     def _hyperparameter_tuning(self,
@@ -122,36 +127,90 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                                n_iter,
                                param_grid,
                                fixed_params,
+                               cv: int = 5,
                                n_best_params=3):
         if param_grid is None:
             raise ValueError('No parameter grid set for tuning.')
 
         search = RandomizedSearchCV(
-                estimator=ensemble.AugmentedEnsemble(cat, **fixed_params),
-                param_distribution=param_grid,
+                estimator=ensemble.AugmentedEnsemble(cat,
+                                                     categories=self._main_keys,
+                                                     outside_categories=self._support_keys,
+                                                     **fixed_params),
+                param_distributions=param_grid,
                 n_iter=n_iter,
                 n_jobs=self._n_jobs,
-                cv=5,
+                cv=cv,
+                scoring=None,
                 random_state=self._random_state)
-        search.fit(*self._trainprocessor.feed_cat_Xy(cat=cat, train=True))
-        self._best_params.update({cat: search.best_n_params_})
+
+        X, y = self._trainprocessor.feed_cat_Xy(cat=cat, train=True)
+        search.fit(X, y)
+        self._best_params.update({cat: search.best_params_})
         results = search.cv_results_
-        result_params = self._get_best_params(results, n_best_params)
+        cv_scores = self._nonmissing_mean(results)
+        cv_ranks = self._score_ranks(cv_scores)
+        self._cv_scores.update({cat: cv_scores})
+        self._results.update({cat: results})
+        result_params = self._get_best_params(results, cv_ranks, n_best_params)
         self._tuned_params.update({cat: result_params})
 
     @staticmethod
-    def _get_best_params(results, n_best_params):
-        """_summary_
+    def _nonmissing_mean(results: dict) -> list:
+        """ Returns the mean test scores from non-missing cross validation results.
+        Only averages the results of splits with valid test scores.
+
+        Examples:
+            >>> wl = WEELexClassifier(embeds=None)
+            >>> results = {'split0_test_score': np.array([np.nan, np.nan]), 'split1_test_score': np.array([0.6, 0.8]), 'split2_test_score': np.array([0.4, 0.8]), 'mean_test_score': np.array([np.nan, np.nan])}
+            >>> wl._nonmissing_mean(results)
+            [0.5, 0.8]
 
         Args:
-            results (_type_): _description_
+            results (dict): cv_results_ from an
+                sklearn.model_selection.RandomizedSearchCV instance
+
+        Returns:
+            list: mean test scores
+        """
+        test_scores = [list(value) for key, value in results.items() if 'test_score' in key and not 'mean' in key and not 'std' in key and not 'rank' in key]
+        mean_test_scores = []
+        for i in range(len(test_scores[0])):
+            lst = np.array([x[i] for x in test_scores if not np.isnan(x[i])])
+            mean_test_scores.append(np.mean(lst))
+        return mean_test_scores
+
+    @staticmethod
+    def _score_ranks(mean_test_scores: list) -> list:
+        """Rank the scores in descending order
+
+        Examples:
+            >>> wl = WEELexClassifier(embeds=None)
+            >>> x = [0.1, 0.9, 0.5]
+            >>> wl._score_ranks(x)
+            [2, 0, 1]
+
+        Args:
+            mean_test_scores (list): list containing the mean test scores
+
+        Returns:
+            list: Rank with 0 being the highest score.
+        """
+        sortedlist = sorted(mean_test_scores, reverse=True)
+        return [sortedlist.index(x) for x in mean_test_scores]
+
+    @staticmethod
+    def _get_best_params(results: dict, ranks: list, n_best_params: int) -> dict:
+        """Select the n best parameter sets from a RandomizedSearchCV or
+            GridSearchCV instance.
+
+        Args:
+            results (dict): truncated parameter set
         """
         result_params = []
-        for x, y, z in zip(results['rank_test_score'],
-                           results['params'],
-                           results['mean_test_score']):
-            if x <= n_best_params:
-                print(y, z)
+        for x, y in zip(ranks,
+                        results['params']):
+            if x < n_best_params:
                 result_params.append(y)
         return result_params
 

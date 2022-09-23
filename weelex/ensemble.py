@@ -1,7 +1,9 @@
 import random
 import pickle
-import glob
+import  glob
 import os
+from re import I
+from typing import Tuple, Iterable, Union, List
 
 from tqdm import tqdm
 import numpy as np
@@ -17,26 +19,29 @@ from sklearn.decomposition import PCA
 # from scipy.sparse import vstack
 
 
-def make_agg_sample(X, n=3):
+def make_agg_sample(X: np.ndarray, n: int = 3) -> np.ndarray:
     """Draw n vectors randomly and return the linear
        combination of these with random weights.
-       Method to ensure the vectors add up to 1 is simplified
+       Method to ensure npdarraothe vectors add up to 1 is simplified
        by just drawing random integers and taking their relative size.
 
     Args:
-        X (numpy.array): Matrix with data to draw from
+        X (numpy.array): n-m Matrix with data to draw from.
         n (int): Number of vectors to aggregate.
 
     Returns:
-        numpy.array: Vector with linear combination.
+        numpy.array: Vector with linear combination of shape (m,).
             i.e. is only one observation.
     """
     input_shape = X.shape
     error = True
 
+    if isinstance(X, pd.DataFrame):
+        X =  np.array(X)
+
     # draw random integers to compute weights:
     while error:  # simple way to repeat drawing if all n weights are 0
-        weights = [random.randint(0, 10) for i in range(n)]
+        weights = [random.randint(0, 10) for _ in range(n)]
         if sum(weights) != 0:
             error = False
 
@@ -49,14 +54,32 @@ def make_agg_sample(X, n=3):
     # combine the random vectors into a matrix
     vects = np.zeros((input_shape[1], n))
     for i in range(n):
-        vects[:, i] = X.iloc[random_vect_ix[i], :]
+        vects[:, i] = X[random_vect_ix[i], :]
 
     # compute linear combination:
     new_vector = vects @ weights
     return new_vector
 
 
-class AugmentedEnsemble(BaseEstimator):
+class BaseEnsemble:
+    def __init__(self, progress_bar=False):
+        self.progress_bar_func = self._get_progress_bar_func(progress_bar)
+
+    def _get_progress_bar_func(self, progress_bar):
+        if progress_bar:
+            progress_bar_func = self._use_progress_bar
+        else:
+            progress_bar_func = self._no_progress_bar
+        return progress_bar_func
+
+    def _no_progress_bar(self, array):
+        return array
+
+    def _use_progress_bar(self, array):
+        return tqdm(array)
+
+
+class AugmentedEnsemble(BaseEnsemble, BaseEstimator):
     """Class to train an ensemble of models.
     For each model, a random selection of input vectors
     is aggregated as a linear combination to "augment" the data.
@@ -169,13 +192,91 @@ class AugmentedEnsemble(BaseEstimator):
         if random_state and random_state is not None:
             random.seed(random_state)
 
+    @staticmethod
+    def _get_targets(y: np.ndarray) -> np.ndarray:
+        if len(y.shape) > 1:
+            targets = y[:, 0]
+        else:
+            targets = y
+        return targets
+
+    @staticmethod
+    def _get_drawclass_data(array: Union[list, pd.DataFrame, np.ndarray],
+                            targets: np.ndarray,
+                            classvalue: int) -> np.ndarray:
+        if not isinstance(array, np.ndarray):
+            array_np = np.array(array)
+        else:
+            array_np = array
+        return array_np[targets == classvalue]
+
+    @staticmethod
+    def _random_category(array: List[str], cat: str) -> str:
+        """Randomly selects a category from a list
+
+        Example:
+            >>> oc = ['Cars', 'Politics']
+            >>> ic = ['Food', 'Space']
+            >>> cc = 'Politics'
+            >>> x = AugmentedEnsemble(category=cc, categories=ic, outside_categories=oc)
+            >>> rc = x._random_category(oc, cc)
+            >>> rc in ['Food', 'Cars', 'Space']
+            True
+
+        Args:
+            array (List[str]): Array to choose from.
+            cat (str): Category that shall not be picked
+
+        Returns:
+            str: selected item
+        """
+        random_cat = random.choice(
+                [x for x in array if x != cat])
+        return random_cat
+
+    def _getkeeps(self,
+                  X: Union[pd.DataFrame, np.ndarray],
+                  y: np.ndarray,
+                  classvalue: int,
+                  ) -> List[bool]:
+        """Draw a random category for the observation:
+           avoid drawing and combining words from different categories.
+           Their linear combination could be anywhere.
+
+        Args:
+            X (Union[pd.DataFrame, np.ndarray]): _description_
+            y (Union[pd.DataFrame, np.ndarray]): _description_
+            classvalue (int): _description_
+
+        Returns:
+            list: List of booleans
+        """
+        if classvalue == 1:
+            # the "inside" class is already coming from a single category
+            # just create an indicator that all vectors can be used
+            keep = [True]*len(X)  # keep all
+            random_cat = None
+        else:
+            # The "outside" class is made up of multiple LIWC categories.
+            # randomly select a category and make an array that
+            # flags vectors that belong to said category:
+            random_cat = self._random_category(array=self.outside_categories_all,
+                                               cat=self.category)
+            if not isinstance(y, np.ndarray):
+                y_np = np.array(y)
+            else:
+                y_np = y
+            keep = list(y_np[:, 1] == random_cat)
+        return keep
+
     def draw_random_samples_classwise(self,
-                                      X,
-                                      y,
-                                      classvalue,
-                                      n_samples_multiplier=5,
-                                      n_samples=None,
-                                      include_all_original=True):
+                                      X: pd.DataFrame,
+                                      y: pd.DataFrame,
+                                      classvalue: int,
+                                      n_samples_multiplier: int = 5,
+                                      n_samples: int = None,
+                                      include_all_original: bool = True
+                                      ) -> Tuple[np.ndarray, np.ndarray]:
         """Combine word vectors by randomly selecting terms
         of a specific category and making a linear combination of these
 
@@ -192,26 +293,24 @@ class AugmentedEnsemble(BaseEstimator):
                 included in the sample. Defaults to True.
 
         Returns:
-            numpy.array, numpy. rray: The X and y arrays that can be used
+            numpy.ndarray, numpy.ndarray: The X and y arrays that can be used
                 for input in Machine Learning models.
         """
         # y might be a matrix -> reduce this to a vector containing the binary
         # class value
+        y_orig = y
         y = np.array(y)
-        if len(y.shape) > 1:
-            targets = y[:, 0]
-        else:
-            targets = y
+        targets = self._get_targets(y)
 
         # get arrays with the data of the class currently drawn
         n_original_samples = len(X[targets == 1])
-        X = X[targets == classvalue]
-        y = y[targets == classvalue]
+        X = self._get_drawclass_data(X, targets, classvalue)
+        y = self._get_drawclass_data(y, targets, classvalue)
 
         # get counts for the number of original terms and
         # the number of observations that shall be drawn.
-        if self.n_samples_multiplier:
-            n_samples = n_original_samples * self.n_samples_multiplier
+        if n_samples_multiplier:
+            n_samples = n_original_samples * n_samples_multiplier
 
         # generate samples:
         new_X = []
@@ -223,17 +322,7 @@ class AugmentedEnsemble(BaseEstimator):
             # Draw a random category for the observation:
             # avoid drawing and combining words from different categories.
             # Their linear combination could be anywhere.
-            if classvalue == 1:
-                # the "inside" class is already coming from a single category
-                # just create an indicator that all vectors can be used
-                keep = [True]*len(X)  # keep all
-            else:
-                # The "outside" class is made up of multiple LIWC categories.
-                # randomly select a category and make an array that
-                # flags vectors that belong to said category:
-                random_cat = random.choice(
-                        [x for x in self.outside_categories_all if x != self.category])
-                keep = list(y[:, 1] == random_cat)
+            keep = self._getkeeps(X, y, classvalue)
 
             # aggregate random vectors from the randomly drawn category:
             append(make_agg_sample(X[keep], n=self.n_vectors_agg_training))
@@ -301,22 +390,22 @@ class AugmentedEnsemble(BaseEstimator):
             models = [self._svm_model() for _ in range(self.n_models)]
         return models
 
-    def _no_progress_bar(self, array):
-        """Returns the array that is input.
-        I.e. this method does basically nothing and serves
-        just as a placeholder or replacement for the progress
-        bar method if no progress bar shall be shown.
+    # def _no_progress_bar(self, array):
+    #     """Returns the array that is input.
+    #     I.e. this method does basically nothing and serves
+    #     just as a placeholder or replacement for the progress
+    #     bar method if no progress bar shall be shown.
 
-        Args:
-            array (numpy.array): Array to loop over
+    #     Args:
+    #         array (numpy.array): Array to loop over
 
-        Returns:
-            numpy.array: The array that is passed with no change to it.
-        """
-        return array
+    #     Returns:
+    #         numpy.array: The array that is passed with no change to it.
+    #     """
+    #     return array
 
-    def _use_progress_bar(self, array):
-        return tqdm(array)
+    # def _use_progress_bar(self, array):
+    #     return tqdm(array)
 
     def fit(self, X, y):
         """Method to train the ml models via passed X and y arrays.
@@ -513,23 +602,6 @@ class AugmentedEnsemble(BaseEstimator):
                 with open(filename+'_model{}.p'.format(i), 'wb') as f:
                     pickle.dump(self.models[i], f)
 
-
-class BaseEnsemble:
-    def __init__(self, progress_bar=False):
-        self.progress_bar_func = self._get_progress_bar_func(progress_bar)
-
-    def _get_progress_bar_func(self, progress_bar):
-        if progress_bar:
-            progress_bar_func = self._use_progress_bar
-        else:
-            progress_bar_func = self._no_progress_bar
-        return progress_bar_func
-
-    def _no_progress_bar(self, array):
-        return array
-
-    def _use_progress_bar(self, array):
-        return tqdm(array)
 
 
 class FullEnsemble(BaseEnsemble):
