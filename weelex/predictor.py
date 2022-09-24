@@ -24,7 +24,6 @@ class PredictionProcessor:
                  corpus_path: str = None,
                  corpus_path_encoding: str = 'latin1',
                  load_clustering: bool = False,
-                 embedding_dim: int = False,
                  checkterm: str = 'Politik',
                  n_top_clusters: int = 3,
                  cluster_share: float = 0.2,
@@ -42,7 +41,6 @@ class PredictionProcessor:
         self._corpus_path = corpus_path
         self._corpus_path_encoding = corpus_path_encoding
         self._load_clustering = load_clustering
-        self._embedding_dim = embedding_dim
         self._checkterm = checkterm
         self._n_top_clusters = n_top_clusters
         self._cluster_share = cluster_share
@@ -50,6 +48,9 @@ class PredictionProcessor:
         self._distance_threshold = distance_threshold
         self._n_words = n_words
         self._n_jobs = n_jobs
+
+        self._embedding_dim = self._get_embedding_dim(self._embeddings,
+                                                      self._checkterm)
 
         if tfidf is not None:
             if isinstance(tfidf, str):
@@ -156,7 +157,7 @@ class PredictionProcessor:
             self.fit_ctfidf(X)
         elif self._ctfidf is None:
             self.fit_ctfidf(X)
-        vects = self._ctfidf.transform(X)
+        vects = self._vectorize(X)
         return self._tfidf_weighted_embeddings_corpus(vects)
 
     @staticmethod
@@ -221,7 +222,7 @@ class PredictionProcessor:
         Returns:
             numpy.array: Matrix of size (len(data) x embedding dimensions)
         """
-        embedding_shape = len(self._embeddings[self._checkterm])
+        embedding_shape = self._embedding_dim
         index2word = {i: term for term, i in self._tfidf.vocabulary_.items()}
 
         print('{} rows to process'.format(vects.shape[0]))
@@ -233,3 +234,6 @@ class PredictionProcessor:
 
         return allvects
 
+    @staticmethod
+    def _get_embedding_dim(embeddings, checkterm):
+        return len(embeddings[checkterm])

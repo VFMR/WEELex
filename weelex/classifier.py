@@ -1,4 +1,4 @@
-from typing import Union, Iterable, Dict
+from typing import Union, Iterable, Dict, List
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import RandomizedSearchCV
@@ -11,15 +11,34 @@ from weelex import embeddings
 from weelex.batchprocessing import batchprocessing
 from weelex import ensemble
 from weelex.trainer import TrainProcessor
+from weelex.tfidf import BasicTfidf
+from weelex.predictor import PredictionProcessor
+from weelex.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class WEELexClassifier(BaseEstimator, TransformerMixin):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
+                 tfidf: Union[str, BasicTfidf] = None,
+                 ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  test_size: float = 0.2,
                  random_state: int = None,
                  n_jobs: int = 1,
                  progress_bar: bool = False,
+                 relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
+                 min_df: Union[int, float] = 5,
+                 max_df: Union[int, float] = 0.95,
+                 spacy_model: str = 'de_core_news_lg',
+                 n_docs: int = 2000000,
+                 corpus_path: str = None,
+                 corpus_path_encoding: str = 'latin1',
+                 load_clustering: bool = False,
+                 checkterm: str = 'Politik',
+                 n_top_clusters: int = 3,
+                 cluster_share: float = 0.2,
+                 clustermethod: str = 'agglomerative',
+                 distance_threshold: float = 0.5,
+                 n_words: int = 40000,
                  **train_params) -> None:
         self._embeddings = self._make_embeddings(embeds)
         self._is_fit = False
@@ -29,6 +48,22 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._n_jobs = n_jobs
         self._train_params = train_params
         self._use_progress_bar = progress_bar
+        self._tfidf = tfidf
+        self._ctfidf = ctfidf
+        self._relevant_pos = relevant_pos
+        self._min_df = min_df
+        self._max_df = max_df
+        self._spacy_model = spacy_model
+        self._n_docs = n_docs
+        self._corpus_path = corpus_path
+        self._corpus_path_encoding = corpus_path_encoding
+        self._load_clustering = load_clustering
+        self._checkterm = checkterm
+        self._n_top_clusters = n_top_clusters
+        self._cluster_share = cluster_share
+        self._clustermethod = clustermethod
+        self._distance_threshold = distance_threshold
+        self._n_words = n_words
 
         # setting up default objects
         self._main_keys = None
@@ -40,17 +75,18 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._results = {}
 
     def set_params(self, **params):
-        self._train_params = params
+        trainparams = {}
+        for key, value in params.items():
+            # CHECKME: check if this is a valid approach
+            if key in self.__dict__:
+                self.__dict__[key] == value
+            else:
+                trainparams.update({key: value})
+        self._train_params = trainparams
         return self
 
     def get_params(self, deep: bool = True) -> dict:
-        return self._train_params
-
-    def fit(self, X, y):
-        # TODO: make fit method that can handle hyperparameter tuning
-        # Concept:
-        #    - Challenge: tuning of hyperparametes should be allowed for each category separately?
-        pass
+        return self.__dict__
 
     def weelexfit(self,
                   lex: Union[lexicon.Lexicon, dict, str],
@@ -86,6 +122,27 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             models.update({cat: model})
         self._models = models
         self._is_fit = True
+
+    def _setup_predictprocessor(self):
+        self._predictprocessor = PredictionProcessor(
+            embeddings=self._embeddings,
+            tfidf=self._tfidf,
+            ctfidf=self._ctfidf,
+            relevant_pos=self._relevant_pos,
+            min_df=self._min_df,
+            max_df=self._max_df,
+            spacy_model=self._spacy_model,
+            n_docs=self._n_docs,
+            corpus_path=self._corpus_path,
+            corpus_path_encoding=self._corpus_path_encoding,
+            load_clustering=self._load_clustering,
+            checkterm=self._checkterm,
+            n_top_clusters=self._n_top_clusters,
+            cluster_share=self._cluster_share,
+            clustermethod=self._clustermethod,
+            distance_threshold=self._distance_threshold,
+            n_words=self._n_words,
+            n_jobs=self._n_jobs)
 
     def _setup_trainprocessor(self,
                               lex: Union[lexicon.Lexicon, dict, str],
@@ -214,6 +271,13 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                 result_params.append(y)
         return result_params
 
+    def _probas_to_binary(self, probas, cutoff):
+        catpreds_binary = {}
+        for cat in self._main_keys:
+            pred = (probas[cat][:,0] >= cutoff).astype(int)
+            catpreds_binary.update({cat: pred})
+        return pd.DataFrame(catpreds_binary)
+
     @batchprocessing.batch_predict
     def predict(self,
                 X: pd.DataFrame,
@@ -221,11 +285,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                 n_batches: int = None,
                 checkpoint_path: str = None) -> pd.DataFrame:
         catpreds = self.predict_proba(X=X)
-        catpreds_binary = {}
-        for cat in self._main_keys:
-            pred = (catpreds[cat][:,0] >= cutoff).astype(int)
-            catpreds_binary.update({cat: pred})
-        return pd.DataFrame(catpreds_binary)
+        return self._probas_to_binary(catpreds)
 
     def predict_proba(self, X: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         catpreds = {}
@@ -248,7 +308,6 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             result = self._weelexpredict_proba_nopb(X)
         return result
 
-    @batchprocessing.batch_predict
     def _weelexpredict_proba_pb(self,
                                 X: pd.DataFrame,
                                 n_batches: int = None,
@@ -256,8 +315,9 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         return self._weelexpredict_proba_nopb(X)
 
     def _weelexpredict_proba_nopb(self, X: pd.DataFrame) -> pd.DataFrame:
-        # TODO: implement predict method for final text prediction
-        pass
+        self._setup_predictprocessor()
+        vects = self._predictprocessor.transform(X)
+        return self.predict_proba(vects)
 
     @batchprocessing.batch_predict
     def weelexpredict(self,
@@ -268,7 +328,25 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         preds = self.weelexpredict_proba(X=X,
                                          n_batches=n_batches,
                                          checkpoint_path=checkpoint_path)
-        return (preds >= cutoff).astype(int)
+        return self._probas_to_binary(preds)
+
+    def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
+        self._predictprocessor.fit_tfidf(data)
+
+    def fit_ctfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
+        self._predictprocessor.fit_ctfidf(data)
+
+    def save_tfidf(self, path: str) -> None:
+        self._predictprocessor.save_tfidf(path)
+
+    def save_ctfidf(self, dir: str) -> None:
+        self._predictprocessor.save_ctfidf(dir)
+
+    def load_tfidf(self, path: str) -> None:
+        self._predictprocessor.load_tfidf(path)
+
+    def load_ctfidf(self, path: str) -> None:
+        self._predictprocessor.load_ctfidf(path)
 
     def save(self):
         # TODO: Implement save() method
