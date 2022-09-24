@@ -1,5 +1,4 @@
 import os
-from re import I
 import unittest
 # import doctest
 
@@ -114,7 +113,7 @@ class TestClassifier(GenericTest):
                      support_lex=self.lex2,
                      hp_tuning=False)
         assert cl._is_fit is True
-        assert isinstance(cl._models, list)
+        assert isinstance(cl._models, dict)
         assert len(cl._models) > 0
         assert cl.main_keys == ['PolitikVR', 'AutoVR']
         assert cl.support_keys == ['Space', 'Food']
@@ -131,7 +130,7 @@ class TestClassifier(GenericTest):
                      hp_tuning=False,
                      progress_bar=True)
         assert cl._is_fit is True
-        assert isinstance(cl._models, list)
+        assert isinstance(cl._models, dict)
         assert len(cl._models) > 0
         assert cl.main_keys == ['PolitikVR', 'AutoVR']
 
@@ -156,7 +155,7 @@ class TestClassifier(GenericTest):
                      n_best_params=n_best_params,
                      cv=3)
         assert cl._is_fit is True
-        assert isinstance(cl._models, list)
+        assert isinstance(cl._models, dict)
         assert len(cl._models) > 0
         assert cl.main_keys == ['PolitikVR', 'AutoVR']
         print(cl._cv_scores)
