@@ -1,4 +1,4 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, Dict
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import RandomizedSearchCV
@@ -33,7 +33,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         # setting up default objects
         self._main_keys = None
         self._support_keys = None
-        self._models = None
+        self._models = {}
         self._best_params = {}
         self._tuned_params = {}
         self._cv_scores = {}
@@ -67,7 +67,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._setup_trainprocessor(lex, support_lex, main_keys, support_keys)
 
         # loop over the categories:
-        models = []
+        models = {}
         # for cat in self._set_progress_bar(self._main_keys):
         for cat in self._main_keys:
             if hp_tuning:
@@ -83,7 +83,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                                                    fixed_params)
             model = self._model(cat, **model_params)
             model.fit(*self._trainprocessor.feed_cat_Xy(cat=cat, train=True))
-            models.append(model)
+            models.update({cat: model})
         self._models = models
         self._is_fit = True
 
@@ -210,22 +210,30 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         result_params = []
         for x, y in zip(ranks,
                         results['params']):
-            if x < n_best_params:
+            if x < n_best_params and len(result_params) < n_best_params:
                 result_params.append(y)
         return result_params
 
+    @batchprocessing.batch_predict
     def predict(self,
                 X: pd.DataFrame,
                 cutoff: float = 0.5,
                 n_batches: int = None,
                 checkpoint_path: str = None) -> pd.DataFrame:
-        preds = self.predict_proba(X=X)
-        return (preds >= cutoff).astype(int)
+        catpreds = self.predict_proba(X=X)
+        catpreds_binary = {}
+        for cat in self._main_keys:
+            pred = (catpreds[cat][:,0] >= cutoff).astype(int)
+            catpreds_binary.update({cat: pred})
+        return pd.DataFrame(catpreds_binary)
 
-    def predict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
-        # TODO: implement predict_proba() method that can handle hyperparam. t.
-        #       (i.e. for predicting lexicon.Lexicon words)
-        pass
+    def predict_proba(self, X: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+        catpreds = {}
+        for cat in self._main_keys:
+            model = self._models[cat]
+            preds = model.predict_proba(X)
+            catpreds.update({cat: preds})
+        return catpreds
 
     def weelexpredict_proba(self,
                             X: pd.DataFrame,
@@ -251,6 +259,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         # TODO: implement predict method for final text prediction
         pass
 
+    @batchprocessing.batch_predict
     def weelexpredict(self,
                       X: pd.DataFrame,
                       cutoff: float = 0.5,
