@@ -50,6 +50,43 @@ class GenericTest(unittest.TestCase):
         self._setup2()
         self.lex1.embed(embeddings=self.embeds)
 
+    def _setup_predictor(self):
+        self._setup2()
+        data = pd.Series(
+            [
+            'Ich esse gerne Kuchen und andere Süßigkeiten',
+            'Dort steht ein schnelles Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein sehr generischer Satz.',
+            'Wie ist das Wetter heute?',
+            'Ich esse gerne Kuchen und andere Süßigkeiten',
+            'Dort steht ein schnelles Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein sehr generischer Satz.',
+            'Wie ist das Wetter heute?',
+            'Ich esse gerne Kuchen und andere Süßigkeiten',
+            'Dort steht ein schnelles Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein sehr generischer Satz.',
+            'Wie ist das Wetter heute?',
+            'Ich esse gerne Kuchen und andere Süßigkeiten',
+            'Dort steht ein schnelles Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein sehr generischer Satz.',
+            'Wie ist das Wetter heute?',
+            ])
+        self.processor = predictor.PredictionProcessor(
+            data = data,
+            embeddings=self.embeds,
+            tfidf=None,
+            ctfidf=None,
+            min_df=1,
+            max_df=0.99,
+            n_docs=len(data),
+            n_words=10,
+        )
+        self.data = data
+
 
 class TestBatchProc(unittest.TestCase):
     def _setup(self):
@@ -104,7 +141,38 @@ class TestBatchProc(unittest.TestCase):
 
 class TestPredictor(GenericTest):
     def test1(self):
-        pass
+        self._setup_predictor()
+        assert isinstance(self.processor, predictor.PredictionProcessor)
+
+        # Test tfidf-fitting
+        self.processor.fit_tfidf()
+        assert self.processor._tfidf.check_fit()
+        print(self.processor._tfidf.vectorizer[-1].vocabulary_)
+
+        # test ctfidf-fitting:
+        print(self.processor._tfidf)
+        self.processor.fit_ctfidf()
+        assert True
+
+        # test transformation with ctfidf:
+        vects = self.processor.transform()
+        print(vects)
+        assert isinstance(vects, np.ndarray)
+        assert vects.shape == (20, 300)
+
+        vects = self.processor.transform(self.data)
+        print(vects)
+        assert isinstance(vects, np.ndarray)
+        assert vects.shape == (20, 300)
+
+        # test transformation without ctfidf:
+        self.processor._use_ctfidf = False
+        vects = self.processor.transform()
+        print(vects)
+        assert isinstance(vects, np.ndarray)
+        assert vects.shape == (20, 300)
+
+
 
 class TestClassifier(GenericTest):
     def test_setup(self):
@@ -155,7 +223,6 @@ class TestClassifier(GenericTest):
                      support_lex=self.lex2,
                      hp_tuning=True,
                      param_grid=param_grid,
-                     fixed_params={'input_shape': [300]},
                      progress_bar=True,
                      n_iter=6,
                      n_best_params=n_best_params,
@@ -169,6 +236,82 @@ class TestClassifier(GenericTest):
         assert list(cl._tuned_params.keys()) == ['PolitikVR', 'AutoVR']
         assert len(cl._tuned_params['AutoVR']) == n_best_params
 
+    def test_weelexpredict(self):
+        self._setup_predictor()
+        n_best_params = 4
+        cl = classifier.WEELexClassifier(
+            embeds=self.embeds,
+            relevant_pos=['NOUN'],
+            min_df=1,
+            max_df=0.99,
+            n_docs=len(self.data),
+            n_words=10,
+        )
+        param_grid = [{'modeltype': ['svm'],
+                       'n_models': [2],
+                       'pca': [10, None],
+                       'svc_c': [0.1, 1, 10]}]
+        cl.weelexfit(lex=self.lex1,
+                     support_lex=self.lex2,
+                     hp_tuning=True,
+                     param_grid=param_grid,
+                     progress_bar=True,
+                     n_iter=6,
+                     n_best_params=n_best_params,
+                     cv=3)
+        preds = cl.weelexpredict(X=self.data)
+        print(preds)
+        assert isinstance(preds, pd.DataFrame)
+        assert preds.shape == (20, 2)
+        assert list(preds.columns) == self.lex1.keys
+        assert list(preds['PolitikVR'].unique()) == [0, 1]
+
+        # without hp tuning:
+        cl = classifier.WEELexClassifier(
+            embeds=self.embeds,
+            relevant_pos=['NOUN'],
+            min_df=1,
+            max_df=0.99,
+            n_docs=len(self.data),
+            n_words=10,
+        )
+        cl.weelexfit(lex=self.lex1,
+                     support_lex=self.lex2,
+                     hp_tuning=False,
+                     progress_bar=True,
+                     n_iter=6,
+                     n_best_params=n_best_params,
+                     cv=3)
+        preds = cl.weelexpredict(X=self.data)
+        print(preds)
+        assert isinstance(preds, pd.DataFrame)
+        assert preds.shape == (20, 2)
+        assert list(preds.columns) == self.lex1.keys
+        assert list(preds['PolitikVR'].unique()) == [0, 1]
+
+        # without ctfidf
+        cl = classifier.WEELexClassifier(
+            embeds=self.embeds,
+            use_ctfidf=False,
+            relevant_pos=['NOUN'],
+            min_df=1,
+            max_df=0.99,
+            n_docs=len(self.data),
+            n_words=10,
+        )
+        cl.weelexfit(lex=self.lex1,
+                     support_lex=self.lex2,
+                     hp_tuning=False,
+                     progress_bar=True,
+                     n_iter=6,
+                     n_best_params=n_best_params,
+                     cv=3)
+        preds = cl.weelexpredict(X=self.data)
+        print(preds)
+        assert isinstance(preds, pd.DataFrame)
+        assert preds.shape == (20, 2)
+        assert list(preds.columns) == self.lex1.keys
+        assert list(preds['PolitikVR'].unique()) == [0, 1]
 
 class TestModels(GenericTest):
     def _setup_augmented(self):

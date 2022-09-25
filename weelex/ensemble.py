@@ -369,11 +369,17 @@ class AugmentedEnsemble(BaseEnsemble, BaseEstimator):
         return pca
 
     def _svm_model(self):
-        steps = [
-            ('scaler', StandardScaler()),
-            ('pca', self._setup_pca()),
-            ('svm', SVC(C=self.svc_c, class_weight='balanced', kernel='rbf'))
-        ]
+        if self.pca is not False:
+            steps = [
+                ('scaler', StandardScaler()),
+                ('pca', self._setup_pca()),
+                ('svm', SVC(C=self.svc_c, class_weight='balanced', kernel='rbf'))
+            ]
+        else:
+            steps = [
+                ('scaler', StandardScaler()),
+                ('svm', SVC(C=self.svc_c, class_weight='balanced', kernel='rbf'))
+            ]
 
         model = Pipeline(steps)
         return model
@@ -607,12 +613,16 @@ class AugmentedEnsemble(BaseEnsemble, BaseEstimator):
 class FullEnsemble(BaseEnsemble):
     def __init__(self,
                  category,
+                 categories,
+                 outside_categories,
                  param_set=None,
                  progress_bar=False,
                  model=AugmentedEnsemble,
                  **modelparams):
         super().__init__(progress_bar)
         self.category = category
+        self._categories = categories
+        self._outside_categories = outside_categories
         self.param_set = param_set
         self.model = model
         self.fixedparams = modelparams
@@ -622,17 +632,23 @@ class FullEnsemble(BaseEnsemble):
         if param_set is None:
             param_set = []
 
-        for params in param_set:
-            full_param_set.append({**self.fixedparams, **params})
-        print('    Sets of parameters:')
-        for i, x in enumerate(full_param_set):
-            print(f'    {i}: {x}')
+        if len(param_set) > 0:
+            for params in param_set:
+                full_param_set.append({**self.fixedparams, **params})
+            print('    Sets of parameters:')
+            for i, x in enumerate(full_param_set):
+                print(f'    {i}: {x}')
 
-        models = [
-                self.model(
-                        self.category, **full_param_set[i]
-                    ) for i in range(len(param_set))
-            ]
+            models = [self.model(self.category,
+                                 self._categories,
+                                 self._outside_categories,
+                                 **full_param_set[i]
+                                 ) for i in range(len(param_set))]
+        else:
+            models = [self.model(self.category,
+                                 self._categories,
+                                 self._outside_categories,
+                                 **self.fixedparams)]
         return models
 
     def fit(self, X, y):

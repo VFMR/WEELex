@@ -16,6 +16,7 @@ class PredictionProcessor:
                  embeddings: embeddings.Embeddings = None,
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+                 use_ctfidf: bool = True,
                  relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
                  min_df: Union[int, float] = 5,
                  max_df: Union[int, float] = 0.95,
@@ -33,6 +34,7 @@ class PredictionProcessor:
                  n_jobs: int = 1) -> None:
         self._data = data
         self._embeddings = embeddings
+        self._use_ctfidf = use_ctfidf
         self._relevant_pos = relevant_pos
         self._min_df = min_df
         self._max_df = max_df
@@ -86,8 +88,10 @@ class PredictionProcessor:
         return tfidf
 
     def _instantiate_ctfidf(self) -> ClusterTfidfVectorizer:
+        if isinstance(self._tfidf, BasicTfidf):
+            tfidf = self._tfidf.vectorizer
         vectorizer = ClusterTfidfVectorizer(
-                    vectorizer=self._tfidf,
+                    vectorizer=tfidf,
                     embeddings=self._embeddings,
                     n_docs=self._n_docs,
                     corpus_path=self._corpus_path,
@@ -114,7 +118,7 @@ class PredictionProcessor:
         if data is None:
             usedata = self._data
         else:
-            self._checksize()
+            self._checksize(data)
             usedata = data
         return usedata
 
@@ -126,14 +130,16 @@ class PredictionProcessor:
         self._tfidf.fit(usedata)
 
     def _vectorize(self, data):
-        return np.array(self._ctfidf.transform(data))
+        if self._use_ctfidf:
+            return self._ctfidf.transform(data)
+        else:
+            return self._tfidf.transform(data)
 
     def fit_ctfidf(self, data: Union[np.ndarray, pd.Series] = None) -> None:
         usedata = self._get_usedata(data)
         if self._ctfidf is None:
             self._ctfidf = self._instantiate_ctfidf()
-        # TODO implement ctfidf fit
-        # self._ctfidf.fit(usedata)
+        self._ctfidf.fit()
 
     def save_tfidf(self, path: str) -> None:
         self._tfidf.save(path)
@@ -151,14 +157,23 @@ class PredictionProcessor:
         ctfidf.load(path)
         self._ctfidf = ctfidf
 
-    def transform(self, X):
+    def transform(self, X: Union[np.ndarray, pd.Series] = None):
+        usedata = self._get_usedata(X)
+
         if self._tfidf is None or not self._tfidf.check_fit():
-            self.fit_tfidf(X)
-            self.fit_ctfidf(X)
-        elif self._ctfidf is None:
-            self.fit_ctfidf(X)
-        vects = self._vectorize(X)
-        return self._tfidf_weighted_embeddings_corpus(vects)
+            self.fit_tfidf(usedata)
+
+        # ctfidf has aggregation of words already built in
+        if self._use_ctfidf:
+            if self._ctfidf is None:
+                self.fit_ctfidf(usedata)
+            result = self._vectorize(usedata)
+        else:
+            vects = self._vectorize(usedata)
+            # additional step of aggregation necessary if ctfidf is not used
+            result = self._tfidf_weighted_embeddings_corpus(vects)
+
+        return result
 
     @staticmethod
     def _get_word_tfidf_pairs(vect, index2word):
@@ -175,7 +190,10 @@ class PredictionProcessor:
             list: Array containing the terms (str) with nonzero vectors
             numpy.array: vector containing the nonzero tfidf values
         """
-        vect_array = vect.toarray()[0]
+        if not isinstance(vect, np.ndarray):
+            vect_array = vect.toarray()[0]
+        else:
+            vect_array = vect
         indices = list(np.where(vect_array != 0)[0])
         words = [index2word[x] for x in indices]
         nonzero_vects = np.array(vect_array[indices])
@@ -237,3 +255,7 @@ class PredictionProcessor:
     @staticmethod
     def _get_embedding_dim(embeddings, checkterm):
         return len(embeddings[checkterm])
+
+    @property
+    def embedding_dim(self):
+        return self._get_embeddings_dim(self._embeddings, self._checkterm)

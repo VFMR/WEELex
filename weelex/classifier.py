@@ -21,6 +21,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                  embeds: Union[dict, embeddings.Embeddings],
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+                 use_ctfidf: bool = True,
                  test_size: float = 0.2,
                  random_state: int = None,
                  n_jobs: int = 1,
@@ -50,6 +51,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._use_progress_bar = progress_bar
         self._tfidf = tfidf
         self._ctfidf = ctfidf
+        self._use_ctfidf = use_ctfidf
         self._relevant_pos = relevant_pos
         self._min_df = min_df
         self._max_df = max_df
@@ -93,7 +95,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                   support_lex: Union[lexicon.Lexicon, dict, str] = None,
                   main_keys: Iterable[str] = None,
                   support_keys: Iterable[str] = None,
-                  hp_tuning: bool = True,
+                  hp_tuning: bool = False,
                   n_iter: int = 150,
                   cv: int = 5,
                   param_grid: dict = None,
@@ -101,6 +103,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                   n_best_params: int = 3,
                   progress_bar: bool = False) -> None:
         self._setup_trainprocessor(lex, support_lex, main_keys, support_keys)
+        input_shape = self._trainprocessor.embedding_dim
 
         # loop over the categories:
         models = {}
@@ -113,11 +116,19 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                                             fixed_params=fixed_params,
                                             n_best_params=n_best_params,
                                             cv=cv)
-            model_params = self._make_train_params(cat,
-                                                   self._train_params,
-                                                   self._tuned_params,
-                                                   fixed_params)
-            model = self._model(cat, **model_params)
+
+            model_params = self._tuned_params.get(cat)
+            if fixed_params is not None:
+                fixed_params_dct = fixed_params
+            else:
+                fixed_params_dct = {}
+            fixed_params_dct.update({'input_shape': input_shape})
+
+            model = self._model(cat,
+                                categories=self._trainprocessor.main_keys,
+                                outside_categories=self._trainprocessor.support_keys,
+                                param_set=model_params,
+                                **fixed_params_dct)
             model.fit(*self._trainprocessor.feed_cat_Xy(cat=cat, train=True))
             models.update({cat: model})
         self._models = models
@@ -128,6 +139,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             embeddings=self._embeddings,
             tfidf=self._tfidf,
             ctfidf=self._ctfidf,
+            use_ctfidf=self._use_ctfidf,
             relevant_pos=self._relevant_pos,
             min_df=self._min_df,
             max_df=self._max_df,
@@ -170,14 +182,15 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
     def _emptyfunc(array):
         return array
 
-    @staticmethod
-    def _make_train_params(cat: str, *param_sets: dict) -> dict:
-        new_params = {}
-        if param_sets is not None:
-            for dct in param_sets:
-                if dct is not None:
-                    new_params.update(dct)
-        return new_params
+    # @staticmethod
+    # def _make_train_params(cat: str, *param_sets: dict) -> dict:
+    #     new_params = {}
+    #     if param_sets is not None:
+    #         for dct in param_sets:
+    #             if dct is not None:
+    #                 catdct = dct.get(cat)
+    #                 new_params.update(catdct)
+    #     return new_params
 
     def _hyperparameter_tuning(self,
                                cat,
@@ -189,11 +202,15 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         if param_grid is None:
             raise ValueError('No parameter grid set for tuning.')
 
+        if fixed_params is not None:
+            fixed_params_dct = fixed_params
+        else:
+            fixed_params_dct = {}
         search = RandomizedSearchCV(
                 estimator=ensemble.AugmentedEnsemble(cat,
                                                      categories=self._main_keys,
                                                      outside_categories=self._support_keys,
-                                                     **fixed_params),
+                                                     **fixed_params_dct),
                 param_distributions=param_grid,
                 n_iter=n_iter,
                 n_jobs=self._n_jobs,
@@ -274,7 +291,10 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
     def _probas_to_binary(self, probas, cutoff):
         catpreds_binary = {}
         for cat in self._main_keys:
-            pred = (probas[cat][:,0] >= cutoff).astype(int)
+            if len(probas[cat].shape) == 2:
+                pred = (probas[cat][:,0] >= cutoff).astype(int)
+            else:
+                pred = (probas[cat] >= cutoff).astype(int)
             catpreds_binary.update({cat: pred})
         return pd.DataFrame(catpreds_binary)
 
@@ -285,7 +305,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                 n_batches: int = None,
                 checkpoint_path: str = None) -> pd.DataFrame:
         catpreds = self.predict_proba(X=X)
-        return self._probas_to_binary(catpreds)
+        return self._probas_to_binary(catpreds, cutoff=cutoff)
 
     def predict_proba(self, X: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         catpreds = {}
@@ -328,7 +348,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         preds = self.weelexpredict_proba(X=X,
                                          n_batches=n_batches,
                                          checkpoint_path=checkpoint_path)
-        return self._probas_to_binary(preds)
+        return self._probas_to_binary(preds, cutoff=cutoff)
 
     def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
         self._predictprocessor.fit_tfidf(data)

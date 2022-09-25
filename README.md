@@ -5,6 +5,7 @@
 ```
 conda create --name weelex python pip
 conda activate weelex
+python -m spacy download de_core_news_lg
 python -m pip install .
 ```
 
@@ -14,6 +15,7 @@ Changes to the package will be automatically reflected in the package installati
 ```
 conda create --name weelex python pip
 conda activate weelex
+python -m spacy download de_core_news_lg
 python -m pip install -e .
 ```
 
@@ -23,6 +25,7 @@ Install the packages that require a c compiler with conda first:
 ```
 conda create --name weelex python pip gensim=4.0.1 spacy=2.3.5
 conda activate weelex
+python -m spacy download de_core_news_lg
 python -m pip install .
 ```
 

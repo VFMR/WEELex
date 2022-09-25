@@ -257,11 +257,7 @@ class BasicTfidf:
         return sw
 
     def _get_params_from_child(self):
-        self.vocabulary_ = self.vectorizer.steps[-1].vocabulary_
-        self.fixed_vocabulary_ = self.vectorizer.steps[-1].fixed_vocabulary_
-        self.idf_ = self.vectorizer.steps[-1].idf_
-        self.stop_words_ = list(
-            set(self.sw + self.vectorizer.steps[-1].stop_words_))
+        pass
 
     def _analyzer(self, comment):
 
@@ -392,4 +388,20 @@ class BasicTfidf:
     def decode(self, doc):
         return self.vectorizer.steps[-1].decode(doc)
 
+    @property
+    def vocabulary_(self):
+        return self.vectorizer.steps[-1][1].vocabulary_
 
+    @property
+    def fixed_vocabulary_(self):
+        return self.vectorizer.steps[-1][1].fixed_vocabulary_
+
+    @property
+    def idf_(self):
+        return self.vectorizer.steps[-1][1].idf_
+
+    @property
+    def stop_words_(self):
+        return list(set(
+            self.sw + list(self.vectorizer.steps[-1][1].stop_words_)
+            ))

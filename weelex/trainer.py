@@ -16,6 +16,7 @@ class TrainProcessor:
                  support_keys: Iterable[str]=None,
                  embeddings: embeddings.Embeddings=None,
                  test_size: Union[float, int]=0.2,
+                 checkterm: str = 'Politik',
                  random_state: int=None):
         # self._lex = lex
         # self._support_lex = support_lex
@@ -29,6 +30,7 @@ class TrainProcessor:
         self._test_size = test_size
         self._random_state = random_state
         self._train_test_drawn = False
+        self._checkterm = checkterm
         self.trains = None
         self.tests = None
 
@@ -264,3 +266,7 @@ class TrainProcessor:
     @property
     def support_keys(self) -> list:
         return self._support_keys
+
+    @property
+    def embedding_dim(self) -> int:
+        return len(self._embeddings[self._checkterm])
