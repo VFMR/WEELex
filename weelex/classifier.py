@@ -107,8 +107,9 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
 
         # loop over the categories:
         models = {}
-        # for cat in self._set_progress_bar(self._main_keys):
-        for cat in self._main_keys:
+        pb = self._set_progress_bar()
+        for cat in pb(self._main_keys):
+        # for cat in self._main_keys:
             if hp_tuning:
                 self._hyperparameter_tuning(cat=cat,
                                             n_iter=n_iter,
@@ -172,25 +173,15 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._main_keys = self._trainprocessor.main_keys
         self._support_keys = self._trainprocessor.support_keys
 
-    def _set_progress_bar(self, array):
+    def _set_progress_bar(self):
         if self._use_progress_bar:
-            return tqdm(array)
+            return tqdm
         else:
-            return self._emptyfunc(array)
+            return self._emptyfunc
 
     @staticmethod
     def _emptyfunc(array):
         return array
-
-    # @staticmethod
-    # def _make_train_params(cat: str, *param_sets: dict) -> dict:
-    #     new_params = {}
-    #     if param_sets is not None:
-    #         for dct in param_sets:
-    #             if dct is not None:
-    #                 catdct = dct.get(cat)
-    #                 new_params.update(catdct)
-    #     return new_params
 
     def _hyperparameter_tuning(self,
                                cat,
@@ -315,26 +306,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
             catpreds.update({cat: preds})
         return catpreds
 
-    def weelexpredict_proba(self,
-                            X: pd.DataFrame,
-                            n_batches: int = None,
-                            checkpoint_path: str = None) -> pd.DataFrame:
-        kwargs = {'X': X,
-                  'n_batches': n_batches,
-                  'checkpoint_path': checkpoint_path}
-        if self._use_progress_bar:
-            result = self._weelexpredict_proba_pb(**kwargs)
-        else:
-            result = self._weelexpredict_proba_nopb(X)
-        return result
-
-    def _weelexpredict_proba_pb(self,
-                                X: pd.DataFrame,
-                                n_batches: int = None,
-                                checkpoint_path: str = None) -> pd.DataFrame:
-        return self._weelexpredict_proba_nopb(X)
-
-    def _weelexpredict_proba_nopb(self, X: pd.DataFrame) -> pd.DataFrame:
+    def weelexpredict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
         self._setup_predictprocessor()
         vects = self._predictprocessor.transform(X)
         return self.predict_proba(vects)
@@ -345,9 +317,7 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                       cutoff: float = 0.5,
                       n_batches: int = None,
                       checkpoint_path: str = None) -> pd.DataFrame:
-        preds = self.weelexpredict_proba(X=X,
-                                         n_batches=n_batches,
-                                         checkpoint_path=checkpoint_path)
+        preds = self.weelexpredict_proba(X=X)
         return self._probas_to_binary(preds, cutoff=cutoff)
 
     def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
