@@ -3,4 +3,7 @@ tests/temp/*
 tests/testfiles/Temp/*
 tests/specifics.py
 *.stats
+weelex.egg-info/*
+spon_main.yml
+.pytest_cache/*
 

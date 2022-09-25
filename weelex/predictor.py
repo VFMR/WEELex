@@ -6,16 +6,16 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from weelex.cluster_tfidf import ctfidf
 from weelex.tfidf import BasicTfidf
 from weelex import embeddings
+from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 class PredictionProcessor:
     def __init__(self,
                  data: Union[np.ndarray, pd.Series] = None,
                  embeddings: embeddings.Embeddings = None,
                  tfidf: Union[str, BasicTfidf] = None,
-                 ctfidf: Union[str, ctfidf.ClusterTfidfVectorizer] = None,
+                 ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
                  min_df: Union[int, float] = 5,
                  max_df: Union[int, float] = 0.95,
@@ -68,7 +68,7 @@ class PredictionProcessor:
         if ctfidf is not None:
             if isinstance(ctfidf, str):
                 self.load_ctfidf(ctfidf)
-            elif isinstance(ctfidf, ctfidf.ClusterTfidfVectorizer):
+            elif isinstance(ctfidf, ClusterTfidfVectorizer):
                 self._ctfidf = ctfidf
             else:
                 raise ValueError(f"""
@@ -85,8 +85,8 @@ class PredictionProcessor:
                             spacy_model=self._spacy_model)
         return tfidf
 
-    def _instantiate_ctfidf(self) -> ctfidf.ClusterTfidfVectorizer:
-        vectorizer = ctfidf.ClusterTfidfVectorizer(
+    def _instantiate_ctfidf(self) -> ClusterTfidfVectorizer:
+        vectorizer = ClusterTfidfVectorizer(
                     vectorizer=self._tfidf,
                     embeddings=self._embeddings,
                     n_docs=self._n_docs,
@@ -147,7 +147,7 @@ class PredictionProcessor:
         self._ctfidf.save(dir)
 
     def load_ctfidf(self, path: str) -> None:
-        ctfidf = ctfidf.ClusterTfidfVectorizer()
+        ctfidf = ClusterTfidfVectorizer()
         ctfidf.load(path)
         self._ctfidf = ctfidf
 

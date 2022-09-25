@@ -33,8 +33,8 @@ class Lexicon:
         Example:
             >>> lex = Lexicon({'A': ['a', 'b'], 'B': ['c', 'd', 'e']})
             >>> lex['A']
-            0    a
-            1    b
+            0      a
+            1      b
             2    NaN
             Name: A, dtype: object
 
@@ -53,9 +53,9 @@ class Lexicon:
             >>> lex = Lexicon({'A': ['a', 'b']})
             >>> lex['B'] = ['c', 'd']
             >>> print(lex._dictionary_df)
-                 A    B
-            0    a    c
-            1    b    d
+               A  B
+            0  a  c
+            1  b  d
 
         Args:
             key (str): Name of the category
@@ -69,9 +69,9 @@ class Lexicon:
         Example:
             >>> lex = Lexicon({'A': ['a', 'b'], 'B': ['c', 'd']})
             >>> lex
-                 A    B
-            0    a    c
-            1    b    d
+               A  B
+            0  a  c
+            1  b  d
 
         Returns:
             pd.DataFrame: Matrix of categories and terms
@@ -102,9 +102,9 @@ class Lexicon:
             >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
             >>> l = Lexicon(my_dct)
             >>> l._build_dictionary(my_dct)
-                 A    B
-            0    a    c
-            1    b    d
+               A  B
+            0  a  c
+            1  b  d
 
         Returns:
             pd.DataFrame: lexicon matrix
@@ -210,8 +210,8 @@ class Lexicon:
             >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
             >>> lex = Lexicon({'A': ['a', 'b']})
             >>> lex._nonmissarray(array)
-            0    one
-            1    two
+            0      one
+            1      two
             2    three
             dtype: object
 

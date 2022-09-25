@@ -8,12 +8,12 @@ from tqdm import tqdm
 
 from weelex import lexicon
 from weelex import embeddings
-from weelex.batchprocessing import batchprocessing
 from weelex import ensemble
 from weelex.trainer import TrainProcessor
 from weelex.tfidf import BasicTfidf
 from weelex.predictor import PredictionProcessor
-from weelex.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
+from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
+from batchprocessing import batchprocessing
 
 
 class WEELexClassifier(BaseEstimator, TransformerMixin):
