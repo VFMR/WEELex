@@ -54,8 +54,13 @@ class Embeddings:
 
     def _get_val_from_key(self, key: str) -> np.ndarray:
         if self.isfiltered:
-            index = self._keys.tolist().index(key)
-            result = self._vectors[index, :]
+            try:
+                index = self._keys.tolist().index(key)
+                result = self._vectors[index, :]
+            except ValueError as e:
+                print(e)
+                print('Returning null vector instead')
+                result = np.zeros((self.dim))
         else:
             result = self._wv[key]
         return result
