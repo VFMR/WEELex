@@ -1,4 +1,5 @@
-from typing import Union, Tuple, Iterable, overload
+from re import I
+from typing import Union, Tuple, Iterable, overload, List
 # from functools import singledispatch, singledispathmethod
 
 import numpy as np
@@ -7,16 +8,17 @@ from gensim.models.fasttext import load_facebook_vectors
 from gensim.models import FastText
 from gensim.models import Word2Vec
 
+from weelex import lexicon
+
 
 class Embeddings:
-    def __init__(self, inputs=None) -> None:
+    def __init__(self) -> None:
         self.isfiltered = False
         self._keys = None
         self._vectors = None
         self._wv = None
         self.testvalue = 'Test'
 
-    # TODO: how do I handle these well?
     def load_facebook_vectors(self, path: str) -> None:
         wv = load_facebook_vectors(path)
         self._wv = wv
@@ -29,19 +31,63 @@ class Embeddings:
         wv = Word2Vec.load(path).wv
         self._wv = wv
 
-    def filter_terms(self, terms: Union[list, np.ndarray, pd.DataFrame, tuple]) -> None:
+    def load_vectors(self,
+                     path: str,
+                     embedding_type: str,
+                     fine_tuned: bool = False) -> None:
+        if embedding_type == 'fasttext':
+            if not fine_tuned:
+                self.load_facebook_vectors(path)
+            else:
+                self.load_finetuned_fasttext(path)
+        elif embedding_type == 'word2vec':
+            self.load_finetuned_word2vec(path)
+        else:
+            raise ValueError(f"""
+                Invalid embedding type {embedding_type}.
+                Enter one of 'word2vec' or 'fasttext'.
+             """)
+
+    def filter_terms(self,
+                     terms: Union[list,
+                                  lexicon.Lexicon,
+                                  np.ndarray,
+                                  pd.DataFrame,
+                                  tuple]) -> None:
         if self.isfiltered:
             myvecs = self._vectors
         else:
             myvecs = self._wv
 
+        if isinstance(terms, np.ndarray) or isinstance(terms, pd.DataFrame):
+            terms_lst = self._flatten_matrix(terms)
+        elif isinstance(terms, lexicon.Lexicon):
+            terms_lst = terms.vocabulary
+        else:
+            terms_lst = terms
+
         keys, vectors = self._data_from_dct(
-            {term: myvecs[term] for term in terms}
+            {term: myvecs[term] for term in terms_lst}
         )
         self._keys = keys
         self._vectors = vectors
         self.isfiltered = True
         self._wv = None
+
+    @staticmethod
+    def _flatten_matrix(mat: Union[np.ndarray, pd.DataFrame]) -> List[str]:
+        lst = []
+        append = lst.append
+        if isinstance(mat, np.ndarray):
+            for row in mat:
+                for cell in row:
+                    append(cell)
+        elif isinstance(mat, pd.DataFrame):
+            for col in mat.columns:
+                for cell in mat[col]:
+                    append(cell)
+        lst = [x for x in set(lst) if not np.isnan(x)]
+        return lst
 
     @staticmethod
     def _data_from_dct(dct: dict) -> Tuple[list, np.array]:
@@ -58,8 +104,6 @@ class Embeddings:
                 index = self._keys.tolist().index(key)
                 result = self._vectors[index, :]
             except ValueError as e:
-                print(e)
-                print('Returning null vector instead')
                 result = np.zeros((self.dim))
         else:
             result = self._wv[key]
@@ -132,25 +176,6 @@ class Embeddings:
                 terms = np.array(terms)
             values = self._get_val_from_key_vectorized(terms)
         return values
-
-    # singledispathmethod only supported in python 3.8 and above
-    # @singledispathmethod
-    # def lookup2(self,
-    #              terms: Union[str, list, np.ndarray, pd.Series]) -> np.ndarray:
-    #     raise TypeError(f'Not supported for objects of type {type(terms)}')
-
-    # @lookup2.register(str)
-    # def lookup_str(self, terms: str) -> np.ndarray:
-    #     return self._get_val_from_key(terms)
-
-    # @lookup2.register(np.ndarray)
-    # def lookup_numpy(self, terms: np.ndarray) -> np.ndarray:
-    #     return self._get_val_from_key_vectorized(terms)
-
-    # @lookup2.register(Union[list, pd.Series])
-    # def lookup_iterable(self, terms: Union[list, pd.Series]) -> np.ndarray:
-    #     terms_array = np.array(terms)
-    #     return self._get_val_from_key_vectorized(terms_array)
 
     def __getitem__(self, key: str) -> np.ndarray:
         return self._get_val_from_key(key)
