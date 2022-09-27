@@ -6,4 +6,4 @@ tests/specifics.py
 weelex.egg-info/*
 spon_main.yml
 .pytest_cache/*
-
+*.npz
