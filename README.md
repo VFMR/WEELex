@@ -29,6 +29,14 @@ python -m spacy download de_core_news_lg
 python -m pip install .
 ```
 
+## Using Jupyter notebooks:
+Prepare the environment additionally for usage of jupyter notebooks:
+```
+pip install --user ipykernel
+python -m ipykernel install --user --name=weelex
+```
+
+
 ## Running Tests:
 `pytest --doctest-modules --ignore=batchprocessing/tests/ tests/myunittests.py weelex/`
 
