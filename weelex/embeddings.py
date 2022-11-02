@@ -1,5 +1,4 @@
-from re import I
-from typing import Union, Tuple, Iterable, overload, List
+from typing import Union, Tuple, Iterable, overload, List, Dict
 # from functools import singledispatch, singledispathmethod
 
 import numpy as np
@@ -12,12 +11,18 @@ from weelex import lexicon
 
 
 class Embeddings:
-    def __init__(self) -> None:
+    def __init__(self,
+                 embedding_dict: Dict[str, float] = None) -> None:
         self.isfiltered = False
-        self._keys = None
-        self._vectors = None
-        self._wv = None
         self.testvalue = 'Test'
+        if embedding_dict is not None:
+            self._wv = embedding_dict
+            self._keys = embedding_dict.keys()
+            self._vectors = np.array([embedding_dict[x] for x in self._keys])
+        else:
+            self._wv = None
+            self._keys = None
+            self._vectors = None
 
     def load_facebook_vectors(self, path: str) -> None:
         wv = load_facebook_vectors(path)

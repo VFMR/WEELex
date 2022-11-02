@@ -6,12 +6,8 @@ import copy
 import pandas as pd
 import numpy as np
 
-from weelex import embeddings
 
-
-@dataclass
-class Lexicon:
-    # TODO: Allow for train_test_split to work
+class BaseLexicon:
     def __init__(self,
                  dictionary: Union[dict, str, pd.DataFrame],
                  sep: str = None,
@@ -21,6 +17,31 @@ class Lexicon:
                 sep=sep,
                 encoding=encoding)
         self._embeddings = None
+
+
+class WeightedLexicon(BaseLexicon):
+    def __init__(self,
+                 dictionary: Union[dict, str, pd.DataFrame],
+                 sep: str = None,
+                 encoding: str = None):
+        super().__init__(
+           dictionary=dictionary,
+           sep=sep,
+           encoding=encoding
+        )
+
+@dataclass
+class Lexicon(BaseLexicon):
+    # TODO: Allow for train_test_split to work
+    def __init__(self,
+                 dictionary: Union[dict, str, pd.DataFrame],
+                 sep: str = None,
+                 encoding: str = None):
+        super().__init__(
+           dictionary=dictionary,
+           sep=sep,
+           encoding=encoding
+        )
 
     def __copy__(self):
         obj = type(self).__new__(self.__class__)
@@ -192,7 +213,7 @@ class Lexicon:
             result = empty_array.fill(np.nan)
         return result
 
-    def embed(self, embeddings: embeddings.Embeddings) -> None:
+    def embed(self, embeddings) -> None:
         dict_df_shape = self._dictionary_df.shape
         embedding_tensor = np.zeros(
             shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
@@ -288,6 +309,10 @@ class Lexicon:
     @property
     def vocabulary(self) -> list:
         return self.get_vocabulary()
+
+    @property
+    def is_embedded(self) -> bool:
+        return self._embeddings is not None
 
     # ------------------------------ Class methods
 

@@ -1,22 +1,22 @@
 from typing import Union, Iterable, Dict, List
 
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
+# from tqdm import tqdm
 
 from weelex import lexicon
 from weelex import embeddings
 from weelex import ensemble
+from weelex import base
 from weelex.trainer import TrainProcessor
 from weelex.tfidf import BasicTfidf
-from weelex.predictor import PredictionProcessor
+# from weelex.predictor import PredictionProcessor
 from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 from batchprocessing import batchprocessing
 
 
-class WEELexClassifier(BaseEstimator, TransformerMixin):
+class WEELexClassifier(base.BasePredictor):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
                  tfidf: Union[str, BasicTfidf] = None,
@@ -41,31 +41,55 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
                  distance_threshold: float = 0.5,
                  n_words: int = 40000,
                  **train_params) -> None:
-        self._embeddings = self._make_embeddings(embeds)
-        self._is_fit = False
+        super().__init__(
+            embeds=embeds,
+            tfidf=tfidf,
+            ctfidf=ctfidf,
+            use_ctfidf=use_ctfidf,
+            test_size=test_size,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            progress_bar=progress_bar,
+            relevant_pos=relevant_pos,
+            min_df=min_df,
+            max_df=max_df,
+            spacy_model=spacy_model,
+            n_docs=n_docs,
+            corpus_path=corpus_path,
+            corpus_path_encoding=corpus_path_encoding,
+            load_clustering=load_clustering,
+            checkterm=checkterm,
+            n_top_clusters=n_top_clusters,
+            cluster_share=cluster_share,
+            clustermethod=clustermethod,
+            distance_threshold=distance_threshold,
+            n_words=n_words
+        )
+        # self._embeddings = self._make_embeddings(embeds)
+        # self._is_fit = False
         self._model = ensemble.FullEnsemble
-        self._test_size = test_size
-        self._random_state = random_state
+        # self._test_size = test_size
+        # self._random_state = random_state
         self._n_jobs = n_jobs
         self._train_params = train_params
-        self._use_progress_bar = progress_bar
-        self._tfidf = tfidf
-        self._ctfidf = ctfidf
-        self._use_ctfidf = use_ctfidf
-        self._relevant_pos = relevant_pos
-        self._min_df = min_df
-        self._max_df = max_df
-        self._spacy_model = spacy_model
-        self._n_docs = n_docs
-        self._corpus_path = corpus_path
-        self._corpus_path_encoding = corpus_path_encoding
-        self._load_clustering = load_clustering
-        self._checkterm = checkterm
-        self._n_top_clusters = n_top_clusters
-        self._cluster_share = cluster_share
-        self._clustermethod = clustermethod
-        self._distance_threshold = distance_threshold
-        self._n_words = n_words
+        # self._use_progress_bar = progress_bar
+        # self._tfidf = tfidf
+        # self._ctfidf = ctfidf
+        # self._use_ctfidf = use_ctfidf
+        # self._relevant_pos = relevant_pos
+        # self._min_df = min_df
+        # self._max_df = max_df
+        # self._spacy_model = spacy_model
+        # self._n_docs = n_docs
+        # self._corpus_path = corpus_path
+        # self._corpus_path_encoding = corpus_path_encoding
+        # self._load_clustering = load_clustering
+        # self._checkterm = checkterm
+        # self._n_top_clusters = n_top_clusters
+        # self._cluster_share = cluster_share
+        # self._clustermethod = clustermethod
+        # self._distance_threshold = distance_threshold
+        # self._n_words = n_words
 
         # setting up default objects
         self._main_keys = None
@@ -135,28 +159,6 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._models = models
         self._is_fit = True
 
-    def _setup_predictprocessor(self):
-        self._predictprocessor = PredictionProcessor(
-            embeddings=self._embeddings,
-            tfidf=self._tfidf,
-            ctfidf=self._ctfidf,
-            use_ctfidf=self._use_ctfidf,
-            relevant_pos=self._relevant_pos,
-            min_df=self._min_df,
-            max_df=self._max_df,
-            spacy_model=self._spacy_model,
-            n_docs=self._n_docs,
-            corpus_path=self._corpus_path,
-            corpus_path_encoding=self._corpus_path_encoding,
-            load_clustering=self._load_clustering,
-            checkterm=self._checkterm,
-            n_top_clusters=self._n_top_clusters,
-            cluster_share=self._cluster_share,
-            clustermethod=self._clustermethod,
-            distance_threshold=self._distance_threshold,
-            n_words=self._n_words,
-            n_jobs=self._n_jobs)
-
     def _setup_trainprocessor(self,
                               lex: Union[lexicon.Lexicon, dict, str],
                               support_lex: Union[lexicon.Lexicon, dict, str] = None,
@@ -172,16 +174,6 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
         self._trainprocessor.make_train_test_data()
         self._main_keys = self._trainprocessor.main_keys
         self._support_keys = self._trainprocessor.support_keys
-
-    def _set_progress_bar(self):
-        if self._use_progress_bar:
-            return tqdm
-        else:
-            return self._emptyfunc
-
-    @staticmethod
-    def _emptyfunc(array):
-        return array
 
     def _hyperparameter_tuning(self,
                                cat,
@@ -345,26 +337,6 @@ class WEELexClassifier(BaseEstimator, TransformerMixin):
     def load(self):
         # TODO: Implement load() method
         pass
-
-    def __repr__(self, N_CHAR_MAX=700):
-        return super().__repr__(N_CHAR_MAX)
-
-    @staticmethod
-    def _make_embeddings(embeds: Union[embeddings.Embeddings, dict]):
-        if not isinstance(embeds, embeddings.Embeddings):
-            my_embeds = embeddings.Embeddings(embeds)
-        else:
-            my_embeds = embeds
-        return my_embeds
-
-    def _get_full_vocab(self) -> list:
-        v1 = self._lexicon.get_vocabulary()
-        v2 = self._support_lexicon.get_vocabulary()
-        return sorted(list(set([v1, v2])))
-
-    def _filter_embeddings(self) -> None:
-        vocab = self._get_full_vocab()
-        self._embeddings.filter_terms(vocab)
 
     @property
     def main_keys(self) -> list:
