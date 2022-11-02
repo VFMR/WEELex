@@ -11,6 +11,7 @@ from weelex import embeddings
 from weelex import trainer
 from weelex import ensemble
 from weelex import predictor
+from weelex import lsx
 from batchprocessing import batchprocessing
 from cluster_tfidf import cluster_tfidf
 
@@ -583,6 +584,22 @@ class TestEmbeddings(unittest.TestCase):
         assert self.embeds.dim == 300
         assert isinstance(self.embeds.keys, np.ndarray)
 
+class TestLSX(GenericTest):
+    def _setup(self):
+        pass
+
+    def test_cosine(self):
+        a = [1,0,0]
+        b = [0,1,0]
+        assert lsx.cosine_simil(a, b) == 0.0
+
+        a = [1,0,0]
+        b = [1,0,0]
+        assert lsx.cosine_simil(a, b) == 1.0
+
+        a = [1, 0, 0]
+        b = [1, 1, 1]
+        assert np.allclose(lsx.cosine_simil(a, b), 0.5773502691896257)
 
 class TestTrainer(GenericTest):
     def _setup4(self):
