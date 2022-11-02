@@ -7,16 +7,157 @@ import pandas as pd
 import numpy as np
 
 
+@dataclass
 class BaseLexicon:
-    def __init__(self,
-                 dictionary: Union[dict, str, pd.DataFrame],
-                 sep: str = None,
-                 encoding: str = None):
-        self._dictionary_df = self._build_dictionary(
-                dictionary,
-                sep=sep,
-                encoding=encoding)
+    def __init__(self):
         self._embeddings = None
+        self._dictionary_df = None
+
+    def __copy__(self):
+        obj = type(self).__new__(self.__class__)
+        obj.__dict__.update(self.__dict__)
+        return obj
+
+    def copy(self):
+        obj = copy.copy(self)
+        return obj
+
+    @staticmethod
+    def _clean_strings(array: pd.Series) -> pd.Series:
+        """Replace the '*'-symbols from terms that may be used for
+        matching different terms. These are not meaningful for the
+        embedding method.
+
+        Example:
+            >>> array = pd.Series(['Test*', 'Te*st', '*test'])
+            >>> lex = BaseLexicon()
+            >>> lex._clean_strings(array)
+            0    Test
+            1    Test
+            2    test
+            dtype: object
+
+        Args:
+            array (pd.Series): pandas Series containing strings
+
+        Returns:
+            pd.Series: Array without stars
+        """
+        return array.str.replace('*', '', regex=False)
+
+    @staticmethod
+    def _embed_word(term, embeddings):
+        if term is not None and term is not np.nan:
+            result = embeddings[term]
+        else:
+            empty_array = np.empty(shape=(embeddings.dim))
+            result = empty_array.fill(np.nan)
+        return result
+
+    @staticmethod
+    def _nonmissarray(array: pd.Series) -> pd.Series:
+        """
+
+        Example:
+            >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
+            >>> lex = BaseLexicon()
+            >>> lex._nonmissarray(array)
+            0      one
+            1      two
+            2    three
+            dtype: object
+
+        Args:
+            array (pd.Series): Array to be get elements that are not nan
+
+        Returns:
+            pd.Series: Array containing only non-nan elements
+        """
+        nonmiss = array[~array.isna()]
+        return nonmiss
+
+    def merge(self,
+              lexica: Union['BaseLexicon', Iterable['BaseLexicon']],
+              inplace: bool=True) -> None:
+        if inplace:
+            obj = self
+        else:
+            obj = self.copy()
+
+        if isinstance(lexica, Lexicon):
+            obj._merge_one(lexica)
+        else:
+            for lex in lexica:
+                obj._merge_one(lex)
+
+        if not inplace:
+            return obj
+
+    def _merge_one(self, lex: 'BaseLexicon') -> None:
+        old_dct = self._dictionary_df.copy()
+        old_keys = old_dct.keys()
+        new_keys = lex.keys
+        update_keys = [x for x in new_keys if x in old_keys]
+        append_keys = [x for x in new_keys if x not in old_keys]
+        new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
+                            # ignore_index=True,
+                            axis=1)
+        self._dictionary_df = new_dct
+        # TODO: allow for merge of existing keys
+
+    def _append_values(self,
+                       lex: 'Lexicon',
+                       key: str,
+                       values: pd.Series) -> pd.Series:
+        maxlen = lex._dictionary_df.shape[0]
+        collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
+        # TODO: Implement rest of method _append_values()
+
+    def get_vocabulary(self):
+        pass
+
+    def save(self, path: str) -> None:
+        """Save lexicon to disk
+
+        Args:
+            path (str): Output file path
+        """
+        # TODO: implement save method
+        pass
+
+    # ------------------------------- Properties
+
+    @property
+    def keys(self):
+        return list(self._dictionary_df.columns)
+
+    @property
+    def embedding_shape(self):
+        return self._embeddings.shape
+
+    @property
+    def embeddings(self):
+        return self._embeddings
+
+    @property
+    def vocabulary(self) -> list:
+        return self.get_vocabulary()
+
+    @property
+    def is_embedded(self) -> bool:
+        return self._embeddings is not None
+
+    # ------------------------------ Class methods
+
+    @classmethod
+    def load(cls, path: str):
+        """Load a previously saved Lexicon instance
+
+        Args:
+            path (str): Path of saved Lexicon instance
+        """
+        # TODO: implement load method
+        # return cls()
 
 
 class WeightedLexicon(BaseLexicon):
@@ -30,7 +171,7 @@ class WeightedLexicon(BaseLexicon):
            encoding=encoding
         )
 
-@dataclass
+
 class Lexicon(BaseLexicon):
     # TODO: Allow for train_test_split to work
     def __init__(self,
@@ -42,11 +183,6 @@ class Lexicon(BaseLexicon):
            sep=sep,
            encoding=encoding
         )
-
-    def __copy__(self):
-        obj = type(self).__new__(self.__class__)
-        obj.__dict__.update(self.__dict__)
-        return obj
 
     def __getitem__(self, key: str) -> pd.Series:
         """getter for simple data retrieval
@@ -99,10 +235,6 @@ class Lexicon(BaseLexicon):
         """
         return self._dictionary_df.__repr__()
 
-    def copy(self):
-        obj = copy.copy(self)
-        return obj
-
     def _build_dictionary(self,
                           dictionary: Union[dict, str, pd.DataFrame],
                           sep: str = None,
@@ -144,75 +276,6 @@ class Lexicon(BaseLexicon):
 
         return dct_df
 
-    def merge(self,
-              lexica: Union['Lexicon', Iterable['Lexicon']],
-              inplace: bool=True) -> None:
-        if inplace:
-            obj = self
-        else:
-            obj = self.copy()
-
-        if isinstance(lexica, Lexicon):
-            obj._merge_one(lexica)
-        else:
-            for lex in lexica:
-                obj._merge_one(lex)
-
-        if not inplace:
-            return obj
-
-    def _merge_one(self, lex: 'Lexicon') -> None:
-        old_dct = self._dictionary_df.copy()
-        old_keys = old_dct.keys()
-        new_keys = lex.keys
-        update_keys = [x for x in new_keys if x in old_keys]
-        append_keys = [x for x in new_keys if x not in old_keys]
-        new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
-                            # ignore_index=True,
-                            axis=1)
-        self._dictionary_df = new_dct
-        # TODO: allow for merge of existing keys
-
-    def _append_values(self,
-                       lex: 'Lexicon',
-                       key: str,
-                       values: pd.Series) -> pd.Series:
-        maxlen = lex._dictionary_df.shape[0]
-        collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
-        # TODO: Implement rest of method _append_values()
-
-    @staticmethod
-    def _clean_strings(array: pd.Series) -> pd.Series:
-        """Replace the '*'-symbols from terms that may be used for
-        matching different terms. These are not meaningful for the
-        embedding method.
-
-        Example:
-            >>> array = pd.Series(['Test*', 'Te*st', '*test'])
-            >>> lex = Lexicon({'A': ['a', 'b']})
-            >>> lex._clean_strings(array)
-            0    Test
-            1    Test
-            2    test
-            dtype: object
-
-        Args:
-            array (pd.Series): pandas Series containing strings
-
-        Returns:
-            pd.Series: Array without stars
-        """
-        return array.str.replace('*', '', regex=False)
-
-    @staticmethod
-    def _embed_word(term, embeddings):
-        if term is not None and term is not np.nan:
-            result = embeddings[term]
-        else:
-            empty_array = np.empty(shape=(embeddings.dim))
-            result = empty_array.fill(np.nan)
-        return result
-
     def embed(self, embeddings) -> None:
         dict_df_shape = self._dictionary_df.shape
         embedding_tensor = np.zeros(
@@ -222,30 +285,6 @@ class Lexicon(BaseLexicon):
                 embedding_tensor[i][j] = self._embed_word(x, embeddings)
 
         self._embeddings = embedding_tensor
-
-    @staticmethod
-    def _nonmissarray(array):
-        """
-
-        Example:
-            >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
-            >>> lex = Lexicon({'A': ['a', 'b']})
-            >>> lex._nonmissarray(array)
-            0      one
-            1      two
-            2    three
-            dtype: object
-
-        Args:
-
-            array (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        nonmiss = array[~array.isna()]
-        return nonmiss
-
 
     def get_vocabulary(self) -> list:
         """Returns a sorted list of all the lexicon categories
@@ -283,48 +322,6 @@ class Lexicon(BaseLexicon):
                 ) for key in self._dictionary_df.columns}
         return out_dict
 
-    def save(self, path: str) -> None:
-        """Save lexicon to disk
-
-        Args:
-            path (str): Output file path
-        """
-        # TODO: implement save method
-        pass
-
-    # ------------------------------- Properties
-
-    @property
-    def keys(self):
-        return list(self._dictionary_df.columns)
-
-    @property
-    def embedding_shape(self):
-        return self._embeddings.shape
-
-    @property
-    def embeddings(self):
-        return self._embeddings
-
-    @property
-    def vocabulary(self) -> list:
-        return self.get_vocabulary()
-
-    @property
-    def is_embedded(self) -> bool:
-        return self._embeddings is not None
-
-    # ------------------------------ Class methods
-
-    @classmethod
-    def load(cls, path: str):
-        """Load a previously saved Lexicon instance
-
-        Args:
-            path (str): Path of saved Lexicon instance
-        """
-        # TODO: implement load method
-        # return cls()
 
 
 def dict_padding(dictionary: dict, filler=np.nan) -> dict:
