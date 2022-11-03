@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, Iterable
+from typing import Union, Iterable, Tuple, Dict
 import json
 import copy
 
@@ -9,9 +9,13 @@ import numpy as np
 
 @dataclass
 class BaseLexicon:
-    def __init__(self):
+    def __init__(self,
+                 dictionary: Union[dict, str, pd.DataFrame],
+                 sep: str = None,
+                 encoding: str = None):
         self._embeddings = None
-        self._dictionary_df = None
+        self._dictionary_df = self._build_dictionary(
+            dictionary, sep, encoding)
 
     def __copy__(self):
         obj = type(self).__new__(self.__class__)
@@ -21,6 +25,47 @@ class BaseLexicon:
     def copy(self):
         obj = copy.copy(self)
         return obj
+
+    @staticmethod
+    def _build_dictionary(dictionary: Union[dict, str, pd.DataFrame],
+                          sep: str = None,
+                          encoding: str = None
+                          ) -> pd.DataFrame:
+        """Processes the input lexicon and returns it in a pandas DataFrame.
+
+        Args:
+            dictionary (dict, str or pd.DataFrame): The key-value pairs to use
+                for the lexicon. If str is passed, it should be the path to
+                a csv (containing tabular data) or json (containig key-value
+                pairs) file.
+                If the file ends with ".json", it will attempt to read the
+                file with the json module. Otherwise pd.read_csv is attempted.
+            sep (str, optional): separator character when reading csv file
+
+        Example:
+            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
+            >>> l = Lexicon(my_dct)
+            >>> l._build_dictionary(my_dct)
+               A  B
+            0  a  c
+            1  b  d
+
+        Returns:
+            pd.DataFrame: lexicon matrix
+        """
+        if isinstance(dictionary, str):
+            if dictionary.endswith('.json'):
+                with open(dictionary, 'r') as f:
+                    my_dct = json.loads(f.read())
+                    dct_df = pd.DataFrame(dict_padding(my_dct))
+            else:
+                dct_df = pd.read_csv(dictionary, sep=sep, encoding=encoding)
+        elif isinstance(dictionary, pd.DataFrame):
+            dct_df = dictionary
+        elif isinstance(dictionary, dict):
+            dct_df = pd.DataFrame(dict_padding(dictionary))
+
+        return dct_df
 
     @staticmethod
     def _clean_strings(array: pd.Series) -> pd.Series:
@@ -76,34 +121,34 @@ class BaseLexicon:
         nonmiss = array[~array.isna()]
         return nonmiss
 
-    def merge(self,
-              lexica: Union['BaseLexicon', Iterable['BaseLexicon']],
-              inplace: bool=True) -> None:
-        if inplace:
-            obj = self
-        else:
-            obj = self.copy()
+    def embed(self, embeddings) -> None:
+        dict_df_shape = self._dictionary_df.shape
+        embedding_tensor = np.zeros(
+            shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
+        for j, key in enumerate(self._dictionary_df.columns):
+            for i, x in enumerate(self[key]):
+                embedding_tensor[i][j] = self._embed_word(x, embeddings)
 
-        if isinstance(lexica, Lexicon):
-            obj._merge_one(lexica)
-        else:
-            for lex in lexica:
-                obj._merge_one(lex)
+        self._embeddings = embedding_tensor
 
-        if not inplace:
-            return obj
+    def get_vocabulary(self) -> list:
+        """Returns a sorted list of all the lexicon categories
 
-    def _merge_one(self, lex: 'BaseLexicon') -> None:
-        old_dct = self._dictionary_df.copy()
-        old_keys = old_dct.keys()
-        new_keys = lex.keys
-        update_keys = [x for x in new_keys if x in old_keys]
-        append_keys = [x for x in new_keys if x not in old_keys]
-        new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
-                            # ignore_index=True,
-                            axis=1)
-        self._dictionary_df = new_dct
-        # TODO: allow for merge of existing keys
+        Example:
+            >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animal': ['Dog', 'Cat']}
+            >>> l = BaseLexicon(my_dct)
+            >>> l.get_vocabulary()
+            ['Bread', 'Cat', 'Dog', 'Salad']
+
+        Returns:
+            list: Sorted array of categories
+        """
+        vocab = []
+        for col in self._dictionary_df:
+            vocab += list(self._dictionary_df[col])
+        vocab = [x for x in vocab if isinstance(x, str)]  # removal of np.nans
+        return sorted(list(set(vocab)))
+
 
     def _append_values(self,
                        lex: 'Lexicon',
@@ -113,8 +158,23 @@ class BaseLexicon:
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
 
-    def get_vocabulary(self):
-        pass
+    def to_dict(self) -> dict:
+        """Return the lexicon in dictionary format.
+
+        Example:
+            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
+            >>> l = BaseLexicon(my_dct)
+            >>> l.to_dict()
+            {'A': ['a', 'b'], 'B': ['c', 'd']}
+
+        Returns:
+            dict: dict with the lexicon key-value pairs
+        """
+        out_dict = {
+            key: list(
+                self._dictionary_df[key]
+                ) for key in self._dictionary_df.columns}
+        return out_dict
 
     def save(self, path: str) -> None:
         """Save lexicon to disk
@@ -164,12 +224,105 @@ class WeightedLexicon(BaseLexicon):
     def __init__(self,
                  dictionary: Union[dict, str, pd.DataFrame],
                  sep: str = None,
-                 encoding: str = None):
+                 encoding: str = None) -> None:
         super().__init__(
            dictionary=dictionary,
            sep=sep,
            encoding=encoding
         )
+        df, weights = self._build_weighted_dictionary(self._dictionary_df)
+        self._dictionary_df = df
+        self._weights = weights
+        self._word2weight = self._get_word2weight()
+
+    def __getitem__(self, key: str) -> Union[float, int]:
+        """getter for simple data retrieval
+
+        Example:
+            >>> lex = WeightedLexicon({'a': 0.1, 'b': 0.2})
+            >>> lex['a']
+            0.1
+            Name: A, dtype: object
+
+        Args:
+            key (str): Term
+
+        Returns:
+            Uniont[float, int]: weight value
+        """
+        return self._get_word_value[key]
+
+    def __setitem__(self, key: str, value: Union[float, int]) -> None:
+        """setter method to add lexicon keys/categories
+
+        Example:
+            >>> lex = WeightedLexicon({'a': 0.1, 'b': 0.2})
+            >>> lex['b'] = 0.5
+            >>> print(lex._weights)
+            0.1
+            0.5
+
+        Args:
+            key (str): Name of the term
+            value (Union[float, int]): weight value
+        """
+        self._dictionary_df[key] = value
+
+    def __repr__(self) -> Dict[str, Union[float, int]]:
+        """repr
+
+        Example:
+            >>> lex = WeightedLexicon({'a': 0.1, 'b': 0.2})
+            >>> lex
+            {'a': 0.1, 'b': 0.2}
+
+        Returns:
+            dict: Dictionary with word-weight pairs.
+        """
+        return self._word2weight
+
+    @staticmethod
+    def _build_weighted_dictionary(raw_dict: pd.DataFrame
+                                   ) -> Tuple[pd.DataFrame, pd.Series]:
+        """The dictionary is expected to be a key-value pair with of the form
+        {word: weight} or a table or DataFrame where the first column
+        contains the words and the second one contains the scores.
+        This method splits the table into a matrix with words and an array
+        of weights. Words are contained in a single column DataFrame to ensure
+        compatibility with the base class.
+
+        Args:
+            raw_dict (pd.DataFrame): result from the _build_dictionary method
+
+        Example:
+            >>> my_dct = pd.DataFrame({0: ['a', 'b'], 1: [0.1, 0.2]})
+            >>> l = WeightedLexicon(my_dct)
+            >>> x, y = l._build_weighted_dictionary(my_dct)
+            >>> print(x)
+               0
+            0  a
+            1  b
+            >>> print(y)
+            0.1
+            0.2
+
+        Returns:
+            (pd.DataFrame, pd.Series): lexicon matrix
+        """
+        dictionary_df = pd.DataFrame(raw_dict.iloc[0,:])
+        weights = raw_dict.iloc[1,:]
+        return dictionary_df, weights
+
+    def _get_word2weight(self) -> Dict[str, Union[float, int]]:
+        words = list(self._dictionary_df.iloc[0,:])
+        weights = list(self._weights)
+        return {x: y for x, y in zip(words, weights)}
+
+    def _get_word_value(self, word: str) -> Union[float, int]:
+        return self._word2weight[word]
+
+    def to_dict(self) -> Dict[str, Union[float, int]]:
+        return self._word2weight
 
 
 class Lexicon(BaseLexicon):
@@ -235,93 +388,34 @@ class Lexicon(BaseLexicon):
         """
         return self._dictionary_df.__repr__()
 
-    def _build_dictionary(self,
-                          dictionary: Union[dict, str, pd.DataFrame],
-                          sep: str = None,
-                          encoding: str = None
-                          ) -> pd.DataFrame:
-        """Processes the input lexicon and returns it in a pandas DataFrame.
+    def merge(self,
+              lexica: Union['BaseLexicon', Iterable['BaseLexicon']],
+              inplace: bool=True) -> None:
+        if inplace:
+            obj = self
+        else:
+            obj = self.copy()
 
-        Args:
-            dictionary (dict, str or pd.DataFrame): The key-value pairs to use
-                for the lexicon. If str is passed, it should be the path to
-                a csv (containing tabular data) or json (containig key-value
-                pairs) file.
-                If the file ends with ".json", it will attempt to read the
-                file with the json module. Otherwise pd.read_csv is attempted.
-            sep (str, optional): separator character when reading csv file
+        if isinstance(lexica, Lexicon):
+            obj._merge_one(lexica)
+        else:
+            for lex in lexica:
+                obj._merge_one(lex)
 
-        Example:
-            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = Lexicon(my_dct)
-            >>> l._build_dictionary(my_dct)
-               A  B
-            0  a  c
-            1  b  d
+        if not inplace:
+            return obj
 
-        Returns:
-            pd.DataFrame: lexicon matrix
-        """
-        if isinstance(dictionary, str):
-            if dictionary.endswith('.json'):
-                with open(dictionary, 'r') as f:
-                    my_dct = json.loads(f.read())
-                    dct_df = pd.DataFrame(dict_padding(my_dct))
-            else:
-                dct_df = pd.read_csv(dictionary, sep=sep, encoding=encoding)
-        elif isinstance(dictionary, pd.DataFrame):
-            dct_df = dictionary
-        elif isinstance(dictionary, dict):
-            dct_df = pd.DataFrame(dict_padding(dictionary))
-
-        return dct_df
-
-    def embed(self, embeddings) -> None:
-        dict_df_shape = self._dictionary_df.shape
-        embedding_tensor = np.zeros(
-            shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
-        for j, key in enumerate(self._dictionary_df.columns):
-            for i, x in enumerate(self[key]):
-                embedding_tensor[i][j] = self._embed_word(x, embeddings)
-
-        self._embeddings = embedding_tensor
-
-    def get_vocabulary(self) -> list:
-        """Returns a sorted list of all the lexicon categories
-
-        Example:
-            >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animal': ['Dog', 'Cat']}
-            >>> l = Lexicon(my_dct)
-            >>> l.get_vocabulary()
-            ['Bread', 'Cat', 'Dog', 'Salad']
-
-        Returns:
-            list: Sorted array of categories
-        """
-        vocab = []
-        for col in self._dictionary_df:
-            vocab += list(self._dictionary_df[col])
-        vocab = [x for x in vocab if isinstance(x, str)]  # removal of np.nans
-        return sorted(list(set(vocab)))
-
-    def to_dict(self) -> dict:
-        """Return the lexicon in dictionary format.
-
-        Example:
-            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = Lexicon(my_dct)
-            >>> l.to_dict()
-            {'A': ['a', 'b'], 'B': ['c', 'd']}
-
-        Returns:
-            dict: dict with the lexicon key-value pairs
-        """
-        out_dict = {
-            key: list(
-                self._dictionary_df[key]
-                ) for key in self._dictionary_df.columns}
-        return out_dict
-
+    def _merge_one(self, lex: 'BaseLexicon') -> None:
+        old_dct = self._dictionary_df.copy()
+        old_keys = old_dct.keys()
+        new_keys = lex.keys
+        update_keys = [x for x in new_keys if x in old_keys]
+        append_keys = [x for x in new_keys if x not in old_keys]
+        new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
+                            # ignore_index=True,
+                            axis=1)
+        self._dictionary_df = new_dct
+        # TODO: allow for merge of existing keys
 
 
 def dict_padding(dictionary: dict, filler=np.nan) -> dict:
