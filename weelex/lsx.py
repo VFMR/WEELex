@@ -1,6 +1,7 @@
 from typing import Union, Tuple, Iterable, List
 
 import numpy as np
+import pandas as pd
 
 from weelex import lexicon
 from weelex import embeddings
@@ -8,6 +9,7 @@ from weelex import base
 from weelex.tfidf import BasicTfidf
 from weelex.predictor import PredictionProcessor
 from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
+from batchprocessing import batchprocessing
 
 
 class LatentSemanticScaling(base.BasePredictor):
@@ -65,6 +67,37 @@ class LatentSemanticScaling(base.BasePredictor):
         for t in self._polarity_lexicon.keys:
 
             all_similarities.append()
+
+    def fit(self, X, y):
+        pass
+
+    @batchprocessing.batch_predict
+    def predict_docs(self,
+                X: pd.DataFrame,
+                cutoff: float = 0.5,
+                n_batches: int = None,
+                checkpoint_path: str = None) -> np.ndarray:
+        preds = self.predict_score_docs(X=X)
+        return preds
+
+    def predict_score_docs(self, X: pd.DataFrame) -> np.ndarray:
+        self._setup_predictprocessor()
+        vects = self._predictprocessor.transform(X)
+        return self.predict_score_words(vects)
+
+    @batchprocessing.batch_predict
+    def predict_words(self,
+                      X: pd.DataFrame,
+                      cutoff: float = 0.5,
+                      n_batches: int = None,
+                      checkpoint_path: str = None) -> np.ndarray:
+        preds = self.predict_score_words(X=X)
+        return preds
+
+    def predict_score_words(self, X: pd.DataFrame) -> np.ndarray:
+        # TODO: implement function to actually make the predictions
+        pass
+
 
 
 

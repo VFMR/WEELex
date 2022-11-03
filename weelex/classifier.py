@@ -114,7 +114,7 @@ class WEELexClassifier(base.BasePredictor):
     def get_params(self, deep: bool = True) -> dict:
         return self.__dict__
 
-    def weelexfit(self,
+    def fit(self,
                   lex: Union[lexicon.Lexicon, dict, str],
                   support_lex: Union[lexicon.Lexicon, dict, str] = None,
                   main_keys: Iterable[str] = None,
@@ -282,15 +282,15 @@ class WEELexClassifier(base.BasePredictor):
         return pd.DataFrame(catpreds_binary)
 
     @batchprocessing.batch_predict
-    def predict(self,
+    def predict_words(self,
                 X: pd.DataFrame,
                 cutoff: float = 0.5,
                 n_batches: int = None,
                 checkpoint_path: str = None) -> pd.DataFrame:
-        catpreds = self.predict_proba(X=X)
+        catpreds = self.predict_proba_words(X=X)
         return self._probas_to_binary(catpreds, cutoff=cutoff)
 
-    def predict_proba(self, X: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+    def predict_proba_words(self, X: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         catpreds = {}
         for cat in self._main_keys:
             model = self._models[cat]
@@ -298,19 +298,19 @@ class WEELexClassifier(base.BasePredictor):
             catpreds.update({cat: preds})
         return catpreds
 
-    def weelexpredict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
+    @batchprocessing.batch_predict
+    def predict_docs(self,
+                       X: pd.DataFrame,
+                       cutoff: float = 0.5,
+                       n_batches: int = None,
+                       checkpoint_path: str = None) -> pd.DataFrame:
+        preds = self.predict_proba_docs(X=X)
+        return self._probas_to_binary(preds, cutoff=cutoff)
+
+    def predict_proba_docs(self, X: pd.DataFrame) -> pd.DataFrame:
         self._setup_predictprocessor()
         vects = self._predictprocessor.transform(X)
-        return self.predict_proba(vects)
-
-    @batchprocessing.batch_predict
-    def weelexpredict(self,
-                      X: pd.DataFrame,
-                      cutoff: float = 0.5,
-                      n_batches: int = None,
-                      checkpoint_path: str = None) -> pd.DataFrame:
-        preds = self.weelexpredict_proba(X=X)
-        return self._probas_to_binary(preds, cutoff=cutoff)
+        return self.predict_proba_words(vects)
 
     def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
         self._predictprocessor.fit_tfidf(data)

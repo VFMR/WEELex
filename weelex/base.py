@@ -2,6 +2,7 @@ from typing import Union, List
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import tqdm
+import pandas as pd
 
 from weelex import lexicon
 from weelex import embeddings
@@ -111,3 +112,4 @@ class BasePredictor(BaseEstimator, TransformerMixin):
 
     def __repr__(self, N_CHAR_MAX=700):
         return super().__repr__(N_CHAR_MAX)
+
