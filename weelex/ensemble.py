@@ -37,7 +37,7 @@ def make_agg_sample(X: np.ndarray, n: int = 3) -> np.ndarray:
     error = True
 
     if isinstance(X, pd.DataFrame):
-        X =  np.array(X)
+        X = np.array(X)
 
     # draw random integers to compute weights:
     while error:  # simple way to repeat drawing if all n weights are 0
@@ -49,7 +49,8 @@ def make_agg_sample(X: np.ndarray, n: int = 3) -> np.ndarray:
     weights = np.array([x/sum(weights) for x in weights])
 
     # draw n random vector indices
-    random_vect_ix = [random.randint(0, len(X)-1) for _ in range(n)]
+    # random_vect_ix = [random.randint(0, len(X)-1) for _ in range(n)]
+    random_vect_ix = [random.randint(0, input_shape[0]-1) for _ in range(n)]
 
     # combine the random vectors into a matrix
     vects = np.zeros((input_shape[1], n))

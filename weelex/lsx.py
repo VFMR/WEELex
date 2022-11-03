@@ -15,7 +15,7 @@ from batchprocessing import batchprocessing
 class LatentSemanticScaling(base.BasePredictor):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
-                 polarity_lexicon: lexicon.Lexicon,
+                #  polarity_lexicon: lexicon.Lexicon,
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  use_ctfidf: bool = True,
@@ -60,16 +60,37 @@ class LatentSemanticScaling(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words
         )
+
+    def polarity(self, word: str) -> float:
+        return self._compute_polarity_word(word)
+
+    def _compute_polarity_word(self, word: str) -> float:
+        vector = self._embeddings[word]
+        return self._compute_polarity(vector=vector)
+
+    def _compute_polarity(self,
+                          vector: np.ndarray,
+                          lexicon_embeddings,
+                          weights) -> float:
+        return self._polarity_function(Vs=lexicon_embeddings,
+                                       vf=vector,
+                                       P=weights)
+
+    @staticmethod
+    def _polarity_function(Vs: np.ndarray,
+                           vf: np.ndarray,
+                           P: np.ndarray) -> float:
+        cosine_sum = 0
+        for i in range(Vs.shape[0]):
+            cosine_sum += cosine_simil(Vs[i,:], vf)*P[i]
+        return (1 / Vs.shape[0]) * cosine_sum
+
+    def fit(self,
+            polarity_lexicon: lexicon.BaseLexicon,
+            X=None, y=None):
         self._polarity_lexicon = polarity_lexicon
-
-    def _compute_polarity(self, word: str) -> float:
-        all_similarities = []
-        for t in self._polarity_lexicon.keys:
-
-            all_similarities.append()
-
-    def fit(self, X, y):
-        pass
+        self._polarity_lexicon.embed(self._embeddings)
+        return self
 
     @batchprocessing.batch_predict
     def predict_docs(self,
@@ -95,10 +116,14 @@ class LatentSemanticScaling(base.BasePredictor):
         return preds
 
     def predict_score_words(self, X: pd.DataFrame) -> np.ndarray:
-        # TODO: implement function to actually make the predictions
-        pass
-
-
+        lexicon_embeddings = self._polarity_lexicon.embeddings
+        weights = self._polarity_lexicon.weights
+        scores = np.zeros((X.shape[0]))
+        for i in range(X.shape[0]):
+            scores[i] = self._compute_polarity(X[i,:],
+                                               lexicon_embeddings=lexicon_embeddings,
+                                               weights=weights)
+        return scores
 
 
 def cosine_simil(a: np.ndarray, b: np.ndarray) -> float:

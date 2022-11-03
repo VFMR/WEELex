@@ -9,6 +9,7 @@ import numpy as np
 
 @dataclass
 class BaseLexicon:
+    # TODO: Allow for train_test_split to work
     def __init__(self,
                  dictionary: Union[dict, str, pd.DataFrame],
                  sep: str = None,
@@ -26,8 +27,7 @@ class BaseLexicon:
         obj = copy.copy(self)
         return obj
 
-    @staticmethod
-    def _build_dictionary(dictionary: Union[dict, str, pd.DataFrame],
+    def _build_dictionary(self, dictionary: Union[dict, str, pd.DataFrame],
                           sep: str = None,
                           encoding: str = None
                           ) -> pd.DataFrame:
@@ -57,15 +57,19 @@ class BaseLexicon:
             if dictionary.endswith('.json'):
                 with open(dictionary, 'r') as f:
                     my_dct = json.loads(f.read())
-                    dct_df = pd.DataFrame(dict_padding(my_dct))
+                    dct_df = self._dict_to_df(my_dct)
             else:
                 dct_df = pd.read_csv(dictionary, sep=sep, encoding=encoding)
         elif isinstance(dictionary, pd.DataFrame):
             dct_df = dictionary
         elif isinstance(dictionary, dict):
-            dct_df = pd.DataFrame(dict_padding(dictionary))
+            dct_df = self._dict_to_df(dictionary)
 
         return dct_df
+
+    @staticmethod
+    def _dict_to_df(dictionary):
+        return pd.DataFrame(_dict_padding(dictionary))
 
     @staticmethod
     def _clean_strings(array: pd.Series) -> pd.Series:
@@ -126,7 +130,7 @@ class BaseLexicon:
         embedding_tensor = np.zeros(
             shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
         for j, key in enumerate(self._dictionary_df.columns):
-            for i, x in enumerate(self[key]):
+            for i, x in enumerate(self._dictionary_df[key]):
                 embedding_tensor[i][j] = self._embed_word(x, embeddings)
 
         self._embeddings = embedding_tensor
@@ -281,6 +285,20 @@ class WeightedLexicon(BaseLexicon):
         """
         return self._word2weight
 
+    # def embed(self, embeddings) -> None:
+    #     dict_df_shape = self._dictionary_df.shape
+    #     embedding_tensor = np.zeros(
+    #         shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
+    #     for j, key in enumerate(self._dictionary_df.columns):
+    #         for i, x in enumerate(self.dictionary_df.loc[key,:]):
+    #             embedding_tensor[i][j] = self._embed_word(x, embeddings)
+
+    #     self._embeddings = embedding_tensor
+
+    @staticmethod
+    def _dict_to_df(dict):
+        return pd.DataFrame([[key, value] for key, value in dict.items()])
+
     @staticmethod
     def _build_weighted_dictionary(raw_dict: pd.DataFrame
                                    ) -> Tuple[pd.DataFrame, pd.Series]:
@@ -309,12 +327,12 @@ class WeightedLexicon(BaseLexicon):
         Returns:
             (pd.DataFrame, pd.Series): lexicon matrix
         """
-        dictionary_df = pd.DataFrame(raw_dict.iloc[0,:])
-        weights = raw_dict.iloc[1,:]
+        dictionary_df = pd.DataFrame(raw_dict.iloc[:,0])
+        weights = raw_dict.iloc[:,1]
         return dictionary_df, weights
 
     def _get_word2weight(self) -> Dict[str, Union[float, int]]:
-        words = list(self._dictionary_df.iloc[0,:])
+        words = list(self._dictionary_df.iloc[:,0])
         weights = list(self._weights)
         return {x: y for x, y in zip(words, weights)}
 
@@ -324,9 +342,20 @@ class WeightedLexicon(BaseLexicon):
     def to_dict(self) -> Dict[str, Union[float, int]]:
         return self._word2weight
 
+    def embed(self, embeddings) -> None:
+        super().embed(embeddings)
+        self._embeddings = self._embeddings[:,0,:]
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @property
+    def vocabulary(self) -> list:
+        # overwrite such that order is unchanged
+        return list(self._dictionary_df.iloc[:,0])
 
 class Lexicon(BaseLexicon):
-    # TODO: Allow for train_test_split to work
     def __init__(self,
                  dictionary: Union[dict, str, pd.DataFrame],
                  sep: str = None,
@@ -418,7 +447,7 @@ class Lexicon(BaseLexicon):
         # TODO: allow for merge of existing keys
 
 
-def dict_padding(dictionary: dict, filler=np.nan) -> dict:
+def _dict_padding(dictionary: dict, filler=np.nan) -> dict:
     """Padding of a dictionary where the values are lists such that these lists
     have the same length.
 
@@ -428,7 +457,7 @@ def dict_padding(dictionary: dict, filler=np.nan) -> dict:
         filler: Value to pad with. Defaults to np.nan
 
     Example:
-        >>> dict_padding({'A': [1,2,3], 'B': [1,2]})
+        >>> _dict_padding({'A': [1,2,3], 'B': [1,2]})
         {'A': [1, 2, 3], 'B': [1, 2, nan]}
 
     Returns:
@@ -438,12 +467,12 @@ def dict_padding(dictionary: dict, filler=np.nan) -> dict:
     maxlen = max(lenghts)
     padded_dict = {}
     for key, value in dictionary.items():
-        new_list = list_padding(lst=value, maxlen=maxlen, filler=filler)
+        new_list = _list_padding(lst=value, maxlen=maxlen, filler=filler)
         padded_dict.update({key: new_list})
     return padded_dict
 
 
-def list_padding(lst: list, maxlen: int, filler=np.nan) -> list:
+def _list_padding(lst: list, maxlen: int, filler=np.nan) -> list:
     """Appends a filler value to a list such that the list has the preferred
     length, or cut values at the end
 
@@ -453,11 +482,11 @@ def list_padding(lst: list, maxlen: int, filler=np.nan) -> list:
         filler (optional): Value to fill list with. Defaults to np.nan.
 
     Example:
-        >>> list_padding(lst=[1,2], maxlen=4, filler=0)
+        >>> _list_padding(lst=[1,2], maxlen=4, filler=0)
         [1, 2, 0, 0]
-        >>> list_padding(lst=[1,2,3], maxlen=2, filler=0)
+        >>> _list_padding(lst=[1,2,3], maxlen=2, filler=0)
         [1, 2]
-        >>> list_padding(lst=[1,2,3], maxlen=5, filler=np.nan)
+        >>> _list_padding(lst=[1,2,3], maxlen=5, filler=np.nan)
         [1, 2, 3, nan, nan]
 
     Returns:
