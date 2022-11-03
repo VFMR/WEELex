@@ -314,6 +314,7 @@ class TestClassifier(GenericTest):
         assert list(preds.columns) == self.lex1.keys
         assert list(preds['PolitikVR'].unique()) == [0, 1]
 
+
 class TestModels(GenericTest):
     def _setup_augmented(self):
         self._setup2()
@@ -443,12 +444,12 @@ class TestLexicon(GenericTest):
         testlist = [1, 2, 3]
         maxlen = 5
         expected_result = [1, 2, 3, np.nan, np.nan]
-        assert lexicon.list_padding(testlist, maxlen=maxlen) == expected_result
+        assert lexicon._list_padding(testlist, maxlen=maxlen) == expected_result
 
     def test_dict_padding(self):
         testdict = {'A': [1, 2, 3], 'B': [1, 2, 3, 4, 5]}
         expected_result = {'A': [1, 2, 3, np.nan, np.nan], 'B': [1, 2, 3, 4, 5]}
-        assert lexicon.dict_padding(testdict) == expected_result
+        assert lexicon._dict_padding(testdict) == expected_result
 
     def test_build_csv(self):
         self._setup()
@@ -548,7 +549,7 @@ class TestEmbeddings(unittest.TestCase):
         assert isinstance(embeds.keys, np.ndarray)
         assert isinstance(embeds._vectors, np.ndarray)
         assert embeds._vectors.shape[1] == 300
-        assert sorted(list(embeds.keys)) == sorted(list(self.vocab))
+        assert sorted(list(embeds.keys)) == sorted(list(self.vocab) + ['gut', 'schlecht', 'super', 'furchtbar'])
 
     # def test_lookup2(self):
     #     self._setup()
@@ -584,9 +585,94 @@ class TestEmbeddings(unittest.TestCase):
         assert self.embeds.dim == 300
         assert isinstance(self.embeds.keys, np.ndarray)
 
+class TestWeightedLex(GenericTest):
+    def _setup_weighted(self):
+        self.mydct1 = {'super': 0.9, 'gut': 0.7, 'schlecht': -0.7, 'furchtbar': -0.9}
+        self.mydct2 = pd.DataFrame([['super', 0.9],
+                                    ['gut', 0.7],
+                                    ['schlecht', -0.7],
+                                    ['furchtbar', -0.9]])
+        self.mydct3 = pd.DataFrame({0: ['super', 'gut', 'schlecht', 'furchtbar'],
+                                    1: [0.9, 0.7, -0.7, -0.9]})
+
+    def _setup_weighted2(self):
+        self._setup_weighted()
+        self._setup2()  # load embeddings
+        self.lex = lexicon.WeightedLexicon(self.mydct1)
+
+    def test_input(self):
+        self._setup_weighted()
+        lex1 = lexicon.WeightedLexicon(self.mydct1)
+        lex2 = lexicon.WeightedLexicon(self.mydct2)
+        lex3 = lexicon.WeightedLexicon(self.mydct3)
+        assert lex1.vocabulary == lex2.vocabulary
+        assert lex2.vocabulary == lex3.vocabulary
+        assert list(lex1.weights) == list(lex2.weights)
+        assert list(lex2.weights) == list(lex3.weights)
+        print(lex1._dictionary_df)
+        print(lex1.weights)
+        assert sorted(lex1.vocabulary) == sorted(['super', 'gut', 'schlecht', 'furchtbar'])
+        assert list(lex1.weights) == [0.9, 0.7, -0.7, -0.9]
+
+    def test_embedding(self):
+        self._setup_weighted2()
+        self.lex.embed(self.embeds)
+        print(self.lex.embeddings)
+        print(self.lex.embeddings.shape)
+        assert self.lex.embeddings.shape == (4,300)
+        assert np.allclose(self.embeds['super'], self.lex.embeddings[0,:])
+        assert np.allclose(self.embeds['gut'], self.lex.embeddings[1,:])
+        assert np.allclose(self.embeds['schlecht'], self.lex.embeddings[2,:])
+        assert np.allclose(self.embeds['furchtbar'], self.lex.embeddings[3,:])
+
+
 class TestLSX(GenericTest):
-    def _setup(self):
-        pass
+    def _setup_lsx(self):
+        self._setup2()
+        data = pd.Series(
+            [
+            'Kuchen finde ich super',
+            'Dort steht ein schlechtes Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein wunderschöner generischer Satz.',
+            'Wie ist das Wetter heute? Es ist mies!',
+            'Kuchen finde ich furchtbar',
+            'Dort steht ein gutes Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein wunderschöner generischer Satz.',
+            'Wie ist das Wetter heute? Es ist mies!',
+            'Kuchen finde ich sehr lecker',
+            'Dort steht ein hässliches Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein wunderschöner generischer Satz.',
+            'Wie ist das Wetter heute? Es ist mies!',
+            'Kuchen finde ich sehr lecker',
+            'Dort steht ein hässliches Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein wunderschöner generischer Satz.',
+            'Wie ist das Wetter heute? Es ist mies!',
+            'Kuchen finde ich sehr lecker',
+            'Dort steht ein hässliches Auto mit einem Lenkrad und Reifen.',
+            'Die Politik von heute ist nicht mehr die gleiche wie damals.',
+            'Hier ist nochmal ein wunderschöner generischer Satz.',
+            'Wie ist das Wetter heute? Es ist mies!',
+            ])
+        self.processor = predictor.PredictionProcessor(
+            data = data,
+            embeddings=self.embeds,
+            tfidf=None,
+            ctfidf=None,
+            relevant_pos=['ADJ', 'ADV', 'NOUN', 'VERB'],
+            min_df=1,
+            max_df=0.99,
+            n_docs=len(data),
+            n_words=10,
+        )
+        self.data = data
+
+        self.mydct1 = {'super': 0.9, 'gut': 0.7, 'schlecht': -0.7, 'furchtbar': -0.9}
+        self.lex = lexicon.WeightedLexicon(self.mydct1)
+        self.model = lsx.LatentSemanticScaling(embeds=self.embeds)
 
     def test_cosine(self):
         a = [1,0,0]
@@ -600,6 +686,19 @@ class TestLSX(GenericTest):
         a = [1, 0, 0]
         b = [1, 1, 1]
         assert np.allclose(lsx.cosine_simil(a, b), 0.5773502691896257)
+
+    def test_lsx(self):
+        self._setup_lsx()
+        self.model.fit(polarity_lexicon=self.lex)
+        vectors = self.processor.transform(self.data)
+        print(vectors)
+        print(vectors.shape)
+        print('embedding_shape: ', self.lex.embeddings.shape)
+        print('embedding_shape-row: ', self.lex.embeddings[0,:].shape)
+        preds = self.model.predict_score_docs(self.data)
+        print(preds)
+        assert False
+
 
 class TestTrainer(GenericTest):
     def _setup4(self):
