@@ -184,7 +184,7 @@ class TestClassifier(GenericTest):
     def test_fit(self):
         self._setup2()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.weelexfit(lex=self.lex1,
+        cl.fit(lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False)
         assert cl._is_fit is True
@@ -200,7 +200,7 @@ class TestClassifier(GenericTest):
     def test_fit_pb(self):
         self._setup2()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.weelexfit(lex=self.lex1,
+        cl.fit(lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False,
                      progress_bar=True)
@@ -220,7 +220,7 @@ class TestClassifier(GenericTest):
                        'n_models': [2],
                        'pca': [10, None],
                        'svc_c': [0.1, 1, 10]}]
-        cl.weelexfit(lex=self.lex1,
+        cl.fit(lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=True,
                      param_grid=param_grid,
@@ -252,7 +252,7 @@ class TestClassifier(GenericTest):
                        'n_models': [2],
                        'pca': [10, None],
                        'svc_c': [0.1, 1, 10]}]
-        cl.weelexfit(lex=self.lex1,
+        cl.fit(lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=True,
                      param_grid=param_grid,
@@ -260,7 +260,7 @@ class TestClassifier(GenericTest):
                      n_iter=6,
                      n_best_params=n_best_params,
                      cv=3)
-        preds = cl.weelexpredict(X=self.data)
+        preds = cl.predict_docs(X=self.data)
         print(preds)
         assert isinstance(preds, pd.DataFrame)
         assert preds.shape == (20, 2)
@@ -276,14 +276,14 @@ class TestClassifier(GenericTest):
             n_docs=len(self.data),
             n_words=10,
         )
-        cl.weelexfit(lex=self.lex1,
+        cl.fit(lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False,
                      progress_bar=True,
                      n_iter=6,
                      n_best_params=n_best_params,
                      cv=3)
-        preds = cl.weelexpredict(X=self.data)
+        preds = cl.predict_docs(X=self.data)
         print(preds)
         assert isinstance(preds, pd.DataFrame)
         assert preds.shape == (20, 2)
@@ -300,14 +300,14 @@ class TestClassifier(GenericTest):
             n_docs=len(self.data),
             n_words=10,
         )
-        cl.weelexfit(lex=self.lex1,
+        cl.fit(lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False,
                      progress_bar=True,
                      n_iter=6,
                      n_best_params=n_best_params,
                      cv=3)
-        preds = cl.weelexpredict(X=self.data)
+        preds = cl.predict_docs(X=self.data)
         print(preds)
         assert isinstance(preds, pd.DataFrame)
         assert preds.shape == (20, 2)
