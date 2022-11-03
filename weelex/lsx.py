@@ -66,7 +66,11 @@ class LatentSemanticScaling(base.BasePredictor):
 
     def _compute_polarity_word(self, word: str) -> float:
         vector = self._embeddings[word]
-        return self._compute_polarity(vector=vector)
+        lexicon_embeddings = self._polarity_lexicon.embeddings
+        weights = self._polarity_lexicon.weights
+        return self._compute_polarity(vector=vector,
+                                      lexicon_embeddings=lexicon_embeddings,
+                                      weights=weights)
 
     def _compute_polarity(self,
                           vector: np.ndarray,
@@ -125,7 +129,6 @@ class LatentSemanticScaling(base.BasePredictor):
                                                weights=weights)
         return scores
 
-
 def cosine_simil(a: np.ndarray, b: np.ndarray) -> float:
     """Compute the cosine similarity between two vectors
 
@@ -142,4 +145,11 @@ def cosine_simil(a: np.ndarray, b: np.ndarray) -> float:
     Returns:
         float: Cosine similarity scalar
     """
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    # while technically undefined, we set the similarity to 0
+    # when one of the vectors is a null vector.
+    # Since we are mostly relying on FastText, this should normally not occur.
+    if np.linalg.norm(a) != 0 and np.linalg.norm(b) != 0:
+        cos_sim = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    else:
+        cos_sim = 0
+    return cos_sim

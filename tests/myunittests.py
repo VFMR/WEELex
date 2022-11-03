@@ -549,7 +549,11 @@ class TestEmbeddings(unittest.TestCase):
         assert isinstance(embeds.keys, np.ndarray)
         assert isinstance(embeds._vectors, np.ndarray)
         assert embeds._vectors.shape[1] == 300
-        assert sorted(list(embeds.keys)) == sorted(list(self.vocab) + ['gut', 'schlecht', 'super', 'furchtbar'])
+        assert sorted(list(embeds.keys)) == sorted(list(set(
+            list(self.vocab) + [
+                'super', 'gut', 'furchtbar', 'schlecht', 'wunderschön',
+                'hässlich', 'mies', 'lecker', 'Kuchen', 'Lenkrad', 'Reifen',
+                'Satz', 'fantastisch', 'schön', 'blöd', 'Wetter', 'generisch'])))
 
     # def test_lookup2(self):
     #     self._setup()
@@ -631,12 +635,12 @@ class TestLSX(GenericTest):
         self._setup2()
         data = pd.Series(
             [
-            'Kuchen finde ich super',
+            'Kuchen finde ich super, weil er gut ist.',
             'Dort steht ein schlechtes Auto mit einem Lenkrad und Reifen.',
             'Die Politik von heute ist nicht mehr die gleiche wie damals.',
             'Hier ist nochmal ein wunderschöner generischer Satz.',
             'Wie ist das Wetter heute? Es ist mies!',
-            'Kuchen finde ich furchtbar',
+            'Kuchen und Süßigkeiten finde ich furchtbar',
             'Dort steht ein gutes Auto mit einem Lenkrad und Reifen.',
             'Die Politik von heute ist nicht mehr die gleiche wie damals.',
             'Hier ist nochmal ein wunderschöner generischer Satz.',
@@ -691,12 +695,23 @@ class TestLSX(GenericTest):
         self._setup_lsx()
         self.model.fit(polarity_lexicon=self.lex)
         vectors = self.processor.transform(self.data)
-        print(vectors)
-        print(vectors.shape)
-        print('embedding_shape: ', self.lex.embeddings.shape)
+        # print(vectors)
+        # print(vectors.shape)
+        # print('embedding_shape: ', self.lex.embeddings.shape)
         print('embedding_shape-row: ', self.lex.embeddings[0,:].shape)
         preds = self.model.predict_score_docs(self.data)
         print(preds)
+        polarity1 = self.model.polarity('gut')
+        polarity2 = self.model.polarity('schlecht')
+        polarity3 = self.model.polarity('wunderschön')
+        polarity4 = self.model.polarity('mies')
+        polarity5 = self.model.polarity('blöd')
+        print(f'gut: {polarity1}, schlecht: {polarity2}, wunderschön: {polarity3}, mies: {polarity4}, blöd: {polarity5}')
+        assert polarity1 > 0
+        assert polarity2 < 0
+        assert polarity3 > 0
+        assert polarity4 < 0
+        assert polarity5 < 0
         assert False
 
 
