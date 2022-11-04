@@ -44,7 +44,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = Lexicon(my_dct)
+            >>> l = BaseLexicon(my_dct)
             >>> l._build_dictionary(my_dct)
                A  B
             0  a  c
@@ -79,7 +79,8 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['Test*', 'Te*st', '*test'])
-            >>> lex = BaseLexicon()
+            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
+            >>> lex = BaseLexicon(my_dct)
             >>> lex._clean_strings(array)
             0    Test
             1    Test
@@ -109,7 +110,8 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
-            >>> lex = BaseLexicon()
+            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
+            >>> lex = BaseLexicon(my_dct)
             >>> lex._nonmissarray(array)
             0      one
             1      two
@@ -246,7 +248,6 @@ class WeightedLexicon(BaseLexicon):
             >>> lex = WeightedLexicon({'a': 0.1, 'b': 0.2})
             >>> lex['a']
             0.1
-            Name: A, dtype: object
 
         Args:
             key (str): Term
@@ -254,23 +255,7 @@ class WeightedLexicon(BaseLexicon):
         Returns:
             Uniont[float, int]: weight value
         """
-        return self._get_word_value[key]
-
-    def __setitem__(self, key: str, value: Union[float, int]) -> None:
-        """setter method to add lexicon keys/categories
-
-        Example:
-            >>> lex = WeightedLexicon({'a': 0.1, 'b': 0.2})
-            >>> lex['b'] = 0.5
-            >>> print(lex._weights)
-            0.1
-            0.5
-
-        Args:
-            key (str): Name of the term
-            value (Union[float, int]): weight value
-        """
-        self._dictionary_df[key] = value
+        return self._get_word_value(key)
 
     def __repr__(self) -> Dict[str, Union[float, int]]:
         """repr
@@ -283,7 +268,7 @@ class WeightedLexicon(BaseLexicon):
         Returns:
             dict: Dictionary with word-weight pairs.
         """
-        return self._word2weight
+        return "{" + ", ".join([f"'{word}': {weight}" for word, weight in self._word2weight.items()]) + "}"
 
     # def embed(self, embeddings) -> None:
     #     dict_df_shape = self._dictionary_df.shape
@@ -321,8 +306,9 @@ class WeightedLexicon(BaseLexicon):
             0  a
             1  b
             >>> print(y)
-            0.1
-            0.2
+            0    0.1
+            1    0.2
+            Name: 1, dtype: float64
 
         Returns:
             (pd.DataFrame, pd.Series): lexicon matrix

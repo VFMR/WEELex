@@ -51,6 +51,8 @@ class PredictionProcessor:
         self._n_words = n_words
         self._n_jobs = n_jobs
 
+        self._is_fit = False
+
         self._embedding_dim = self._get_embedding_dim(self._embeddings,
                                                       self._checkterm)
 
@@ -157,22 +159,31 @@ class PredictionProcessor:
         ctfidf.load(path)
         self._ctfidf = ctfidf
 
+    def fit(self, X: Union[np.ndarray, pd.Series]) -> None:
+        self.fit_tfidf(data=X)
+        if self._use_ctfidf:
+            self.fit_ctfidf(data=X)
+        self._is_fit = True
+
     def transform(self, X: Union[np.ndarray, pd.Series] = None):
         usedata = self._get_usedata(X)
 
-        if self._tfidf is None or not self._tfidf.check_fit():
-            self.fit_tfidf(usedata)
+        if self._is_fit is False:
+            if self._tfidf is None or not self._tfidf.check_fit():
+                self.fit_tfidf(usedata)
 
         # ctfidf has aggregation of words already built in
         if self._use_ctfidf:
             if self._ctfidf is None:
-                self.fit_ctfidf(usedata)
+                if self._is_fit is False:
+                    self.fit_ctfidf(usedata)
             result = self._vectorize(usedata)
         else:
             vects = self._vectorize(usedata)
             # additional step of aggregation necessary if ctfidf is not used
             result = self._tfidf_weighted_embeddings_corpus(vects)
 
+        self._is_fit = True
         return result
 
     @staticmethod

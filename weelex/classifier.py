@@ -22,7 +22,7 @@ class WEELexClassifier(base.BasePredictor):
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  use_ctfidf: bool = True,
-                 test_size: float = 0.2,
+                 test_size: float = None,
                  random_state: int = None,
                  n_jobs: int = 1,
                  progress_bar: bool = False,
@@ -68,7 +68,7 @@ class WEELexClassifier(base.BasePredictor):
         # self._embeddings = self._make_embeddings(embeds)
         # self._is_fit = False
         self._model = ensemble.FullEnsemble
-        # self._test_size = test_size
+        self._test_size = test_size
         # self._random_state = random_state
         self._n_jobs = n_jobs
         self._train_params = train_params

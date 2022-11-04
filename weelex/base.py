@@ -18,7 +18,6 @@ class BasePredictor(BaseEstimator, TransformerMixin):
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  use_ctfidf: bool = True,
-                 test_size: float = 0.2,
                  random_state: int = None,
                  n_jobs: int = 1,
                  progress_bar: bool = False,
@@ -37,9 +36,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
                  distance_threshold: float = 0.5,
                  n_words: int = 40000) -> None:
         self._embeddings = self._make_embeddings(embeds)
-        self._is_fit = False
         # self._model = ensemble.FullEnsemble
-        self._test_size = test_size
         self._random_state = random_state
         self._n_jobs = n_jobs
         self._use_progress_bar = progress_bar
@@ -60,6 +57,10 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._clustermethod = clustermethod
         self._distance_threshold = distance_threshold
         self._n_words = n_words
+
+        # initialize properties:
+        self._predictprocessor = None
+        self._is_fit = False
 
     def _setup_predictprocessor(self):
         self._predictprocessor = PredictionProcessor(
