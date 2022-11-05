@@ -65,6 +65,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._predictprocessor = None
         self._is_fit = False
 
+    def get_params(self, deep: bool = True) -> dict:
+        return self.__dict__
+
     def _setup_predictprocessor(self):
         self._predictprocessor = PredictionProcessor(
             embeddings=self._embeddings,
@@ -93,6 +96,24 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         )
         self._predictprocessor.load(os.path.join(path, 'predictprocessor'))
         self._predictprocessor._embeddings = self._embeddings
+
+    def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
+        self._predictprocessor.fit_tfidf(data)
+
+    def fit_ctfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
+        self._predictprocessor.fit_ctfidf(data)
+
+    def save_tfidf(self, path: str) -> None:
+        self._predictprocessor.save_tfidf(path)
+
+    def save_ctfidf(self, dir: str) -> None:
+        self._predictprocessor.save_ctfidf(dir)
+
+    def load_tfidf(self, path: str) -> None:
+        self._predictprocessor.load_tfidf(path)
+
+    def load_ctfidf(self, path: str) -> None:
+        self._predictprocessor.load_ctfidf(path)
 
     def save(self, path):
         if self._is_fit is False:

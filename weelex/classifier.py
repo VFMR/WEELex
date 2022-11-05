@@ -89,9 +89,6 @@ class WEELexClassifier(base.BasePredictor):
         self._train_params = trainparams
         return self
 
-    def get_params(self, deep: bool = True) -> dict:
-        return self.__dict__
-
     def fit(self,
                   lex: Union[lexicon.Lexicon, dict, str],
                   support_lex: Union[lexicon.Lexicon, dict, str] = None,
@@ -290,31 +287,13 @@ class WEELexClassifier(base.BasePredictor):
         vects = self._predictprocessor.transform(X)
         return self.predict_proba_words(vects)
 
-    def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
-        self._predictprocessor.fit_tfidf(data)
+    def save(self, path):
+        super().save(path)
+        # TODO: Expand save() method beyond base class
 
-    def fit_ctfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
-        self._predictprocessor.fit_ctfidf(data)
-
-    def save_tfidf(self, path: str) -> None:
-        self._predictprocessor.save_tfidf(path)
-
-    def save_ctfidf(self, dir: str) -> None:
-        self._predictprocessor.save_ctfidf(dir)
-
-    def load_tfidf(self, path: str) -> None:
-        self._predictprocessor.load_tfidf(path)
-
-    def load_ctfidf(self, path: str) -> None:
-        self._predictprocessor.load_ctfidf(path)
-
-    def save(self):
-        # TODO: Implement save() method
-        pass
-
-    def load(self):
-        # TODO: Implement load() method
-        pass
+    def load(self, path):
+        super().load(path)
+        # TODO: Expand load() method beyond base class
 
     @property
     def main_keys(self) -> list:
