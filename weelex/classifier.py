@@ -65,31 +65,9 @@ class WEELexClassifier(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words
         )
-        # self._embeddings = self._make_embeddings(embeds)
-        # self._is_fit = False
         self._model = ensemble.FullEnsemble
         self._test_size = test_size
-        # self._random_state = random_state
-        self._n_jobs = n_jobs
         self._train_params = train_params
-        # self._use_progress_bar = progress_bar
-        # self._tfidf = tfidf
-        # self._ctfidf = ctfidf
-        # self._use_ctfidf = use_ctfidf
-        # self._relevant_pos = relevant_pos
-        # self._min_df = min_df
-        # self._max_df = max_df
-        # self._spacy_model = spacy_model
-        # self._n_docs = n_docs
-        # self._corpus_path = corpus_path
-        # self._corpus_path_encoding = corpus_path_encoding
-        # self._load_clustering = load_clustering
-        # self._checkterm = checkterm
-        # self._n_top_clusters = n_top_clusters
-        # self._cluster_share = cluster_share
-        # self._clustermethod = clustermethod
-        # self._distance_threshold = distance_threshold
-        # self._n_words = n_words
 
         # setting up default objects
         self._main_keys = None

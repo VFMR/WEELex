@@ -1,4 +1,6 @@
 from typing import Union, Tuple, Iterable, List
+import os
+import json
 
 import numpy as np
 import pandas as pd
@@ -82,14 +84,6 @@ class LatentSemanticScaling(base.BasePredictor):
         vector = self._embeddings[word]
         return self._compute_polarity_vector(vector=vector)
 
-    # def _compute_polarity(self,
-    #                       vector: np.ndarray,
-    #                       lexicon_embeddings,
-    #                       weights) -> float:
-    #     return self._polarity_function(Vs=lexicon_embeddings,
-    #                                    vf=vector,
-    #                                    P=weights)
-
     @staticmethod
     def _polarity_function(vf: np.ndarray,
                            Vs: np.ndarray,
@@ -111,7 +105,6 @@ class LatentSemanticScaling(base.BasePredictor):
             self._setup_predictprocessor()
         self._predictprocessor.fit(X=X)
         self._is_fit = True
-
 
     @batchprocessing.batch_predict
     def predict_docs(self,

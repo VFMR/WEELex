@@ -1,8 +1,11 @@
 from typing import Union, List
+import os
+import json
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import tqdm
 import pandas as pd
+from sklearn.exceptions import NotFittedError
 
 from weelex import lexicon
 from weelex import embeddings
@@ -83,6 +86,74 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             distance_threshold=self._distance_threshold,
             n_words=self._n_words,
             n_jobs=self._n_jobs)
+
+    def _load_predictprocessor(self, path):
+        self._predictprocessor = PredictionProcessor(
+            embeddings=self._embeddings
+        )
+        self._predictprocessor.load(os.path.join(path, 'predictprocessor'))
+        self._predictprocessor._embeddings = self._embeddings
+
+    def save(self, path):
+        if self._is_fit is False:
+            raise NotFittedError(f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
+
+        os.makedirs(path, exist_ok=True)
+        self._predictprocessor.save(os.path.join(path, 'predictprocessor'))
+        properties = self._get_properties()
+        with open(os.path.join(path, 'properties.json'), 'w') as f:
+            json.dump(properties, f)
+
+        # TODO: better handling of exception when embeddings are not filtered
+        self._embeddings.save_filtered(os.path.join(path, 'embeddings'))
+
+    def load(self, path):
+        with open(os.path.join(path, 'properties.json'), 'r') as f:
+            properties = json.load(f)
+
+        self._set_properties(properties=properties)
+        self._embeddings.load_filtered(os.path.join(path, 'embeddings'))
+        self._load_predictprocessor(path)
+
+    def _get_properties(self):
+        properties = {
+        'use_ctfidf': self._use_ctfidf,
+        'random_state': self._random_state,
+        'progress_bar': self._use_progress_bar,
+        'relevant_pos': self._relevant_pos,
+        'min_df': self._min_df,
+        'max_df': self._max_df,
+        'spacy_model': self._spacy_model,
+        'n_docs': self._n_docs,
+        'corpus_path': self._corpus_path,
+        'corpus_path_encoding': self._corpus_path_encoding,
+        'load_clustering': self._load_clustering,
+        'checkterm': self._checkterm,
+        'n_top_clusters': self._n_top_clusters,
+        'cluster_share': self._cluster_share,
+        'clustermethod': self._clustermethod,
+        'distance_threshold': self._distance_threshold,
+        'n_words': self._n_words}
+        return properties
+
+    def _set_properties(self, properties):
+        self._use_ctfidf = properties['use_ctfidf']
+        self._random_state = properties['random_state']
+        self._use_progress_bar = properties['progress_bar']
+        self._relevant_pos = properties['relevant_pos']
+        self._min_df = properties['min_df']
+        self._max_df = properties['max_df']
+        self._spacy_model = properties['spacy_model']
+        self._n_docs = properties['n_docs']
+        self._corpus_path = properties['corpus_path']
+        self._corpus_path_encoding = properties['corpus_path_encoding']
+        self._load_clustering = properties['load_clustering']
+        self._checkterm = properties['checkterm']
+        self._n_top_clusters = properties['n_top_clusters']
+        self._cluster_share = properties['cluster_share']
+        self._clustermethod = properties['clustermethod']
+        self._distance_threshold = properties['distance_threshold']
+        self._n_words = properties['n_words']
 
     def _set_progress_bar(self):
         if self._use_progress_bar:

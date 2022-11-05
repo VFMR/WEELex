@@ -1,6 +1,7 @@
-from json import load
-from re import I
+import os
 from typing import Union, List
+import json
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -82,6 +83,50 @@ class PredictionProcessor:
         else:
             self._ctfidf = None
 
+    def _get_properties(self):
+        properties = {
+            # 'data': self._data,
+            'use_ctfidf': self._use_ctfidf,
+            'relevant_pos': self._relevant_pos,
+            'min_df': self._min_df,
+            'max_df': self._max_df,
+            'spacy_model': self._spacy_model,
+            'n_docs': self._n_docs,
+            'corpus_path': self._corpus_path,
+            'corpus_path_encoding': self._corpus_path_encoding,
+            'load_clustering': self._load_clustering,
+            'checkterm': self._checkterm,
+            'n_top_clusters': self._n_top_clusters,
+            'cluster_share': self._cluster_share,
+            'clustermethod': self._clustermethod,
+            'distance_threshold': self._distance_threshold,
+            'n_words': self._n_words,
+            'n_jobs': self._n_jobs,
+            'is_fit': self._is_fit,
+            'embedding_dim': self._embedding_dim
+        }
+        return properties
+
+    def _set_properties(self, properties):
+        self._use_ctfidf = properties['use_ctfidf']
+        self._relevant_pos =  properties['relevant_pos']
+        self._min_df =  properties['min_df']
+        self._max_df =  properties['max_df']
+        self._spacy_model =  properties['spacy_model']
+        self._n_docs =  properties['n_docs']
+        self._corpus_path =  properties['corpus_path']
+        self._corpus_path_encoding =  properties['corpus_path_encoding']
+        self._load_clustering =  properties['load_clustering']
+        self._checkterm =  properties['checkterm']
+        self._n_top_clusters =  properties['n_top_clusters']
+        self._cluster_share =  properties['cluster_share']
+        self._clustermethod =  properties['clustermethod']
+        self._distance_threshold =  properties['distance_threshold']
+        self._n_words =  properties['n_words']
+        self._n_jobs =  properties['n_jobs']
+        self._is_fit =  properties['is_fit']
+        self._embedding_dim =  properties['embedding_dim']
+
     def _instantiate_tfidf(self):
         tfidf = BasicTfidf(relevant_pos=self._relevant_pos,
                             min_df=self._min_df,
@@ -158,6 +203,44 @@ class PredictionProcessor:
         ctfidf = ClusterTfidfVectorizer()
         ctfidf.load(path)
         self._ctfidf = ctfidf
+
+    def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
+        self._tfidf.save(os.path.join(path, 'tfidf.p'))
+        if self._ctfidf is not None:
+            self._ctfidf.save(os.path.join(path, 'ctfidf'))
+        properties = self._get_properties()
+        with open(os.path.join(path, 'properties.json'), 'w') as f:
+            json.dump(properties, f)
+
+    def load(self, path: str) -> None:
+        with open(os.path.join(path, 'properties.json'), 'r') as f:
+            properties = json.load(f)
+        self.load_tfidf(os.path.join(path, 'tfidf.p'))
+        try:
+            self.load_ctfidf(os.path.join(path, 'ctfidf'))
+        except FileNotFoundError:
+            print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
+        self._set_properties(properties)
+        self._is_fit = True
+
+    def _archive_saved_folder(self, path: str) -> None:
+        shutil.make_archive(path, 'gztar', path)
+        shutil.rmtree(path)
+
+    def _unpack_saved_folder(self, path: str) -> None:
+        if path.endswith('.tar.gz'):
+            extract_dir = path.replace('.tar.gz', '')
+        else:
+            extract_dir = path
+        shutil.unpack_archive(path, extract_dir=extract_dir)
+
+    def _remove_unpacked_savefolder(self, path: str) -> None:
+        if path.endswith('.tar.gz'):
+            extract_dir = path.replace('.tar.gz', '')
+        else:
+            extract_dir = path
+        shutil.rmtree(extract_dir)
 
     def fit(self, X: Union[np.ndarray, pd.Series]) -> None:
         self.fit_tfidf(data=X)
