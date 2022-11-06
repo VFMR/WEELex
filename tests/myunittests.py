@@ -184,7 +184,7 @@ class TestClassifier(GenericTest):
     def test_fit(self):
         self._setup2()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.fit(lex=self.lex1,
+        cl.fit(X=self.data,lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False)
         assert cl._is_fit is True
@@ -200,7 +200,8 @@ class TestClassifier(GenericTest):
     def test_fit_pb(self):
         self._setup2()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.fit(lex=self.lex1,
+        cl.fit(X=self.data,
+               lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False,
                      progress_bar=True)
@@ -220,14 +221,15 @@ class TestClassifier(GenericTest):
                        'n_models': [2],
                        'pca': [10, None],
                        'svc_c': [0.1, 1, 10]}]
-        cl.fit(lex=self.lex1,
-                     support_lex=self.lex2,
-                     hp_tuning=True,
-                     param_grid=param_grid,
-                     progress_bar=True,
-                     n_iter=6,
-                     n_best_params=n_best_params,
-                     cv=3)
+        cl.fit(X=self.data,
+               lex=self.lex1,
+               support_lex=self.lex2,
+               hp_tuning=True,
+               param_grid=param_grid,
+               progress_bar=True,
+               n_iter=6,
+               n_best_params=n_best_params,
+               cv=3)
         assert cl._is_fit is True
         assert isinstance(cl._models, dict)
         assert len(cl._models) > 0
@@ -252,7 +254,8 @@ class TestClassifier(GenericTest):
                        'n_models': [2],
                        'pca': [10, None],
                        'svc_c': [0.1, 1, 10]}]
-        cl.fit(lex=self.lex1,
+        cl.fit(X=self.data,
+                lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=True,
                      param_grid=param_grid,
@@ -276,7 +279,8 @@ class TestClassifier(GenericTest):
             n_docs=len(self.data),
             n_words=10,
         )
-        cl.fit(lex=self.lex1,
+        cl.fit(X=self.data,
+                 lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False,
                      progress_bar=True,
@@ -300,7 +304,8 @@ class TestClassifier(GenericTest):
             n_docs=len(self.data),
             n_words=10,
         )
-        cl.fit(lex=self.lex1,
+        cl.fit(X=self.data,
+                lex=self.lex1,
                      support_lex=self.lex2,
                      hp_tuning=False,
                      progress_bar=True,
@@ -693,13 +698,13 @@ class TestLSX(GenericTest):
 
     def test_lsx(self):
         self._setup_lsx()
-        self.model.fit(polarity_lexicon=self.lex)
+        self.model.fit(polarity_lexicon=self.lex, X=self.data)
         vectors = self.processor.transform(self.data)
         # print(vectors)
         # print(vectors.shape)
         # print('embedding_shape: ', self.lex.embeddings.shape)
         print('embedding_shape-row: ', self.lex.embeddings[0,:].shape)
-        preds = self.model.predict_score_docs(self.data)
+        preds = self.model.predict_docs(self.data)
         print(preds)
         polarity1 = self.model.polarity('gut')
         polarity2 = self.model.polarity('schlecht')
@@ -712,7 +717,6 @@ class TestLSX(GenericTest):
         assert polarity3 > 0
         assert polarity4 < 0
         assert polarity5 < 0
-        assert False
 
 
 class TestTrainer(GenericTest):
