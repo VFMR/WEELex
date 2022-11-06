@@ -105,35 +105,28 @@ class LatentSemanticScaling(base.BasePredictor):
 
     @batchprocessing.batch_predict
     def predict_docs(self,
-                X: pd.DataFrame,
-                cutoff: float = 0.5,
-                n_batches: int = None,
-                checkpoint_path: str = None) -> np.ndarray:
-        preds = self.predict_score_docs(X=X)
-        return preds
-
-    def predict_score_docs(self, X: pd.DataFrame) -> np.ndarray:
+                     X: Union[pd.Series, np.ndarray],
+                     n_batches: int = None,
+                     checkpoint_path: str = None) -> np.ndarray:
         if self._predictprocessor is None:
             raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
         vects = self._predictprocessor.transform(X)
-        return self.predict_score_vectors(vects)
+        return self.predict_vectors(vects)
 
-    def predict_score_words(self, X: pd.Series) -> np.ndarray:
+    def predict_words(self,
+                       X: Union[pd.Series, np.ndarray],
+                       n_batches: int = None,
+                       checkpoint_path: str = None) -> np.ndarray:
         vectors = np.zeros((X.shape[0], self._embeddings.dim))
         for i in range(X.shape[0]):
             vectors[i] = self._embeddings[X[i]]
-        return self.predict_score_vectors(vectors)
+        return self.predict_vectors(X=vectors)
 
     @batchprocessing.batch_predict
     def predict_vectors(self,
-                      X: pd.DataFrame,
-                      cutoff: float = 0.5,
-                      n_batches: int = None,
-                      checkpoint_path: str = None) -> np.ndarray:
-        preds = self.predict_score_words(X=X)
-        return preds
-
-    def predict_score_vectors(self, X: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
+                        X: Union[pd.Series, np.ndarray],
+                        n_batches: int = None,
+                        checkpoint_path: str = None) -> np.ndarray:
         lexicon_embeddings = self._lex.embeddings
         weights = self._lex.weights
         scores = np.zeros((X.shape[0]))
