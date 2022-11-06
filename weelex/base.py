@@ -149,18 +149,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         all_words += self._tfidf.vocabulary_
         return list(set(all_words))
 
-
-    def load(self, path):
-        with open(os.path.join(path, 'properties.json'), 'r') as f:
-            properties = json.load(f)
-
-        self._set_properties(properties=properties)
-        self._embeddings.load_filtered(os.path.join(path, 'embeddings'))
-        self._load_predictprocessor(path)
-        # TODO: load lex
-
     def _get_properties(self):
         properties = {
+        'model_name': self.__class__.__name__,
         'use_ctfidf': self._use_ctfidf,
         'random_state': self._random_state,
         'progress_bar': self._use_progress_bar,
@@ -219,8 +210,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
 
     def _get_full_vocab(self) -> list:
         v1 = self._lexicon.get_vocabulary()
-        v2 = self._support_lexicon.get_vocabulary()
-        return sorted(list(set([v1, v2])))
+        return v1
 
     def _filter_embeddings(self) -> None:
         vocab = self._get_full_vocab()
@@ -229,3 +219,30 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     def __repr__(self, N_CHAR_MAX=700):
         return super().__repr__(N_CHAR_MAX)
 
+    #---------------------------------------------------------------------------
+    # properties:
+    @property
+    def vocabulary(self):
+        return list(set(self._lex.vocabulary + self._tfidf.vocabulary_))
+
+    @property
+    def embedding_dim(self):
+        return self._embeddings.dim
+
+    @property
+    def is_fit(self):
+        return self._is_fit
+
+    #---------------------------------------------------------------------------
+    # classmethods:
+    @classmethod
+    def load(cls, path):
+        with open(os.path.join(path, 'properties.json'), 'r') as f:
+            properties = json.load(f)
+        instance = cls(embeds=None)
+        instance._set_properties(properties=properties)
+        instance._embeddings.load_filtered(os.path.join(path, 'embeddings'))
+        instance._load_predictprocessor(path)
+        instance._lex = lexicon.load(os.path.join(path, 'lex'))
+        instance._is_fit = True
+        return instance

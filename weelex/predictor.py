@@ -192,7 +192,11 @@ class PredictionProcessor:
         self._tfidf.save(path)
 
     def load_tfidf(self, path: str) -> None:
-        tfidf = BasicTfidf()
+        tfidf = BasicTfidf(stopwords_file=None,
+                           relevant_pos=self._relevant_pos,
+                           min_df=self._min_df,
+                           max_df=self._max_df,
+                           spacy_model=self._spacy_model)
         tfidf.load(path)
         self._tfidf = tfidf
 
@@ -200,7 +204,19 @@ class PredictionProcessor:
         self._ctfidf.save(dir)
 
     def load_ctfidf(self, path: str) -> None:
-        ctfidf = ClusterTfidfVectorizer()
+        ctfidf = ClusterTfidfVectorizer(vectorizer=self._tfidf.vectorizer,
+                                        embeddings=self._embeddings,
+                                        n_docs=self._n_docs,
+                                        corpus_path=self._corpus_path,
+                                        corpus_path_encoding=self._corpus_path_encoding,
+                                        load_clustering=self._load_clustering,
+                                        embedding_dim=self._embedding_dim,
+                                        checkterm=self._checkterm,
+                                        n_top_clusters=self._n_top_clusters,
+                                        cluster_share=self._cluster_share,
+                                        clustermethod=self._clustermethod,
+                                        distance_threshold=self._distance_threshold,
+                                        n_words=self._n_words)
         ctfidf.load(path)
         self._ctfidf = ctfidf
 
@@ -208,7 +224,7 @@ class PredictionProcessor:
         os.makedirs(path, exist_ok=True)
         self._tfidf.save(os.path.join(path, 'tfidf.p'))
         if self._ctfidf is not None:
-            self._ctfidf.save(os.path.join(path, 'ctfidf'))
+            self._ctfidf.save(path)
         properties = self._get_properties()
         with open(os.path.join(path, 'properties.json'), 'w') as f:
             json.dump(properties, f)
@@ -216,12 +232,13 @@ class PredictionProcessor:
     def load(self, path: str) -> None:
         with open(os.path.join(path, 'properties.json'), 'r') as f:
             properties = json.load(f)
+        self._set_properties(properties)
+
         self.load_tfidf(os.path.join(path, 'tfidf.p'))
         try:
-            self.load_ctfidf(os.path.join(path, 'ctfidf'))
+            self.load_ctfidf(os.path.join(path, 'clustertfidf'))
         except FileNotFoundError:
             print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
-        self._set_properties(properties)
         self._is_fit = True
 
     def _archive_saved_folder(self, path: str) -> None:

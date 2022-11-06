@@ -71,6 +71,7 @@ class WEELexClassifier(base.BasePredictor):
         self._train_params = train_params
 
         # setting up default objects
+        self._support_lex = None
         self._main_keys = None
         self._support_keys = None
         self._models = {}
@@ -136,6 +137,8 @@ class WEELexClassifier(base.BasePredictor):
             models.update({cat: model})
         self._models = models
         self._is_fit = True
+        self._lex = lex
+        self._support_lex = support_lex
 
     def _get_full_vocab(self) -> list:
         all_terms = super()._get_full_vocab()
@@ -309,10 +312,8 @@ class WEELexClassifier(base.BasePredictor):
         super().save(path)
         # TODO: Expand save() method beyond base class
 
-    def load(self, path):
-        super().load(path)
-        # TODO: Expand load() method beyond base class
-
+    #---------------------------------------------------------------------------
+    # properties
     @property
     def main_keys(self) -> list:
         return self._main_keys
@@ -320,3 +321,16 @@ class WEELexClassifier(base.BasePredictor):
     @property
     def support_keys(self) -> list:
         return self._support_keys
+
+    @property
+    def vocabulary(self):
+        vocab = super().vocabulary
+        if self._support_lex is not None:
+            vocab += self._support_lex.vocabulary
+        return list(set(vocab))
+
+    #---------------------------------------------------------------------------
+    # classmethods:
+    @classmethod
+    def load(cls, path):
+        return super().load(path)
