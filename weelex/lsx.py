@@ -74,8 +74,8 @@ class LatentSemanticScaling(base.BasePredictor):
         return self._compute_polarity_vector(vector[0,:])
 
     def _compute_polarity_vector(self, vector: np.ndarray) -> float:
-        lexicon_embeddings = self._polarity_lexicon.embeddings
-        weights = self._polarity_lexicon.weights
+        lexicon_embeddings = self._lex.embeddings
+        weights = self._lex.weights
         return self._polarity_function(vf=vector,
                                        Vs=lexicon_embeddings,
                                        P=weights)
@@ -94,17 +94,14 @@ class LatentSemanticScaling(base.BasePredictor):
         return (1 / Vs.shape[0]) * cosine_sum
 
     def fit(self,
-            polarity_lexicon: lexicon.BaseLexicon,
+            polarity_lexicon: lexicon.WeightedLexicon,
             X=Union[pd.Series, np.ndarray],
             y=None):
-        self._polarity_lexicon = polarity_lexicon
-        self._polarity_lexicon.embed(self._embeddings)
+        self._lex = polarity_lexicon
+        self._lex.embed(self._embeddings)
 
         # setting up the aggregator:
-        if self._predictprocessor is None:
-            self._setup_predictprocessor()
-        self._predictprocessor.fit(X=X)
-        self._is_fit = True
+        self._fit_predictprocessor(X=X)
 
     @batchprocessing.batch_predict
     def predict_docs(self,
@@ -137,8 +134,8 @@ class LatentSemanticScaling(base.BasePredictor):
         return preds
 
     def predict_score_vectors(self, X: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
-        lexicon_embeddings = self._polarity_lexicon.embeddings
-        weights = self._polarity_lexicon.weights
+        lexicon_embeddings = self._lex.embeddings
+        weights = self._lex.weights
         scores = np.zeros((X.shape[0]))
         for i in range(X.shape[0]):
             scores[i] = self._polarity_function(vf=X[i,:],

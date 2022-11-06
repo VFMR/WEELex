@@ -5,6 +5,7 @@ import json
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import tqdm
 import pandas as pd
+import numpy as np
 from sklearn.exceptions import NotFittedError
 
 from weelex import lexicon
@@ -64,6 +65,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         # initialize properties:
         self._predictprocessor = None
         self._is_fit = False
+        self._lex = None
 
     def get_params(self, deep: bool = True) -> dict:
         return self.__dict__
@@ -95,6 +97,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             embeddings=self._embeddings
         )
         self._predictprocessor.load(os.path.join(path, 'predictprocessor'))
+        # HACK: setting the private _embeddings property is not optimal
         self._predictprocessor._embeddings = self._embeddings
 
     def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
@@ -103,17 +106,23 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     def fit_ctfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
         self._predictprocessor.fit_ctfidf(data)
 
-    def save_tfidf(self, path: str) -> None:
-        self._predictprocessor.save_tfidf(path)
+    # def save_tfidf(self, path: str) -> None:
+    #     self._predictprocessor.save_tfidf(path)
 
-    def save_ctfidf(self, dir: str) -> None:
-        self._predictprocessor.save_ctfidf(dir)
+    # def save_ctfidf(self, dir: str) -> None:
+    #     self._predictprocessor.save_ctfidf(dir)
 
-    def load_tfidf(self, path: str) -> None:
-        self._predictprocessor.load_tfidf(path)
+    # def load_tfidf(self, path: str) -> None:
+    #     self._predictprocessor.load_tfidf(path)
 
-    def load_ctfidf(self, path: str) -> None:
-        self._predictprocessor.load_ctfidf(path)
+    # def load_ctfidf(self, path: str) -> None:
+    #     self._predictprocessor.load_ctfidf(path)
+
+    def _fit_predictprocessor(self, X: Union[pd.Series, np.ndarray]) -> None:
+        if self._predictprocessor is None:
+            self._setup_predictprocessor()
+        self._predictprocessor.fit(X=X)
+        self._is_fit = True
 
     def save(self, path):
         if self._is_fit is False:
@@ -125,8 +134,21 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         with open(os.path.join(path, 'properties.json'), 'w') as f:
             json.dump(properties, f)
 
-        # TODO: better handling of exception when embeddings are not filtered
+        # filter embeddings if not done already and save the relevant vectors
+        if self._embeddings.isfiltered is False:
+            self._embeddings.filter_terms(self._get_full_vocab())
         self._embeddings.save_filtered(os.path.join(path, 'embeddings'))
+
+        if self._lex is not None:
+            self._lex.save(os.path.join(path, 'lex'))
+
+    def _get_full_vocab(self):
+        all_words = []
+        if self._lex is not None:
+            all_words += self._lex.vocabulary
+        all_words += self._tfidf.vocabulary_
+        return list(set(all_words))
+
 
     def load(self, path):
         with open(os.path.join(path, 'properties.json'), 'r') as f:
@@ -135,6 +157,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._set_properties(properties=properties)
         self._embeddings.load_filtered(os.path.join(path, 'embeddings'))
         self._load_predictprocessor(path)
+        # TODO: load lex
 
     def _get_properties(self):
         properties = {

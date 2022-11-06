@@ -1,8 +1,10 @@
 from typing import Union, Iterable, Dict, List
+import os
 
 from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
 import numpy as np
+from sklearn.exceptions import NotFittedError
 # from tqdm import tqdm
 
 from weelex import lexicon
@@ -46,7 +48,6 @@ class WEELexClassifier(base.BasePredictor):
             tfidf=tfidf,
             ctfidf=ctfidf,
             use_ctfidf=use_ctfidf,
-            test_size=test_size,
             random_state=random_state,
             n_jobs=n_jobs,
             progress_bar=progress_bar,
@@ -90,17 +91,19 @@ class WEELexClassifier(base.BasePredictor):
         return self
 
     def fit(self,
-                  lex: Union[lexicon.Lexicon, dict, str],
-                  support_lex: Union[lexicon.Lexicon, dict, str] = None,
-                  main_keys: Iterable[str] = None,
-                  support_keys: Iterable[str] = None,
-                  hp_tuning: bool = False,
-                  n_iter: int = 150,
-                  cv: int = 5,
-                  param_grid: dict = None,
-                  fixed_params: dict = None,
-                  n_best_params: int = 3,
-                  progress_bar: bool = False) -> None:
+            X: Union[pd.Series, np.ndarray],
+            lex: Union[lexicon.Lexicon, dict, str],
+            support_lex: Union[lexicon.Lexicon, dict, str] = None,
+            main_keys: Iterable[str] = None,
+            support_keys: Iterable[str] = None,
+            hp_tuning: bool = False,
+            n_iter: int = 150,
+            cv: int = 5,
+            param_grid: dict = None,
+            fixed_params: dict = None,
+            n_best_params: int = 3,
+            progress_bar: bool = False) -> None:
+        self._fit_predictprocessor(X=X)
         self._setup_trainprocessor(lex, support_lex, main_keys, support_keys)
         input_shape = self._trainprocessor.embedding_dim
 
@@ -133,6 +136,20 @@ class WEELexClassifier(base.BasePredictor):
             models.update({cat: model})
         self._models = models
         self._is_fit = True
+
+    def _get_full_vocab(self) -> list:
+        all_terms = super()._get_full_vocab()
+        all_terms += self._support_lex.vocabulary
+        return list(set(all_terms))
+
+    def save(self, path) -> None:
+        super().save(path)
+        if self._support_lex is not None:
+            self._support_lex.save(os.path.join(path, 'support_lex'))
+
+    def load(self, path) -> None:
+        super().load(path)
+        # TODO: load support lex
 
     def _setup_trainprocessor(self,
                               lex: Union[lexicon.Lexicon, dict, str],
@@ -283,7 +300,8 @@ class WEELexClassifier(base.BasePredictor):
         return self._probas_to_binary(preds, cutoff=cutoff)
 
     def predict_proba_docs(self, X: pd.DataFrame) -> pd.DataFrame:
-        self._setup_predictprocessor()
+        if self._is_fit is False:
+            raise NotFittedError(f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
         vects = self._predictprocessor.transform(X)
         return self.predict_proba_words(vects)
 
