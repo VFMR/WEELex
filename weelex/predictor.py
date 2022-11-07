@@ -18,6 +18,7 @@ class PredictionProcessor:
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  use_ctfidf: bool = True,
+                 aggregate_word_level: bool = True,
                  relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
                  min_df: Union[int, float] = 5,
                  max_df: Union[int, float] = 0.95,
@@ -36,6 +37,7 @@ class PredictionProcessor:
         self._data = data
         self._embeddings = embeddings
         self._use_ctfidf = use_ctfidf
+        self._aggregate_word_level = aggregate_word_level
         self._relevant_pos = relevant_pos
         self._min_df = min_df
         self._max_df = max_df
@@ -178,7 +180,7 @@ class PredictionProcessor:
 
     def _vectorize(self, data):
         if self._use_ctfidf:
-            return self._ctfidf.transform(data)
+            return self._ctfidf.transform(data, aggregate_word_level=self._aggregate_word_level)
         else:
             return self._tfidf.transform(data)
 
@@ -355,11 +357,15 @@ class PredictionProcessor:
         index2word = {i: term for term, i in self._tfidf.vocabulary_.items()}
 
         print('{} rows to process'.format(vects.shape[0]))
-        allvects = np.zeros((vects.shape[0], embedding_shape))
-        i = 0
-        for vect in tqdm(vects):
-            allvects[i] = self._tfidf_weighted_embeddings(vect, index2word)
-            i += 1
+        if self._aggregate_word_level:
+            allvects = np.zeros((vects.shape[0], embedding_shape))
+            i = 0
+            for vect in tqdm(vects):
+                allvects[i] = self._tfidf_weighted_embeddings(vect, index2word)
+                i += 1
+        else:
+            # TODO: Implement tfidf without word level aggregation
+            raise NotImplementedError('TFIDF without word level aggregation is not implemented yet')
 
         return allvects
 

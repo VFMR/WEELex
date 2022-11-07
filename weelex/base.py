@@ -22,6 +22,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  use_ctfidf: bool = True,
+                 word_level_aggregation: bool = True,
                  random_state: int = None,
                  n_jobs: int = 1,
                  progress_bar: bool = False,
@@ -47,6 +48,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._tfidf = tfidf
         self._ctfidf = ctfidf
         self._use_ctfidf = use_ctfidf
+        self._word_level_aggregation = word_level_aggregation
         self._relevant_pos = relevant_pos
         self._min_df = min_df
         self._max_df = max_df
@@ -76,6 +78,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             tfidf=self._tfidf,
             ctfidf=self._ctfidf,
             use_ctfidf=self._use_ctfidf,
+            aggregate_word_level=self._word_level_aggregation,
             relevant_pos=self._relevant_pos,
             min_df=self._min_df,
             max_df=self._max_df,

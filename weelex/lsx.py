@@ -19,6 +19,7 @@ class LatentSemanticScaling(base.BasePredictor):
     def __init__(self,
                  embeds: Union[dict, embeddings.Embeddings],
                 #  polarity_lexicon: lexicon.Lexicon,
+                 word_level_aggregation: bool = False,
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
                  use_ctfidf: bool = True,
@@ -44,6 +45,7 @@ class LatentSemanticScaling(base.BasePredictor):
             tfidf=tfidf,
             ctfidf=ctfidf,
             use_ctfidf=use_ctfidf,
+            word_level_aggregation=word_level_aggregation,
             random_state=random_state,
             progress_bar=progress_bar,
             relevant_pos=relevant_pos,
@@ -130,10 +132,21 @@ class LatentSemanticScaling(base.BasePredictor):
         lexicon_embeddings = self._lex.embeddings
         weights = self._lex.weights
         scores = np.zeros((X.shape[0]))
-        for i in range(X.shape[0]):
-            scores[i] = self._polarity_function(vf=X[i,:],
-                                               Vs=lexicon_embeddings,
-                                               P=weights)
+        if self._word_level_aggregation:
+            for i in range(X.shape[0]):
+                scores[i] = self._polarity_function(vf=X[i,:],
+                                                Vs=lexicon_embeddings,
+                                                P=weights)
+        else:
+            for i in range(X.shape[0]):
+                row_vectors = X['vectors'][i]
+                row_weights = X['weights'][i]
+                row_score = 0
+                for j, x in enumerate(row_vectors):
+                    row_score += row_weights[j] * self._polarity_function(vf=x,
+                                                         Vs=lexicon_embeddings,
+                                                         P=weights)
+                scores[i] = row_score
         return scores
 
 def cosine_simil(a: np.ndarray, b: np.ndarray) -> float:
