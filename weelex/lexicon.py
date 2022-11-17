@@ -81,9 +81,7 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['Test*', 'Te*st', '*test'])
-            >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> lex = BaseLexicon(my_dct)
-            >>> lex._clean_strings(array)
+            >>> BaseLexicon._clean_strings(array)
             0    Test
             1    Test
             2    test
@@ -293,16 +291,6 @@ class WeightedLexicon(BaseLexicon):
         """
         return "{" + ", ".join([f"'{word}': {weight}" for word, weight in self._word2weight.items()]) + "}"
 
-    # def embed(self, embeddings) -> None:
-    #     dict_df_shape = self._dictionary_df.shape
-    #     embedding_tensor = np.zeros(
-    #         shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
-    #     for j, key in enumerate(self._dictionary_df.columns):
-    #         for i, x in enumerate(self.dictionary_df.loc[key,:]):
-    #             embedding_tensor[i][j] = self._embed_word(x, embeddings)
-
-    #     self._embeddings = embedding_tensor
-
     @staticmethod
     def _dict_to_df(dict):
         return pd.DataFrame([[key, value] for key, value in dict.items()])
@@ -322,8 +310,7 @@ class WeightedLexicon(BaseLexicon):
 
         Example:
             >>> my_dct = pd.DataFrame({0: ['a', 'b'], 1: [0.1, 0.2]})
-            >>> l = WeightedLexicon(my_dct)
-            >>> x, y = l._build_weighted_dictionary(my_dct)
+            >>> x, y = WeightedLexicon._build_weighted_dictionary(my_dct)
             >>> print(x)
                0
             0  a

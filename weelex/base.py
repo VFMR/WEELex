@@ -1,6 +1,8 @@
 from typing import Union, List
 import os
 import json
+import shutil
+from zipfile import ZipFile
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import tqdm
@@ -21,6 +23,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
                  embeds: Union[dict, embeddings.Embeddings],
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+                 use_tfidf: bool = True,
                  use_ctfidf: bool = True,
                  word_level_aggregation: bool = True,
                  random_state: int = None,
@@ -47,6 +50,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._use_progress_bar = progress_bar
         self._tfidf = tfidf
         self._ctfidf = ctfidf
+        self._use_tfidf = use_tfidf
         self._use_ctfidf = use_ctfidf
         self._word_level_aggregation = word_level_aggregation
         self._relevant_pos = relevant_pos
@@ -77,6 +81,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             embeddings=self._embeddings,
             tfidf=self._tfidf,
             ctfidf=self._ctfidf,
+            use_tfidf=self._use_tfidf,
             use_ctfidf=self._use_ctfidf,
             aggregate_word_level=self._word_level_aggregation,
             relevant_pos=self._relevant_pos,
@@ -121,13 +126,14 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     # def load_ctfidf(self, path: str) -> None:
     #     self._predictprocessor.load_ctfidf(path)
 
-    def _fit_predictprocessor(self, X: Union[pd.Series, np.ndarray]) -> None:
+    def _fit_predictprocessor(self,
+                              X: Union[pd.Series, np.ndarray]) -> None:
         if self._predictprocessor is None:
             self._setup_predictprocessor()
-        self._predictprocessor.fit(X=X)
-        self._is_fit = True
+        self._predictprocessor.fit(X=X, keepwords=self._lex.vocabulary)
 
     def save(self, path):
+        # TODO: directly write into zip archive instead of rmtree()
         if self._is_fit is False:
             raise NotFittedError(f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
 
@@ -144,6 +150,10 @@ class BasePredictor(BaseEstimator, TransformerMixin):
 
         if self._lex is not None:
             self._lex.save(os.path.join(path, 'lex'))
+
+        # archiving the created folder
+        shutil.make_archive(path+'.weelex', 'zip', path)
+        shutil.rmtree(path)
 
     def _get_full_vocab(self):
         all_words = []
@@ -240,11 +250,19 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     # classmethods:
     @classmethod
     def load(cls, path):
-        with open(os.path.join(path, 'properties.json'), 'r') as f:
-            properties = json.load(f)
         instance = cls(embeds=None)
-        instance._set_properties(properties=properties)
-        instance._embeddings.load_filtered(os.path.join(path, 'embeddings'))
+        if not path.endswith('.weelex.zip'):
+            if path.endswith('.weelex'):
+                usepath = path + '.zip'
+            else:
+                usepath = path + '.weelex.zip'
+        with ZipFile(usepath) as myzip:
+            with myzip.open('properties.json', 'r') as f:
+                properties = json.load(f)
+            instance._set_properties(properties=properties)
+
+            instance._embeddings = embeddings.Embeddings.load_filtered(
+                    myzip.open('embeddings.npz', 'r'))
         instance._load_predictprocessor(path)
         instance._lex = lexicon.load(os.path.join(path, 'lex'))
         instance._is_fit = True

@@ -1,7 +1,9 @@
 import os
-from typing import Union, List
+import random
+from typing import Union, List, Iterable
 import json
 import shutil
+from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
@@ -17,6 +19,7 @@ class PredictionProcessor:
                  embeddings: embeddings.Embeddings = None,
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+                 use_tfidf: bool =True,
                  use_ctfidf: bool = True,
                  aggregate_word_level: bool = True,
                  relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
@@ -36,6 +39,7 @@ class PredictionProcessor:
                  n_jobs: int = 1) -> None:
         self._data = data
         self._embeddings = embeddings
+        self._use_tfidf = use_tfidf
         self._use_ctfidf = use_ctfidf
         self._aggregate_word_level = aggregate_word_level
         self._relevant_pos = relevant_pos
@@ -193,13 +197,15 @@ class PredictionProcessor:
     def save_tfidf(self, path: str) -> None:
         self._tfidf.save(path)
 
-    def load_tfidf(self, path: str) -> None:
+    def load_tfidf(self,
+                   path: str,
+                   zip_archive: ZipFile = None) -> None:
         tfidf = BasicTfidf(stopwords_file=None,
                            relevant_pos=self._relevant_pos,
                            min_df=self._min_df,
                            max_df=self._max_df,
                            spacy_model=self._spacy_model)
-        tfidf.load(path)
+        tfidf.load(path=path, zip_archive=zip_archive)
         self._tfidf = tfidf
 
     def save_ctfidf(self, dir: str) -> None:
@@ -224,7 +230,8 @@ class PredictionProcessor:
 
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
-        self._tfidf.save(os.path.join(path, 'tfidf.p'))
+        if self._use_tfidf:
+            self._tfidf.save(os.path.join(path, 'tfidf.p'))
         if self._ctfidf is not None:
             self._ctfidf.save(path)
         properties = self._get_properties()
@@ -236,11 +243,15 @@ class PredictionProcessor:
             properties = json.load(f)
         self._set_properties(properties)
 
-        self.load_tfidf(os.path.join(path, 'tfidf.p'))
-        try:
-            self.load_ctfidf(os.path.join(path, 'clustertfidf'))
-        except FileNotFoundError:
-            print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
+        if self._use_tfidf is True:
+            self.load_tfidf(os.path.join(path, 'tfidf.p'))
+
+        if self._use_ctfidf is True:
+            try:
+                self.load_ctfidf(os.path.join(path, 'clustertfidf'))
+            except FileNotFoundError:
+                print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
+
         self._is_fit = True
 
     def _archive_saved_folder(self, path: str) -> None:
@@ -261,8 +272,17 @@ class PredictionProcessor:
             extract_dir = path
         shutil.rmtree(extract_dir)
 
-    def fit(self, X: Union[np.ndarray, pd.Series]) -> None:
-        self.fit_tfidf(data=X)
+    def fit(self,
+            X: Union[np.ndarray, pd.Series],
+            keepwords: Iterable[str]= None) -> None:
+        if self._use_tfidf:
+            self.fit_tfidf(data=X)
+            tfidf_vocab = list(self._tfidf.vocabulary_.keys())
+            if keepwords is not None:
+                filter_terms = list(set(keepwords + tfidf_vocab))
+            else:
+                filter_terms = tfidf_vocab
+            self._embeddings.filter_terms(filter_terms)
         if self._use_ctfidf:
             self.fit_ctfidf(data=X)
         self._is_fit = True
@@ -376,3 +396,32 @@ class PredictionProcessor:
     @property
     def embedding_dim(self):
         return self._get_embeddings_dim(self._embeddings, self._checkterm)
+
+    @classmethod
+    def load_from_weelexarchive(cls, zipfile):
+        embeddings = np.load(zipfile.open('embeddings.npz', 'r'))
+        instance = cls(embeddings=embeddings)
+
+        with zipfile.open('predictprocessor/properties.json', 'r') as f:
+            properties = json.load(f)
+        instance._set_properties(properties)
+
+        if instance._use_tfidf is True:
+            instance.load_tfidf(path='predictprocessor/tfidf.p',
+                                zip_archive=zipfile)
+
+        if instance._use_ctfidf is True:
+            try:
+                # CHECKME Test whether this works
+                random_int = str(random.randint(0, 99999999))
+                random_int = random_int.zfill(8)
+                zipfile.extract('predictprocessor/clustertfidf',
+                                path=os.path.join('wlxextract'+random_int, 'predictprocessor', 'clustertfidf'))
+                instance.load_ctfidf(os.path.join('wlxextract'+random_int, 'predictprocessor', 'clustertfidf'))
+                shutil.rmtree(os.path.join('weelexextract'+random_int))
+            except FileNotFoundError as e:
+                print(e)
+                print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
+
+        instance._is_fit = True
+        return instance

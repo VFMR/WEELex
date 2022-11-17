@@ -12,9 +12,10 @@ from weelex import lexicon
 
 class Embeddings:
     def __init__(self,
-                 embedding_dict: Dict[str, float] = None) -> None:
+                 embedding_dict: Dict[str, float] = None,
+                 testvalue='test') -> None:
         self.isfiltered = False
-        self.testvalue = 'Test'
+        self._testvalue = testvalue
         if embedding_dict is not None:
             self._wv = embedding_dict
             self._keys = embedding_dict.keys()
@@ -24,17 +25,6 @@ class Embeddings:
             self._keys = None
             self._vectors = None
 
-    def load_facebook_vectors(self, path: str) -> None:
-        wv = load_facebook_vectors(path)
-        self._wv = wv
-
-    def load_finetuned_fasttext(self, path: str) -> None:
-        wv = FastText.load(path).wv
-        self._wv = wv
-
-    def load_finetuned_word2vec(self, path: str) -> None:
-        wv = Word2Vec.load(path).wv
-        self._wv = wv
 
     def load_vectors(self,
                      path: str,
@@ -59,11 +49,6 @@ class Embeddings:
                                   np.ndarray,
                                   pd.DataFrame,
                                   tuple]) -> None:
-        if self.isfiltered:
-            myvecs = self._vectors
-        else:
-            myvecs = self._wv
-
         if isinstance(terms, np.ndarray) or isinstance(terms, pd.DataFrame):
             terms_lst = self._flatten_matrix(terms)
         elif isinstance(terms, lexicon.Lexicon):
@@ -72,12 +57,15 @@ class Embeddings:
             terms_lst = terms
 
         keys, vectors = self._data_from_dct(
-            {term: myvecs[term] for term in terms_lst}
+            {term: self._wv[term] for term in terms_lst}
         )
         self._keys = keys
         self._vectors = vectors
         self.isfiltered = True
-        self._wv = None
+        self._wv = self.make_wv_from_keys_vectors()
+
+    def make_wv_from_keys_vectors(self) -> Dict[str, np.ndarray]:
+        return {key: value for key, value in zip(self._keys, self._vectors)}
 
     @staticmethod
     def _flatten_matrix(mat: Union[np.ndarray, pd.DataFrame]) -> List[str]:
@@ -134,24 +122,6 @@ class Embeddings:
                     '''There are no key-vector pairs to be saved yet.
                     Please apply the filter() method before.''')
 
-    def load_filtered(self, path: str) -> None:
-        if not path.endswith('.npz'):
-            path = path+'.npz'
-        loaded = np.load(path, allow_pickle=False)
-        if isinstance(loaded['keys'], np.ndarray):
-            self._keys = loaded['keys']
-            failure = False
-        else:
-            failure = True
-
-        if isinstance(loaded['vectors'], np.ndarray):
-            self._vectors = loaded['vectors']
-        else:
-            failure = True
-
-        if failure:
-            raise ValueError('Wrong data type in loaded file.')
-        self.isfiltered = True
 
     @property
     def keys(self):
@@ -160,9 +130,9 @@ class Embeddings:
     @property
     def dim(self):
         try:
-            result = len(self._vectors[0])
+            result = len(self._wv[self._testvalue])
         except:
-            result = len(self._wv)
+            result = len(self._vectors[0])
         return result
 
     @overload
@@ -184,3 +154,51 @@ class Embeddings:
 
     def __getitem__(self, key: str) -> np.ndarray:
         return self._get_val_from_key(key)
+
+    # --------------------------------------------------------------------------
+    # classmethods
+    @classmethod
+    def load_filtered(cls, path: str) -> None:
+        instance = cls()
+        if isinstance(path, str):
+            if not path.endswith('.npz'):
+                path = path+'.npz'
+        loaded = np.load(path, allow_pickle=False)
+        if isinstance(loaded['keys'], np.ndarray):
+            instance._keys = loaded['keys']
+            failure = False
+        else:
+            failure = True
+
+        if isinstance(loaded['vectors'], np.ndarray):
+            instance._vectors = loaded['vectors']
+        else:
+            failure = True
+
+        if failure:
+            raise ValueError('Wrong data type in loaded file.')
+
+        instance.isfiltered = True
+        instance._wv = instance.make_wv_from_keys_vectors()
+        return instance
+
+    @classmethod
+    def load_facebook_vectors(cls, path: str) -> None:
+        inst = cls()
+        wv = load_facebook_vectors(path)
+        inst._wv = wv
+        return inst
+
+    @classmethod
+    def load_finetuned_fasttext(cls, path: str) -> None:
+        inst = cls()
+        wv = FastText.load(path).wv
+        inst._wv = wv
+        return inst
+
+    @classmethod
+    def load_finetuned_word2vec(cls, path: str) -> None:
+        inst = cls()
+        wv = Word2Vec.load(path).wv
+        inst._wv = wv
+        return inst

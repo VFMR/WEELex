@@ -1,6 +1,7 @@
 import time
 import pickle
 import re
+import zipfile
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -289,9 +290,15 @@ class BasicTfidf:
 
         return tokens
 
-    def load(self, path):
-        with open(path, 'rb') as f:
-            self.vectorizer = pickle.load(f)
+    def load(self,
+             path: str,
+             zip_archive: zipfile.ZipFile = None):
+        if zip_archive is not None:
+            with zip_archive.open(path, 'r') as f:
+                self.vectorizer = pickle.load(f)
+        else:
+            with open(path, 'rb') as f:
+                self.vectorizer = pickle.load(f)
 
     def fit(self, X, y=None):
 

@@ -48,6 +48,7 @@ class WEELexClassifier(base.BasePredictor):
             embeds=embeds,
             tfidf=tfidf,
             ctfidf=ctfidf,
+            use_tfidf=True,
             use_ctfidf=use_ctfidf,
             word_level_aggregation=word_level_aggregation,
             random_state=random_state,
@@ -81,6 +82,9 @@ class WEELexClassifier(base.BasePredictor):
         self._tuned_params = {}
         self._cv_scores = {}
         self._results = {}
+
+        if self._use_tfidf is False and self._use_ctfidf is False:
+            raise ValueError('Both "use_tfidf" and "use_tfidf" are set to False. This is currently not implemented.')
 
     def set_params(self, **params):
         trainparams = {}

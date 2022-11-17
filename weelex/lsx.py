@@ -22,6 +22,7 @@ class LatentSemanticScaling(base.BasePredictor):
                  word_level_aggregation: bool = False,
                  tfidf: Union[str, BasicTfidf] = None,
                  ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+                 use_tfidf: bool = True,
                  use_ctfidf: bool = True,
                  random_state: int = None,
                  progress_bar: bool = False,
@@ -63,6 +64,7 @@ class LatentSemanticScaling(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words
         )
+        self._use_tfidf =  use_tfidf
 
     def polarity(self, word: str) -> float:
         if self._is_fit is False:
@@ -70,10 +72,63 @@ class LatentSemanticScaling(base.BasePredictor):
         return self._compute_polarity_word(word)
 
     def doc_polarity(self, doc: str) -> float:
-        if self._predictprocessor is None:
-            raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
-        vector = self._predictprocessor.transform(pd.Series(np.array([doc])))
-        return self._compute_polarity_vector(vector[0,:])
+        if self._use_ctfidf:
+            if self._predictprocessor is None:
+                raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
+            result = self._compute_polarity_ctfidf_doc(doc)
+        elif self._use_tfidf:
+            raise NotImplementedError('Prediction for tfidf but without ctfidf is not yet implemented.')
+        else:
+            lexicon_embeddings = self._lex.embeddings
+            weights = self._lex.weights
+            result = self._predict_doc_allwords(doc=doc,
+                                                lexicon_embeddings=lexicon_embeddings,
+                                                weights=weights)
+        return result
+
+    def _compute_polarity_ctfidf_doc(self, doc: str) -> float:
+        vec_w = self._predictprocessor.transform(pd.Series(np.array([doc])))
+        vectors = vec_w['vectors'][0]
+        ctfidf_weights = vec_w['weights'][0]
+        lexicon_embeddings = self._lex.embeddings
+        polarity_weights = self._lex.weights
+        polarity = self._compute_polarity_ctfidf_vecs(
+            ctfidf_vectors=vectors,
+            ctfidf_weights=ctfidf_weights,
+            lexicon_embeddings=lexicon_embeddings,
+            polarity_weights=polarity_weights
+        )
+        return polarity
+
+    def _compute_polarity_ctfidf_vecs(self,
+                                      ctfidf_vectors,
+                                      ctfidf_weights,
+                                      lexicon_embeddings,
+                                      polarity_weights):
+        polarity = 0
+        for i, vf in enumerate(ctfidf_vectors):
+            polarity += ctfidf_weights[i]*self._polarity_function(
+                                            vf=vf,
+                                            Vs=lexicon_embeddings,
+                                            P=polarity_weights)
+        return polarity
+
+    def _compute_polarity_ctfidf_corpus(self, corpus: pd.Series) -> np.ndarray:
+        result = np.zeros( (len(corpus)) )
+        vec_w = self._predictprocessor.transform(corpus)
+        lexicon_embeddings = self._lex.embeddings
+        polarity_weights = self._lex.weights
+
+        for i in range(len(corpus)):
+            ctfidf_vectors = vec_w['vectors'][i]
+            ctfidf_weights = vec_w['weights'][i]
+            result[i] = self._compute_polarity_ctfidf_vecs(
+                ctfidf_vectors=ctfidf_vectors,
+                ctfidf_weights=ctfidf_weights,
+                lexicon_embeddings=lexicon_embeddings,
+                polarity_weights=polarity_weights
+                )
+        return result
 
     def _compute_polarity_vector(self, vector: np.ndarray) -> float:
         lexicon_embeddings = self._lex.embeddings
@@ -104,6 +159,25 @@ class LatentSemanticScaling(base.BasePredictor):
 
         # setting up the aggregator:
         self._fit_predictprocessor(X=X)
+        self._is_fit = True
+
+    def _transform_doc_unweighted(self, doc: str) -> np.ndarray:
+        splits = doc.split()
+        result = []
+        for i, x in enumerate(splits):
+            if x in self._embeddings.keys:
+                result.append(self._embeddings[x])
+        return result
+
+    def _predict_doc_allwords(self, doc, lexicon_embeddings, weights) -> float:
+        row_vects = self._transform_doc_unweighted(doc)
+        row_scores = []
+        for x in row_vects:
+            row_scores.append(
+                self._polarity_function(vf=x,
+                                        Vs=lexicon_embeddings,
+                                        P=weights))
+        return np.mean(row_scores)
 
     @batchprocessing.batch_predict
     def predict_docs(self,
@@ -112,8 +186,21 @@ class LatentSemanticScaling(base.BasePredictor):
                      checkpoint_path: str = None) -> np.ndarray:
         if self._predictprocessor is None:
             raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
-        vects = self._predictprocessor.transform(X)
-        return self.predict_vectors(vects)
+
+        if self._use_ctfidf or self._use_tfidf:
+            preds = self._compute_polarity_ctfidf_corpus(X)
+        else:
+            lexicon_embeddings = self._lex.embeddings
+            weights = self._lex.weights
+            preds = np.zeros( (X.shape[0]))
+            for i in range(X.shape[0]):
+                doc = X[i]
+                preds[i] = self._predict_doc_allwords(
+                    doc=doc,
+                    lexicon_embeddings=lexicon_embeddings,
+                    weights=weights)
+
+        return preds
 
     def predict_words(self,
                        X: Union[pd.Series, np.ndarray],
