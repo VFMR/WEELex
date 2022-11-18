@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 
 from weelex import lexicon
 from weelex import embeddings
@@ -41,6 +42,7 @@ class LatentSemanticScaling(base.BasePredictor):
                  distance_threshold: float = 0.5,
                  n_words: int = 40000,
                  scale_results: bool = True,
+                 scaler: Union[str, callable] = 'standard'
                  ) -> None:
         super().__init__(
             embeds=embeds,
@@ -67,7 +69,17 @@ class LatentSemanticScaling(base.BasePredictor):
         )
         self._use_result_scaling = scale_results
         self._use_tfidf =  use_tfidf
-        self._scaler = StandardScaler()
+        self._scaler = self._get_scaler(scaler)
+
+    @staticmethod
+    def _get_scaler(scaler: Union[str, callable]):
+        if isinstance(scaler, str):
+            if scaler == 'standard':
+                return StandardScaler()
+            elif scaler == 'minmax':
+                return MinMaxScaler()
+        else:
+            return scaler()
 
     def _get_properties(self):
         properties =  super()._get_properties()
@@ -82,10 +94,10 @@ class LatentSemanticScaling(base.BasePredictor):
                        polarity_scores: Union[float, np.ndarray]
                        ) -> Union[float, np.ndarray]:
         if self._use_result_scaling:
-            if isinstance(polarity_scores, float):
+            if isinstance(polarity_scores, float) or isinstance(polarity_scores, int):
                 score_array = np.array([polarity_scores]).reshape(-1,1)
                 result = self._scaler.transform(score_array).reshape(-1)[0]
-            else:
+            elif isinstance(polarity_scores, np.ndarray):
                 score_array = polarity_scores.reshape(-1, 1)
                 result = self._scaler.transform(score_array).reshape(-1)
         else:

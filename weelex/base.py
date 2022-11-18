@@ -126,7 +126,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             self._setup_predictprocessor()
         self._predictprocessor.fit(X=X, keepwords=self._lex.vocabulary)
 
-    def save(self, path):
+    def save(self, path: str) -> None:
         # TODO: directly write into zip archive instead of rmtree()
         if self._is_fit is False:
             raise NotFittedError(f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
@@ -257,7 +257,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     #---------------------------------------------------------------------------
     # classmethods:
     @classmethod
-    def load(cls, path):
+    def load(cls, path: str) -> 'BasePredictor':
         instance = cls(embeds=None)
         usepath = cls._check_zippath(path)
         with ZipFile(usepath) as myzip:
