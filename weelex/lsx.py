@@ -40,6 +40,7 @@ class LatentSemanticScaling(base.BasePredictor):
                  clustermethod: str = 'agglomerative',
                  distance_threshold: float = 0.5,
                  n_words: int = 40000,
+                 scale_results: bool = True,
                  ) -> None:
         super().__init__(
             embeds=embeds,
@@ -64,13 +65,37 @@ class LatentSemanticScaling(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words
         )
+        self._scale_results = scale_results
         self._use_tfidf =  use_tfidf
         self._scaler = StandardScaler()
+
+    def _get_properties(self):
+        properties =  super()._get_properties()
+        properties.update({'scale_results': self._scale_results})
+        return properties
+
+    def _set_properties(self, properties):
+        super()._set_properties(properties)
+        self._scale_results = properties['scale_results']
+
+    def _scale_results(self,
+                       polarity_scores: Union[float, np.ndarray]
+                       ) -> Union[float, np.ndarray]:
+        if self._scale_results:
+            if isinstance(polarity_scores, float):
+                score_array = np.array([polarity_scores]).reshape(-1,1)
+                result = self._scaler.transform(score_array).reshape(-1)[0]
+            else:
+                score_array = polarity_scores.reshape(-1, 1)
+                result = self._scaler.transform(score_array).reshape(-1)
+        else:
+            result = polarity_scores
+        return result
 
     def polarity(self, word: str) -> float:
         if self._is_fit is False:
             raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
-        return self._compute_polarity_word(word)
+        return self._scale_results(self._compute_polarity_word(word))
 
     def doc_polarity(self, doc: str) -> float:
         if self._use_ctfidf:
@@ -85,7 +110,7 @@ class LatentSemanticScaling(base.BasePredictor):
             result = self._predict_doc_allwords(doc=doc,
                                                 lexicon_embeddings=lexicon_embeddings,
                                                 weights=weights)
-        return result
+        return self._scale_results(result)
 
     def _compute_polarity_ctfidf_doc(self, doc: str) -> float:
         vec_w = self._predictprocessor.transform(pd.Series(np.array([doc])))
@@ -105,7 +130,7 @@ class LatentSemanticScaling(base.BasePredictor):
                                       ctfidf_vectors,
                                       ctfidf_weights,
                                       lexicon_embeddings,
-                                      polarity_weights):
+                                      polarity_weights) -> float:
         polarity = 0
         for i, vf in enumerate(ctfidf_vectors):
             polarity += ctfidf_weights[i]*self._polarity_function(
@@ -163,7 +188,7 @@ class LatentSemanticScaling(base.BasePredictor):
         self._is_fit = True
 
         # making prediction on X to fit scaler:
-        preds = self.predict_docs(X)
+        preds = self._predict_docs_unscaled(X)
         self._scaler.fit(preds.reshape(-1,1))
 
     def _transform_doc_unweighted(self, doc: str) -> np.ndarray:
@@ -184,11 +209,7 @@ class LatentSemanticScaling(base.BasePredictor):
                                         P=weights))
         return np.mean(row_scores)
 
-    @batchprocessing.batch_predict
-    def predict_docs(self,
-                     X: Union[pd.Series, np.ndarray],
-                     n_batches: int = None,
-                     checkpoint_path: str = None) -> np.ndarray:
+    def _predict_docs_unscaled(self, X: Union[pd.Series, np.ndarray]) -> np.ndarray:
         if self._predictprocessor is None:
             raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
 
@@ -204,8 +225,16 @@ class LatentSemanticScaling(base.BasePredictor):
                     doc=doc,
                     lexicon_embeddings=lexicon_embeddings,
                     weights=weights)
-
         return preds
+
+
+    @batchprocessing.batch_predict
+    def predict_docs(self,
+                     X: Union[pd.Series, np.ndarray],
+                     n_batches: int = None,
+                     checkpoint_path: str = None) -> np.ndarray:
+        preds = self._predict_docs_unscaled(X=X)
+        return self._scale_results(preds)
 
     @batchprocessing.batch_predict
     def predict_words(self,
@@ -240,12 +269,13 @@ class LatentSemanticScaling(base.BasePredictor):
                                                          Vs=lexicon_embeddings,
                                                          P=weights)
                 scores[i] = row_score
-        return scores
+
+        return self._scale_results(scores)
 
     #---------------------------------------------------------------------------
     # classmethods:
     @classmethod
-    def load(cls, path):
+    def load(cls, path: str) -> 'LatentSemanticScaling':
         instance = super().load(path)
         usepath = cls._check_zippath(path)
         with ZipFile(usepath) as myzip:

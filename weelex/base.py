@@ -159,7 +159,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         all_words += self._tfidf.vocabulary_
         return list(set(all_words))
 
-    def _get_properties(self):
+    def _get_properties(self) -> dict:
         properties = {
         'model_name': self.__class__.__name__,
         'use_ctfidf': self._use_ctfidf,
@@ -181,7 +181,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         'n_words': self._n_words}
         return properties
 
-    def _set_properties(self, properties):
+    def _set_properties(self, properties: dict) -> None:
         self._use_ctfidf = properties['use_ctfidf']
         self._random_state = properties['random_state']
         self._use_progress_bar = properties['progress_bar']
@@ -211,7 +211,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         return array
 
     @staticmethod
-    def _make_embeddings(embeds: Union[embeddings.Embeddings, dict]):
+    def _make_embeddings(embeds: Union[embeddings.Embeddings, dict]) -> embeddings.Embeddings:
         if not isinstance(embeds, embeddings.Embeddings):
             my_embeds = embeddings.Embeddings(embedding_dict=embeds)
         else:
@@ -230,7 +230,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         return super().__repr__(N_CHAR_MAX)
 
     @staticmethod
-    def _check_zippath(path):
+    def _check_zippath(path: str) -> str:
         if not path.endswith('.weelex.zip'):
             if path.endswith('.weelex'):
                 usepath = path + '.zip'

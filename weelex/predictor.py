@@ -411,7 +411,7 @@ class PredictionProcessor:
         instance._set_properties(properties)
 
         if instance._use_tfidf is True:
-            instance.load_tfidf(path='predictprocessor/tfidf.p',
+            instance.load_tfidf(path='predictprocessor/tfidf.joblib',
                                 zip_archive=zipfile)
 
         if instance._use_ctfidf is True:
