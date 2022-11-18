@@ -114,18 +114,6 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     def fit_ctfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
         self._predictprocessor.fit_ctfidf(data)
 
-    # def save_tfidf(self, path: str) -> None:
-    #     self._predictprocessor.save_tfidf(path)
-
-    # def save_ctfidf(self, dir: str) -> None:
-    #     self._predictprocessor.save_ctfidf(dir)
-
-    # def load_tfidf(self, path: str) -> None:
-    #     self._predictprocessor.load_tfidf(path)
-
-    # def load_ctfidf(self, path: str) -> None:
-    #     self._predictprocessor.load_ctfidf(path)
-
     def _fit_predictprocessor(self,
                               X: Union[pd.Series, np.ndarray]) -> None:
         if self._predictprocessor is None:
