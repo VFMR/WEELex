@@ -93,6 +93,7 @@ class PredictionProcessor:
         properties = {
             # 'data': self._data,
             'use_ctfidf': self._use_ctfidf,
+            'aggregate_word_level': self._aggregate_word_level,
             'relevant_pos': self._relevant_pos,
             'min_df': self._min_df,
             'max_df': self._max_df,
@@ -115,6 +116,7 @@ class PredictionProcessor:
 
     def _set_properties(self, properties):
         self._use_ctfidf = properties['use_ctfidf']
+        self._aggregate_word_level = properties['aggregate_word_level']
         self._relevant_pos =  properties['relevant_pos']
         self._min_df =  properties['min_df']
         self._max_df =  properties['max_df']

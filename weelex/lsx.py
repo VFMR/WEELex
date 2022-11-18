@@ -1,16 +1,16 @@
 from typing import Union, Tuple, Iterable, List
-import os
-import json
+from zipfile import ZipFile
+import joblib
 
 import numpy as np
 import pandas as pd
 from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import StandardScaler
 
 from weelex import lexicon
 from weelex import embeddings
 from weelex import base
 from weelex.tfidf import BasicTfidf
-from weelex.predictor import PredictionProcessor
 from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 from batchprocessing import batchprocessing
 
@@ -65,6 +65,7 @@ class LatentSemanticScaling(base.BasePredictor):
             n_words=n_words
         )
         self._use_tfidf =  use_tfidf
+        self._scaler = StandardScaler()
 
     def polarity(self, word: str) -> float:
         if self._is_fit is False:
@@ -235,6 +236,17 @@ class LatentSemanticScaling(base.BasePredictor):
                                                          P=weights)
                 scores[i] = row_score
         return scores
+
+    #---------------------------------------------------------------------------
+    # classmethods:
+    @classmethod
+    def load(cls, path):
+        instance = super().load(path)
+        usepath = cls._check_zippath(path)
+        with ZipFile(usepath) as myzip:
+            with myzip.open('scaler.joblib', 'r') as f:
+                instance._scaler = joblib.load(f)
+
 
 def cosine_simil(a: np.ndarray, b: np.ndarray) -> float:
     """Compute the cosine similarity between two vectors

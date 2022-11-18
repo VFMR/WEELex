@@ -3,12 +3,14 @@ import os
 import json
 import shutil
 from zipfile import ZipFile
+import joblib
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import StandardScaler
 
 from weelex import lexicon
 from weelex import embeddings
@@ -72,6 +74,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._predictprocessor = None
         self._is_fit = False
         self._lex = None
+        self._scaler = None
 
     def get_params(self, deep: bool = True) -> dict:
         return self.__dict__
@@ -141,6 +144,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
 
         if self._lex is not None:
             self._lex.save(os.path.join(path, 'lex'))
+
+        if self._scaler is not None:
+            joblib.dump(self._scaler, os.path.join(path, 'scaler.joblib'))
 
         # archiving the created folder
         shutil.make_archive(path+'.weelex', 'zip', path)
@@ -223,6 +229,17 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     def __repr__(self, N_CHAR_MAX=700):
         return super().__repr__(N_CHAR_MAX)
 
+    @staticmethod
+    def _check_zippath(path):
+        if not path.endswith('.weelex.zip'):
+            if path.endswith('.weelex'):
+                usepath = path + '.zip'
+            else:
+                usepath = path + '.weelex.zip'
+        else:
+            usepath = path
+        return usepath
+
     #---------------------------------------------------------------------------
     # properties:
     @property
@@ -242,11 +259,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     @classmethod
     def load(cls, path):
         instance = cls(embeds=None)
-        if not path.endswith('.weelex.zip'):
-            if path.endswith('.weelex'):
-                usepath = path + '.zip'
-            else:
-                usepath = path + '.weelex.zip'
+        usepath = cls._check_zippath(path)
         with ZipFile(usepath) as myzip:
             with myzip.open('properties.json', 'r') as f:
                 properties = json.load(f)
@@ -256,5 +269,6 @@ class BasePredictor(BaseEstimator, TransformerMixin):
                     myzip.open('embeddings.npz', 'r'))
             instance._load_predictprocessor(myzip)
             instance._lex = lexicon.load(path='lex/', archive=myzip)
+
         instance._is_fit = True
         return instance
