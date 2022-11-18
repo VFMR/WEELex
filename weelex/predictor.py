@@ -233,7 +233,7 @@ class PredictionProcessor:
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
         if self._use_tfidf:
-            self._tfidf.save(os.path.join(path, 'tfidf.p'))
+            self._tfidf.save(os.path.join(path, 'tfidf.joblib'))
         if self._ctfidf is not None:
             self._ctfidf.save(path)
         properties = self._get_properties()
@@ -246,7 +246,7 @@ class PredictionProcessor:
         self._set_properties(properties)
 
         if self._use_tfidf is True:
-            self.load_tfidf(os.path.join(path, 'tfidf.p'))
+            self.load_tfidf(os.path.join(path, 'tfidf.joblib'))
 
         if self._use_ctfidf is True:
             try:

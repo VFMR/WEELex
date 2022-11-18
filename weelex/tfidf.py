@@ -2,6 +2,7 @@ import time
 import pickle
 import re
 import zipfile
+import joblib
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -295,10 +296,10 @@ class BasicTfidf:
              zip_archive: zipfile.ZipFile = None):
         if zip_archive is not None:
             with zip_archive.open(path, 'r') as f:
-                self.vectorizer = pickle.load(f)
+                self.vectorizer = joblib.load(f)
         else:
             with open(path, 'rb') as f:
-                self.vectorizer = pickle.load(f)
+                self.vectorizer = joblib.load(f)
 
     def fit(self, X, y=None):
 
@@ -338,7 +339,7 @@ class BasicTfidf:
     def save(self, path):
         # exporting the different results from vectorization:
         with open(path, 'wb') as f:
-            pickle.dump(self.vectorizer, f)  # vectorizer
+            joblib.dump(self.vectorizer, f)
 
     # for compatibility, include all the other methods of the TfidfVectorizer class
     def get_feature_names(self):

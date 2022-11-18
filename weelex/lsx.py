@@ -148,7 +148,7 @@ class LatentSemanticScaling(base.BasePredictor):
                            P: np.ndarray) -> float:
         cosine_sum = 0
         for i in range(Vs.shape[0]):
-            cosine_sum += cosine_simil(Vs[i,:], vf)*P[i]
+            cosine_sum += _cosine_simil(Vs[i,:], vf)*P[i]
         return (1 / Vs.shape[0]) * cosine_sum
 
     def fit(self,
@@ -161,6 +161,10 @@ class LatentSemanticScaling(base.BasePredictor):
         # setting up the aggregator:
         self._fit_predictprocessor(X=X)
         self._is_fit = True
+
+        # making prediction on X to fit scaler:
+        preds = self.predict_docs(X)
+        self._scaler.fit(preds.reshape(-1,1))
 
     def _transform_doc_unweighted(self, doc: str) -> np.ndarray:
         splits = doc.split()
@@ -203,6 +207,7 @@ class LatentSemanticScaling(base.BasePredictor):
 
         return preds
 
+    @batchprocessing.batch_predict
     def predict_words(self,
                        X: Union[pd.Series, np.ndarray],
                        n_batches: int = None,
@@ -246,15 +251,16 @@ class LatentSemanticScaling(base.BasePredictor):
         with ZipFile(usepath) as myzip:
             with myzip.open('scaler.joblib', 'r') as f:
                 instance._scaler = joblib.load(f)
+        return instance
 
 
-def cosine_simil(a: np.ndarray, b: np.ndarray) -> float:
+def _cosine_simil(a: np.ndarray, b: np.ndarray) -> float:
     """Compute the cosine similarity between two vectors
 
     Example:
         >>> a = np.array([1,2,3])
         >>> b = np.array([3,2,1])
-        >>> cosine_simil(a, b)
+        >>> _cosine_simil(a, b)
         0.7142857142857143
 
     Args:
