@@ -65,23 +65,23 @@ class LatentSemanticScaling(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words
         )
-        self._scale_results = scale_results
+        self._use_result_scaling = scale_results
         self._use_tfidf =  use_tfidf
         self._scaler = StandardScaler()
 
     def _get_properties(self):
         properties =  super()._get_properties()
-        properties.update({'scale_results': self._scale_results})
+        properties.update({'use_result_scaling': self._use_result_scaling})
         return properties
 
     def _set_properties(self, properties):
         super()._set_properties(properties)
-        self._scale_results = properties['scale_results']
+        self._use_result_scaling = properties['use_result_scaling']
 
     def _scale_results(self,
                        polarity_scores: Union[float, np.ndarray]
                        ) -> Union[float, np.ndarray]:
-        if self._scale_results:
+        if self._use_result_scaling:
             if isinstance(polarity_scores, float):
                 score_array = np.array([polarity_scores]).reshape(-1,1)
                 result = self._scaler.transform(score_array).reshape(-1)[0]
