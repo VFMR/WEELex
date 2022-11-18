@@ -1,5 +1,6 @@
 from typing import Union, Tuple, Iterable, overload, List, Dict
 # from functools import singledispatch, singledispathmethod
+from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
@@ -19,12 +20,11 @@ class Embeddings:
         if embedding_dict is not None:
             self._wv = embedding_dict
             self._keys = embedding_dict.keys()
-            self._vectors = np.array([embedding_dict[x] for x in self._keys])
+            self._vectors = self._get_val_from_key_vectorized(self._keys)
         else:
             self._wv = None
             self._keys = None
             self._vectors = None
-
 
     def load_vectors(self,
                      path: str,
@@ -57,7 +57,7 @@ class Embeddings:
             terms_lst = terms
 
         keys, vectors = self._data_from_dct(
-            {term: self._wv[term] for term in terms_lst}
+            {term: self._get_val_from_key(term) for term in terms_lst}
         )
         self._keys = keys
         self._vectors = vectors
@@ -105,9 +105,10 @@ class Embeddings:
     def _get_val_from_key_vectorized(self, keys: Iterable[str]) -> np.ndarray:
         # TODO: currently only working for filtered embeddings
         # TODO: is not working efficiently right now. Only basic functionality
-        lst = [self._get_val_from_key(x) for x in keys]
-        values = np.array(lst)
-        return values
+        vector = np.zeros(len(keys, self.dim))
+        for i, x in keys:
+            vector[i] = self._get_val_from_key(x)
+        return vector
 
     def save_filtered(self, path: str) -> None:
         if self._keys is not None:
@@ -158,22 +159,42 @@ class Embeddings:
     # --------------------------------------------------------------------------
     # classmethods
     @classmethod
-    def load_filtered(cls, path: str) -> None:
+    def load_filtered(cls,
+                      path: str,
+                      archive: ZipFile = None) -> None:
         instance = cls()
-        if isinstance(path, str):
-            if not path.endswith('.npz'):
-                path = path+'.npz'
-        loaded = np.load(path, allow_pickle=False)
-        if isinstance(loaded['keys'], np.ndarray):
-            instance._keys = loaded['keys']
-            failure = False
-        else:
-            failure = True
+        if archive is None:
+            if isinstance(path, str):
+                if not path.endswith('.npz'):
+                    path = path+'.npz'
+            with np.load(path, allow_pickle=False) as loaded:
+                if isinstance(loaded['keys'], np.ndarray):
+                    instance._keys = loaded['keys']
+                    failure = False
+                else:
+                    failure = True
 
-        if isinstance(loaded['vectors'], np.ndarray):
-            instance._vectors = loaded['vectors']
+                if isinstance(loaded['vectors'], np.ndarray):
+                    instance._vectors = loaded['vectors']
+                else:
+                    failure = True
         else:
-            failure = True
+            if isinstance(path, str):
+                if not path.endswith('.npz'):
+                    path = path+'.npz'
+            with archive.open(path, 'r') as f:
+                with np.load(f, allow_pickle=False) as loaded:
+                    if isinstance(loaded['keys'], np.ndarray):
+                        instance._keys = loaded['keys']
+                        failure = False
+                    else:
+                        failure = True
+
+                    if isinstance(loaded['vectors'], np.ndarray):
+                        instance._vectors = loaded['vectors']
+                    else:
+                        failure = True
+
 
         if failure:
             raise ValueError('Wrong data type in loaded file.')

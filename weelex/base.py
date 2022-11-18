@@ -100,13 +100,16 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             n_words=self._n_words,
             n_jobs=self._n_jobs)
 
-    def _load_predictprocessor(self, path):
-        self._predictprocessor = PredictionProcessor(
-            embeddings=self._embeddings
+    def _load_predictprocessor(self, zip_archive):
+        # self._predictprocessor = PredictionProcessor(
+        #     embeddings=self._embeddings
+        # )
+        # self._predictprocessor.load(os.path.join(path, 'predictprocessor'))
+        # # HACK: setting the private _embeddings property is not optimal
+        # self._predictprocessor._embeddings = self._embeddings
+        self._predictprocessor = PredictionProcessor.load_from_weelexarchive(
+            zip_archive
         )
-        self._predictprocessor.load(os.path.join(path, 'predictprocessor'))
-        # HACK: setting the private _embeddings property is not optimal
-        self._predictprocessor._embeddings = self._embeddings
 
     def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
         self._predictprocessor.fit_tfidf(data)
@@ -251,7 +254,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
 
             instance._embeddings = embeddings.Embeddings.load_filtered(
                     myzip.open('embeddings.npz', 'r'))
-        instance._load_predictprocessor(path)
-        instance._lex = lexicon.load(os.path.join(path, 'lex'))
+            instance._load_predictprocessor(myzip)
+            instance._lex = lexicon.load(path='lex/', archive=myzip)
         instance._is_fit = True
         return instance

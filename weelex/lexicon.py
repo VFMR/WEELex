@@ -3,6 +3,7 @@ from typing import Union, Iterable, Tuple, Dict
 import os
 import json
 import copy
+from zipfile import ZipFile
 
 import pandas as pd
 import numpy as np
@@ -224,21 +225,39 @@ class BaseLexicon:
     # ------------------------------ Class methods
 
     @classmethod
-    def load(cls, path: str, properties: dict = None):
+    def load(cls,
+             path: str,
+             properties: dict = None,
+             archive: ZipFile = None):
         """Load a previously saved Lexicon instance
 
         Args:
             path (str): Path of saved Lexicon instance
         """
         if properties is None:
-            with open(os.path.join(path, 'properties.json'), 'r') as f:
-                properties = json.load(f)
+            if archive is None:
+                with open(os.path.join(path, 'properties.json'), 'r') as f:
+                    properties = json.load(f)
+            else:
+                with archive.open(path+'properties.json', 'r') as f:
+                    properties = json.load(f)
         propertyname = properties['name']
         if  propertyname != cls.__name__:
             raise ValueError(f"Attempted to load a saved {propertyname} instance when a {cls.__name__} instance is required.")
 
-        dictionary_df = pd.read_csv(os.path.join(path, 'dictionary_df.csv.gz'))
-        embeddings = np.load(os.path.join(path, 'embeddings.npy'))
+        if archive is None:
+            dictionary_df = pd.read_csv(os.path.join(path, 'dictionary_df.csv.gz'))
+            embeddings = np.load(os.path.join(path, 'embeddings.npy'))
+        else:
+            with archive.open(path+'dictionary_df.csv.gz', 'r') as f:
+                try:
+                    dictionary_df = pd.read_csv(f, compression='gzip')
+                except UnicodeDecodeError:
+                    dictionary_df = pd.read_csv(f,
+                                                encoding='latin1',
+                                                compression='gzip')
+            with archive.open(path+'embeddings.npy') as f:
+                embeddings = np.load(f)
 
         instance = cls(dictionary=None)
         instance._embeddings = embeddings
@@ -366,9 +385,16 @@ class WeightedLexicon(BaseLexicon):
     #---------------------------------------------------------------------------
     # Classmethods:
     @classmethod
-    def load(cls, path, properties):
-        instance = super().load(path, properties)
-        weights = pd.read_csv(os.path.join(path, 'weights.csv.gz')).iloc[:,0]
+    def load(cls, path, properties, archive: ZipFile = None):
+        instance = super().load(path, properties, archive=archive)
+        if archive is None:
+            weights = pd.read_csv(os.path.join(path, 'weights.csv.gz')).iloc[:,0]
+        else:
+            with archive.open(path + 'weights.csv.gz') as f:
+                try:
+                    weights = pd.read_csv(f, compression='gzip').iloc[:,0]
+                except UnicodeDecodeError:
+                    weights = pd.read_csv(f, encoding='latin1', compression='gzip').iloc[:,0]
         instance._weights = weights
         instance._word2weight = properties['_word2weight']
         return instance
@@ -529,17 +555,26 @@ def merge_lexica(lexica: Iterable[Lexicon]) -> Lexicon:
     return lex1
 
 def load(path: str,
+         archive: ZipFile = None,
          ) -> Union['BaseLexicon', 'WeightedLexicon', 'Lexicon']:
-    with open(os.path.join(path, 'properties.json'), 'r') as f:
-        properties = json.load(f)
+    if archive is None:
+        with open(os.path.join(path, 'properties.json'), 'r') as f:
+            properties = json.load(f)
+    else:
+        if path.endswith('/'):
+            filepath = path + 'properties.json'
+        else:
+            filepath = path + '/properties.json'
+        with archive.open(filepath, 'r') as f:
+            properties = json.load(f)
 
     propertyname = properties['name']
     if propertyname == 'BaseLexicon':
-        instance = BaseLexicon.load(path, properties)
+        instance = BaseLexicon.load(path, properties, archive=archive)
     elif propertyname == 'WeightedLexicon':
-        instance = WeightedLexicon.load(path, properties)
+        instance = WeightedLexicon.load(path, properties, archive=archive)
     elif propertyname == 'Lexicon':
-        instance = Lexicon.load(path, properties)
+        instance = Lexicon.load(path, properties, archive=archive)
     else:
         raise ValueError(f'Attempted to load an instance of {propertyname} when one of'+' {"BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.')
     return instance

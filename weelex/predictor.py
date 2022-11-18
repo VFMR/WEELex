@@ -211,7 +211,7 @@ class PredictionProcessor:
     def save_ctfidf(self, dir: str) -> None:
         self._ctfidf.save(dir)
 
-    def load_ctfidf(self, path: str) -> None:
+    def load_ctfidf(self, path: str, archive: ZipFile = None) -> None:
         ctfidf = ClusterTfidfVectorizer(vectorizer=self._tfidf.vectorizer,
                                         embeddings=self._embeddings,
                                         n_docs=self._n_docs,
@@ -225,7 +225,7 @@ class PredictionProcessor:
                                         clustermethod=self._clustermethod,
                                         distance_threshold=self._distance_threshold,
                                         n_words=self._n_words)
-        ctfidf.load(path)
+        ctfidf.load(path, archive)
         self._ctfidf = ctfidf
 
     def save(self, path: str) -> None:
@@ -398,9 +398,11 @@ class PredictionProcessor:
         return self._get_embeddings_dim(self._embeddings, self._checkterm)
 
     @classmethod
-    def load_from_weelexarchive(cls, zipfile):
-        embeddings = np.load(zipfile.open('embeddings.npz', 'r'))
-        instance = cls(embeddings=embeddings)
+    def load_from_weelexarchive(cls, zipfile: ZipFile):
+        embeds = embeddings.Embeddings.load_filtered('embeddings.npz',
+                                                     archive=zipfile)
+
+        instance = cls(embeddings=embeds)
 
         with zipfile.open('predictprocessor/properties.json', 'r') as f:
             properties = json.load(f)
@@ -412,13 +414,14 @@ class PredictionProcessor:
 
         if instance._use_ctfidf is True:
             try:
-                # CHECKME Test whether this works
-                random_int = str(random.randint(0, 99999999))
-                random_int = random_int.zfill(8)
-                zipfile.extract('predictprocessor/clustertfidf',
-                                path=os.path.join('wlxextract'+random_int, 'predictprocessor', 'clustertfidf'))
-                instance.load_ctfidf(os.path.join('wlxextract'+random_int, 'predictprocessor', 'clustertfidf'))
-                shutil.rmtree(os.path.join('weelexextract'+random_int))
+                instance.load_ctfidf(path='predictprocessor/clustertfidf',
+                                     archive=zipfile)
+                # random_int = str(random.randint(0, 99999999))
+                # random_int = random_int.zfill(8)
+                # zipfile.extract('predictprocessor/clustertfidf',
+                #                 path=os.path.join('wlxextract'+random_int, 'predictprocessor', 'clustertfidf'))
+                # instance.load_ctfidf(os.path.join('wlxextract'+random_int, 'predictprocessor', 'clustertfidf'))
+                # shutil.rmtree(os.path.join('weelexextract'+random_int))
             except FileNotFoundError as e:
                 print(e)
                 print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
