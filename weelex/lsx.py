@@ -244,7 +244,8 @@ class LatentSemanticScaling(base.BasePredictor):
     def predict_docs(self,
                      X: Union[pd.Series, np.ndarray],
                      n_batches: int = None,
-                     checkpoint_path: str = None) -> np.ndarray:
+                     checkpoint_path: str = None,
+                     n_jobs: int = 1) -> np.ndarray:
         preds = self._predict_docs_unscaled(X=X)
         return self._scale_results(preds)
 
