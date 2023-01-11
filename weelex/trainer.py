@@ -135,13 +135,14 @@ class TrainProcessor:
         """
         Example:
             >>> A = pd.DataFrame(np.zeros((3,10)))
-            >>> A.index = ['Cars:Vehicle', 'Politics:Politician', 'Food:Bread']
+            >>> A.index = ['Cars:Vehicle', 'Politics:Politician', 'Food:Bread', 'Food:a:b']
             >>> x = TrainProcessor(lex={'A': ['a', 'b']})
             >>> x._make_id_term_mapping(A)
               categories       terms
             0       Cars     Vehicle
             1   Politics  Politician
             2       Food       Bread
+            3       Food         a:b
 
         """
         # terms = embedding_df.index.str.replace(r'[A-Za-z0-9]*\:', '',
