@@ -110,6 +110,8 @@ class WEELexClassifier(base.BasePredictor):
             fixed_params: dict = None,
             n_best_params: int = 3,
             progress_bar: bool = False) -> None:
+        self._lex = lex
+        self._support_lex = support_lex
         self._fit_predictprocessor(X=X)
         self._setup_trainprocessor(lex, support_lex, main_keys, support_keys)
         input_shape = self._trainprocessor.embedding_dim
@@ -143,8 +145,6 @@ class WEELexClassifier(base.BasePredictor):
             models.update({cat: model})
         self._models = models
         self._is_fit = True
-        self._lex = lex
-        self._support_lex = support_lex
 
     def _get_full_vocab(self) -> list:
         all_terms = super()._get_full_vocab()
