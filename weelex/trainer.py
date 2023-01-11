@@ -149,7 +149,7 @@ class TrainProcessor:
         # term2cat = pd.DataFrame(terms, columns=['terms'])
         # categories = df_full.index.str.extract(r'([A-Za-z0-9]*)\:')
         # term2cat['categories'] = categories
-        term2cat = embedding_df.index.str.split(':', expand=True)\
+        term2cat = embedding_df.index.str.split(':', expand=True, n=1)\
                                          .to_frame(index=False)
         term2cat.columns = ['categories', 'terms']
         return term2cat
