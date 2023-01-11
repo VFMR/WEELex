@@ -26,22 +26,6 @@ class Embeddings:
             self._keys = None
             self._vectors = None
 
-    def load_vectors(self,
-                     path: str,
-                     embedding_type: str,
-                     fine_tuned: bool = False) -> None:
-        if embedding_type == 'fasttext':
-            if not fine_tuned:
-                self.load_facebook_vectors(path)
-            else:
-                self.load_finetuned_fasttext(path)
-        elif embedding_type == 'word2vec':
-            self.load_finetuned_word2vec(path)
-        else:
-            raise ValueError(f"""
-                Invalid embedding type {embedding_type}.
-                Enter one of 'word2vec' or 'fasttext'.
-             """)
 
     def filter_terms(self,
                      terms: Union[list,
@@ -105,8 +89,8 @@ class Embeddings:
     def _get_val_from_key_vectorized(self, keys: Iterable[str]) -> np.ndarray:
         # TODO: currently only working for filtered embeddings
         # TODO: is not working efficiently right now. Only basic functionality
-        vector = np.zeros(len(keys, self.dim))
-        for i, x in keys:
+        vector = np.zeros(shape=(len(keys), self.dim))
+        for i, x in enumerate(keys):
             vector[i] = self._get_val_from_key(x)
         return vector
 
@@ -202,6 +186,25 @@ class Embeddings:
         instance.isfiltered = True
         instance._wv = instance.make_wv_from_keys_vectors()
         return instance
+
+    @classmethod
+    def load_vectors(cls,
+                     path: str,
+                     embedding_type: str,
+                     fine_tuned: bool = False) -> None:
+        if embedding_type == 'fasttext':
+            if not fine_tuned:
+                inst = cls.load_facebook_vectors(path)
+            else:
+                inst = cls.load_finetuned_fasttext(path)
+        elif embedding_type == 'word2vec':
+            inst = cls.load_finetuned_word2vec(path)
+        else:
+            raise ValueError(f"""
+                Invalid embedding type {embedding_type}.
+                Enter one of 'word2vec' or 'fasttext'.
+             """)
+        return inst
 
     @classmethod
     def load_facebook_vectors(cls, path: str) -> None:
