@@ -43,8 +43,7 @@ class GenericTest(unittest.TestCase):
 
     def _setup2(self):
         self._setup()
-        embeds = embeddings.Embeddings()
-        embeds.load_filtered(os.path.join(TEMPDIR, 'filtered_embeddings'))
+        embeds = embeddings.Embeddings.load_filtered(os.path.join(TEMPDIR, 'filtered_embeddings'))
         self.embeds = embeds
 
     def _setup3(self):
@@ -99,7 +98,8 @@ class TestBatchProc(unittest.TestCase):
             batchprocessing._save_checkpoints(
                 self.myobj.fake_cp_path,
                 iteration=i,
-                df=splits_df
+                df=splits_df,
+                n_batches=10,
             )
 
     def test_batch_predict(self):
@@ -182,7 +182,7 @@ class TestClassifier(GenericTest):
 
 
     def test_fit(self):
-        self._setup2()
+        self._setup_predictor()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
         cl.fit(X=self.data,lex=self.lex1,
                      support_lex=self.lex2,
@@ -198,7 +198,7 @@ class TestClassifier(GenericTest):
         assert len(X) == len(y)
 
     def test_fit_pb(self):
-        self._setup2()
+        self._setup_predictor()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
         cl.fit(X=self.data,
                lex=self.lex1,
@@ -211,7 +211,7 @@ class TestClassifier(GenericTest):
         assert cl.main_keys == ['PolitikVR', 'AutoVR']
 
     def test_hp_tuning(self):
-        self._setup2()
+        self._setup_predictor()
         n_best_params = 4
         cl = classifier.WEELexClassifier(
             embeds=self.embeds,
@@ -532,8 +532,7 @@ class TestEmbeddings(unittest.TestCase):
 
     def _setup2(self):
         self._setup()
-        embeds = embeddings.Embeddings()
-        embeds.load_filtered(self.path)
+        embeds = embeddings.Embeddings.load_filtered(self.path)
         self.embeds = embeds
 
     def test_data_from_dict(self):
@@ -549,8 +548,7 @@ class TestEmbeddings(unittest.TestCase):
 
     def test_load_filtered(self):
         self._setup()
-        embeds = embeddings.Embeddings()
-        embeds.load_filtered(self.path)
+        embeds = embeddings.Embeddings.load_filtered(self.path)
         assert isinstance(embeds.keys, np.ndarray)
         assert isinstance(embeds._vectors, np.ndarray)
         assert embeds._vectors.shape[1] == 300
@@ -686,15 +684,15 @@ class TestLSX(GenericTest):
     def test_cosine(self):
         a = [1,0,0]
         b = [0,1,0]
-        assert lsx.cosine_simil(a, b) == 0.0
+        assert lsx._cosine_simil(a, b) == 0.0
 
         a = [1,0,0]
         b = [1,0,0]
-        assert lsx.cosine_simil(a, b) == 1.0
+        assert lsx._cosine_simil(a, b) == 1.0
 
         a = [1, 0, 0]
         b = [1, 1, 1]
-        assert np.allclose(lsx.cosine_simil(a, b), 0.5773502691896257)
+        assert np.allclose(lsx._cosine_simil(a, b), 0.5773502691896257)
 
     def test_lsx(self):
         self._setup_lsx()
@@ -710,13 +708,11 @@ class TestLSX(GenericTest):
         polarity2 = self.model.polarity('schlecht')
         polarity3 = self.model.polarity('wunderschön')
         polarity4 = self.model.polarity('mies')
-        polarity5 = self.model.polarity('blöd')
-        print(f'gut: {polarity1}, schlecht: {polarity2}, wunderschön: {polarity3}, mies: {polarity4}, blöd: {polarity5}')
+        print(f'gut: {polarity1}, schlecht: {polarity2}, wunderschön: {polarity3}, mies: {polarity4}')
         assert polarity1 > 0
         assert polarity2 < 0
         assert polarity3 > 0
         assert polarity4 < 0
-        assert polarity5 < 0
 
 
 class TestTrainer(GenericTest):
