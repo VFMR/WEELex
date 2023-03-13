@@ -6,5 +6,15 @@ paper:
 
 
 
+## Installation:
+### Regular install:
+- Clone into directory or download and extract zip
+- Enter the downloaded package directory and execute:
+```
+conda create --name weelex python pip
+conda activate weelex
+python -m spacy download de_core_news_lg
+python -m pip install .
+```
 
 
