@@ -1,0 +1,871 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>weelex package &mdash; Weelex 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Weelex
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">weelex package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#weelex-base-module">weelex.base module</a></li>
+<li><a class="reference internal" href="#weelex-classifier-module">weelex.classifier module</a></li>
+<li><a class="reference internal" href="#weelex-cli-module">weelex.cli module</a></li>
+<li><a class="reference internal" href="#module-weelex.embeddings">weelex.embeddings module</a></li>
+<li><a class="reference internal" href="#module-weelex.ensemble">weelex.ensemble module</a></li>
+<li><a class="reference internal" href="#module-weelex.lexicon">weelex.lexicon module</a></li>
+<li><a class="reference internal" href="#weelex-lsx-module">weelex.lsx module</a></li>
+<li><a class="reference internal" href="#weelex-predictor-module">weelex.predictor module</a></li>
+<li><a class="reference internal" href="#module-weelex.tfidf">weelex.tfidf module</a></li>
+<li><a class="reference internal" href="#weelex-trainer-module">weelex.trainer module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Weelex</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>weelex package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/weelex.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="weelex-package">
+<h1>weelex package<a class="headerlink" href="#weelex-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="weelex-base-module">
+<h2>weelex.base module<a class="headerlink" href="#weelex-base-module" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="weelex-classifier-module">
+<h2>weelex.classifier module<a class="headerlink" href="#weelex-classifier-module" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="weelex-cli-module">
+<h2>weelex.cli module<a class="headerlink" href="#weelex-cli-module" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-weelex.embeddings">
+<span id="weelex-embeddings-module"></span><h2>weelex.embeddings module<a class="headerlink" href="#module-weelex.embeddings" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.embeddings.</span></span><span class="sig-name descname"><span class="pre">Embeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embedding_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">testvalue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.dim">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dim</span></span><a class="headerlink" href="#weelex.embeddings.Embeddings.dim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.filter_terms">
+<span class="sig-name descname"><span class="pre">filter_terms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#weelex.lexicon.Lexicon" title="weelex.lexicon.Lexicon"><span class="pre">Lexicon</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.filter_terms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.filter_terms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.keys">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">keys</span></span><a class="headerlink" href="#weelex.embeddings.Embeddings.keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.load_facebook_vectors">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_facebook_vectors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.load_facebook_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.load_facebook_vectors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.load_filtered">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_filtered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">archive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ZipFile</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.load_filtered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.load_filtered" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.load_finetuned_fasttext">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_finetuned_fasttext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.load_finetuned_fasttext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.load_finetuned_fasttext" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.load_finetuned_word2vec">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_finetuned_word2vec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.load_finetuned_word2vec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.load_finetuned_word2vec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.load_vectors">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_vectors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fine_tuned</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.load_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.load_vectors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.lookup">
+<span class="sig-name descname"><span class="pre">lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.lookup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.lookup" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Series</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.make_wv_from_keys_vectors">
+<span class="sig-name descname"><span class="pre">make_wv_from_keys_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.make_wv_from_keys_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.make_wv_from_keys_vectors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.embeddings.Embeddings.save_filtered">
+<span class="sig-name descname"><span class="pre">save_filtered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/embeddings.html#Embeddings.save_filtered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.embeddings.Embeddings.save_filtered" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-weelex.ensemble">
+<span id="weelex-ensemble-module"></span><h2>weelex.ensemble module<a class="headerlink" href="#module-weelex.ensemble" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.ensemble.</span></span><span class="sig-name descname"><span class="pre">AugmentedEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">category</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outside_categories</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples_multiplier_outside</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modeltype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'svm'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">svc_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">svc_kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rbf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_vectors_agg_training</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_fast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">modelkwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#weelex.ensemble.BaseEnsemble" title="weelex.ensemble.BaseEnsemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEnsemble</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEstimator</span></code></p>
+<p>Class to train an ensemble of models.
+For each model, a random selection of input vectors
+is aggregated as a linear combination to “augment” the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>BaseEstimator</strong> – Sklearn base class for estimators.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.draw_random_samples_classwise">
+<span class="sig-name descname"><span class="pre">draw_random_samples_classwise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classvalue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples_multiplier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_all_original</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.draw_random_samples_classwise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.draw_random_samples_classwise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine word vectors by randomly selecting terms
+of a specific category and making a linear combination of these</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>pandas.DataFrame</em>) – The matrix of word vectors</p></li>
+<li><p><strong>y</strong> (<em>pandas.DataFrame</em>) – Contains the classes of each term</p></li>
+<li><p><strong>classvalue</strong> (<em>int</em>) – Value of current class to consider. 0 or 1</p></li>
+<li><p><strong>n_samples_multiplier</strong> (<em>int</em>) – Value to multiply number of original
+words of the category with to get the number of observations
+that shall be drawn.</p></li>
+<li><p><strong>n_samples</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples. Defaults to None.</p></li>
+<li><p><strong>include_all_original</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the
+original, i.e. non-aggregated, word vectors shall be
+included in the sample. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The X and y arrays that can be used</dt><dd><p>for input in Machine Learning models.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to train the ml models via passed X and y arrays.
+X is a matrix with the embedding vectors for each term, y is
+a binary that tells whether the term belongs to the “inside” (i.e.
+is part of the category that shall be predicted) or the “outside”
+(i.e. is from a category different from the one to be predicted).</p>
+<p>A sample of observations, in the form of linear combinations from
+random word embeddings of a category, is drawn and used for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>numpy.array</em><em> or </em><em>pandas.DataFrame</em>) – Matrix of word embeddings</p></li>
+<li><p><strong>y</strong> (<em>numpy.array</em><em> or </em><em>pandas.DataFrame</em>) – target values</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load (hyper-)parameters and models that were saved using
+the .save method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Name of saved file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict binary class of input matrix.
+Uses .predict_proba method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em>) – Input matrix</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em><em>, </em><em>optional</em>) – Cutoff value for binary prediction.
+Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Binary prediction</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.predict_proba">
+<span class="sig-name descname"><span class="pre">predict_proba</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.predict_proba"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.predict_proba" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to predict “probabilities” for each observation.
+Mean of probabilites for individual models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>X</strong> (<em>numpy.array</em><em> or </em><em>pandas.DataFrame</em>) – Matrix to predict</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Prediction vector containing the probabilities</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save (hyper-)parameters and models to disk.
+Use this to use a fitted model later on for prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Path and name of save file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.AugmentedEnsemble.score">
+<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_func=&lt;function</span> <span class="pre">f1_score&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#AugmentedEnsemble.score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.AugmentedEnsemble.score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scoring function. Used for Parameter tuning</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em>) – Input matrix</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – target vector</p></li>
+<li><p><strong>score_func</strong> (<em>callable</em><em>, </em><em>optional</em>) – Function for scoring.
+Defaults to sklearn.metrics.f1_score.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Score</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.ensemble.BaseEnsemble">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.ensemble.</span></span><span class="sig-name descname"><span class="pre">BaseEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">progress_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#BaseEnsemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.BaseEnsemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.ensemble.FullEnsemble">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.ensemble.</span></span><span class="sig-name descname"><span class="pre">FullEnsemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">category</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outside_categories</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_set=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_bar=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model=&lt;class</span> <span class="pre">'weelex.ensemble.AugmentedEnsemble'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**modelparams</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#FullEnsemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.FullEnsemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#weelex.ensemble.BaseEnsemble" title="weelex.ensemble.BaseEnsemble"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEnsemble</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.FullEnsemble.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#FullEnsemble.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.FullEnsemble.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.FullEnsemble.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#FullEnsemble.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.FullEnsemble.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.FullEnsemble.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#FullEnsemble.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.FullEnsemble.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.FullEnsemble.predict_proba">
+<span class="sig-name descname"><span class="pre">predict_proba</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#FullEnsemble.predict_proba"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.FullEnsemble.predict_proba" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.ensemble.FullEnsemble.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#FullEnsemble.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.FullEnsemble.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="weelex.ensemble.ensemble_cross_val_score">
+<span class="sig-prename descclassname"><span class="pre">weelex.ensemble.</span></span><span class="sig-name descname"><span class="pre">ensemble_cross_val_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/ensemble.html#ensemble_cross_val_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.ensemble_cross_val_score" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="weelex.ensemble.make_agg_sample">
+<span class="sig-prename descclassname"><span class="pre">weelex.ensemble.</span></span><span class="sig-name descname"><span class="pre">make_agg_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/weelex/ensemble.html#make_agg_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.ensemble.make_agg_sample" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Draw n vectors randomly and return the linear</dt><dd><p>combination of these with random weights.
+Method to ensure npdarraothe vectors add up to 1 is simplified
+by just drawing random integers and taking their relative size.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>numpy.array</em>) – n-m Matrix with data to draw from.</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – Number of vectors to aggregate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Vector with linear combination of shape (m,).</dt><dd><p>i.e. is only one observation.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-weelex.lexicon">
+<span id="weelex-lexicon-module"></span><h2>weelex.lexicon module<a class="headerlink" href="#module-weelex.lexicon" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.lexicon.</span></span><span class="sig-name descname"><span class="pre">BaseLexicon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.embed">
+<span class="sig-name descname"><span class="pre">embed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embeddings</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon.embed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon.embed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.embedding_shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">embedding_shape</span></span><a class="headerlink" href="#weelex.lexicon.BaseLexicon.embedding_shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.embeddings">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">embeddings</span></span><a class="headerlink" href="#weelex.lexicon.BaseLexicon.embeddings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.get_vocabulary">
+<span class="sig-name descname"><span class="pre">get_vocabulary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon.get_vocabulary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon.get_vocabulary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a sorted list of all the lexicon categories</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Food&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Bread&#39;</span><span class="p">,</span> <span class="s1">&#39;Salad&#39;</span><span class="p">],</span> <span class="s1">&#39;Animal&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Dog&#39;</span><span class="p">,</span> <span class="s1">&#39;Cat&#39;</span><span class="p">]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span> <span class="o">=</span> <span class="n">BaseLexicon</span><span class="p">(</span><span class="n">my_dct</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span><span class="o">.</span><span class="n">get_vocabulary</span><span class="p">()</span>
+<span class="go">[&#39;Bread&#39;, &#39;Cat&#39;, &#39;Dog&#39;, &#39;Salad&#39;]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sorted array of categories</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.is_embedded">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_embedded</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#weelex.lexicon.BaseLexicon.is_embedded" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.keys">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">keys</span></span><a class="headerlink" href="#weelex.lexicon.BaseLexicon.keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">archive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ZipFile</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a previously saved Lexicon instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path of saved Lexicon instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save lexicon to disk</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Output file path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#BaseLexicon.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.BaseLexicon.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the lexicon in dictionary format.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="s1">&#39;B&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span> <span class="o">=</span> <span class="n">BaseLexicon</span><span class="p">(</span><span class="n">my_dct</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">{&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;]}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict with the lexicon key-value pairs</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.BaseLexicon.vocabulary">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vocabulary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><a class="headerlink" href="#weelex.lexicon.BaseLexicon.vocabulary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.lexicon.Lexicon">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.lexicon.</span></span><span class="sig-name descname"><span class="pre">Lexicon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#Lexicon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.Lexicon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#weelex.lexicon.BaseLexicon" title="weelex.lexicon.BaseLexicon"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseLexicon</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.Lexicon.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lexica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#weelex.lexicon.BaseLexicon" title="weelex.lexicon.BaseLexicon"><span class="pre">BaseLexicon</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#weelex.lexicon.BaseLexicon" title="weelex.lexicon.BaseLexicon"><span class="pre">BaseLexicon</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#Lexicon.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.Lexicon.merge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.lexicon.</span></span><span class="sig-name descname"><span class="pre">WeightedLexicon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#WeightedLexicon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.WeightedLexicon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#weelex.lexicon.BaseLexicon" title="weelex.lexicon.BaseLexicon"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseLexicon</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon.embed">
+<span class="sig-name descname"><span class="pre">embed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embeddings</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#WeightedLexicon.embed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.WeightedLexicon.embed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">archive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ZipFile</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#WeightedLexicon.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.WeightedLexicon.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a previously saved Lexicon instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path of saved Lexicon instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/lexicon.html#WeightedLexicon.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.WeightedLexicon.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save lexicon to disk</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Output file path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#WeightedLexicon.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.WeightedLexicon.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the lexicon in dictionary format.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_dct</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="s1">&#39;B&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span> <span class="o">=</span> <span class="n">BaseLexicon</span><span class="p">(</span><span class="n">my_dct</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">{&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;]}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict with the lexicon key-value pairs</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon.vocabulary">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vocabulary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><a class="headerlink" href="#weelex.lexicon.WeightedLexicon.vocabulary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.lexicon.WeightedLexicon.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#weelex.lexicon.WeightedLexicon.weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="weelex.lexicon.load">
+<span class="sig-prename descclassname"><span class="pre">weelex.lexicon.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">archive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ZipFile</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#weelex.lexicon.BaseLexicon" title="weelex.lexicon.BaseLexicon"><span class="pre">BaseLexicon</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#weelex.lexicon.WeightedLexicon" title="weelex.lexicon.WeightedLexicon"><span class="pre">WeightedLexicon</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#weelex.lexicon.Lexicon" title="weelex.lexicon.Lexicon"><span class="pre">Lexicon</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="weelex.lexicon.merge_lexica">
+<span class="sig-prename descclassname"><span class="pre">weelex.lexicon.</span></span><span class="sig-name descname"><span class="pre">merge_lexica</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lexica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#weelex.lexicon.Lexicon" title="weelex.lexicon.Lexicon"><span class="pre">Lexicon</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#weelex.lexicon.Lexicon" title="weelex.lexicon.Lexicon"><span class="pre">Lexicon</span></a></span></span><a class="reference internal" href="_modules/weelex/lexicon.html#merge_lexica"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.lexicon.merge_lexica" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="weelex-lsx-module">
+<h2>weelex.lsx module<a class="headerlink" href="#weelex-lsx-module" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="weelex-predictor-module">
+<h2>weelex.predictor module<a class="headerlink" href="#weelex-predictor-module" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-weelex.tfidf">
+<span id="weelex-tfidf-module"></span><h2>weelex.tfidf module<a class="headerlink" href="#module-weelex.tfidf" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.tfidf.</span></span><span class="sig-name descname"><span class="pre">BasicTfidf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stopwords_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relevant_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['ADJ',</span> <span class="pre">'ADV',</span> <span class="pre">'NOUN',</span> <span class="pre">'VERB']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacy_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'de_core_news_lg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.build_analyzer">
+<span class="sig-name descname"><span class="pre">build_analyzer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.build_analyzer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.build_analyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls TfidfVectorizer build_analyzer() method.
+Does not include the proprocessing thus far.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.build_preprocessor">
+<span class="sig-name descname"><span class="pre">build_preprocessor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.build_preprocessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.build_preprocessor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.build_tokenizer">
+<span class="sig-name descname"><span class="pre">build_tokenizer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.build_tokenizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.build_tokenizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls TfidfVectorizer build_tokenizer() method.
+Does not include the preprocessing thus far.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.check_fit">
+<span class="sig-name descname"><span class="pre">check_fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.check_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.check_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.decode">
+<span class="sig-name descname"><span class="pre">decode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.decode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.decode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.fit_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.fixed_vocabulary_">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fixed_vocabulary_</span></span><a class="headerlink" href="#weelex.tfidf.BasicTfidf.fixed_vocabulary_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.get_feature_names">
+<span class="sig-name descname"><span class="pre">get_feature_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.get_feature_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.get_feature_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.get_feature_names_out">
+<span class="sig-name descname"><span class="pre">get_feature_names_out</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.get_feature_names_out"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.get_feature_names_out" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.get_params">
+<span class="sig-name descname"><span class="pre">get_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.get_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.get_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.get_stop_words">
+<span class="sig-name descname"><span class="pre">get_stop_words</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.get_stop_words"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.get_stop_words" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.idf_">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">idf_</span></span><a class="headerlink" href="#weelex.tfidf.BasicTfidf.idf_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zip_archive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ZipFile</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.set_params">
+<span class="sig-name descname"><span class="pre">set_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.set_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.set_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.stop_words_">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stop_words_</span></span><a class="headerlink" href="#weelex.tfidf.BasicTfidf.stop_words_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#BasicTfidf.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.BasicTfidf.transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="weelex.tfidf.BasicTfidf.vocabulary_">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vocabulary_</span></span><a class="headerlink" href="#weelex.tfidf.BasicTfidf.vocabulary_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="weelex.tfidf.TfidfCleaner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weelex.tfidf.</span></span><span class="sig-name descname"><span class="pre">TfidfCleaner</span></span><a class="reference internal" href="_modules/weelex/tfidf.html#TfidfCleaner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.TfidfCleaner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEstimator</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">TransformerMixin</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.TfidfCleaner.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#TfidfCleaner.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.TfidfCleaner.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="weelex.tfidf.TfidfCleaner.transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#TfidfCleaner.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.TfidfCleaner.transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="weelex.tfidf.remove_urls">
+<span class="sig-prename descclassname"><span class="pre">weelex.tfidf.</span></span><span class="sig-name descname"><span class="pre">remove_urls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#remove_urls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.remove_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to remove URLs found in strings via regular expressions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>texts</strong> (<em>pandas.Series</em>) – Array with strings</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array with urls removed</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(pandas.Series)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="weelex.tfidf.tfidf_cleanup">
+<span class="sig-prename descclassname"><span class="pre">weelex.tfidf.</span></span><span class="sig-name descname"><span class="pre">tfidf_cleanup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/weelex/tfidf.html#tfidf_cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weelex.tfidf.tfidf_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="weelex-trainer-module">
+<h2>weelex.trainer module<a class="headerlink" href="#weelex-trainer-module" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, VFMR
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
