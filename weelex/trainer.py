@@ -134,10 +134,9 @@ class TrainProcessor:
     def _make_id_term_mapping(embedding_df: pd.DataFrame) -> pd.DataFrame:
         """
         Example:
-            >>> A = pd.DataFrame(np.zeros((3,10)))
+            >>> A = pd.DataFrame(np.zeros((4,10)))
             >>> A.index = ['Cars:Vehicle', 'Politics:Politician', 'Food:Bread', 'Food:a:b']
-            >>> x = TrainProcessor(lex={'A': ['a', 'b']})
-            >>> x._make_id_term_mapping(A)
+            >>> TrainProcessor._make_id_term_mapping(A)
               categories       terms
             0       Cars     Vehicle
             1   Politics  Politician

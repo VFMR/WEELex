@@ -1,0 +1,26 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    -   id: check-yaml
+    -   id: check-added-large-files
+-   repo: local
+    hooks:
+    -   id: unittests
+        name: run unit tests
+        entry: pytest --doctest-modules weelex/
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [commit]
+        always_run: true
+        args: ["--doctest-modules", "weelex/"]
+    -   id: documentation
+        name: update documentation
+        entry: docs/make.bat html
+        language: script
+        pass_filenames: false
+        stages: [commit]
+        always_run: true
