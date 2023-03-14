@@ -16,14 +16,11 @@ setup(
               'pandas==1.3.5',
               'spacy',
               'tqdm==4.62.3',
-              # 'python==3.9.7',
-              'nltk==3.6.5',
+              'nltk>=3.6.6',
               'batchprocessing @ git+https://github.com/VFMR/batchprocessing.git#egg=batchprocessing-0.1',
               'cluster_tfidf @ git+https://github.com/VFMR/cluster_tfidf.git#egg=cluster_tfidf.1'
             ],
         package_dir={
             '': '.',
-            # 'batchprocessing': './batchprocessing',
-            # 'cluster_tfidf': './cluster_tfidf/cluster_tfidf'
             }
         )
