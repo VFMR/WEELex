@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from weelex.tfidf import BasicTfidf
 from weelex import embeddings
-from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
+from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 class PredictionProcessor:
     def __init__(self,

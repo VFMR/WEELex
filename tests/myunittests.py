@@ -12,7 +12,7 @@ from weelex import trainer
 from weelex import ensemble
 from weelex import predictor
 from weelex import lsx
-from batchprocessing import batchprocessing
+import batchprocessing
 from cluster_tfidf import cluster_tfidf
 
 INPUTDIR = 'tests/testfiles/'
