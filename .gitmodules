@@ -1,7 +1,0 @@
-[submodule "batchprocessing"]
-	path = batchprocessing
-	url = git@github.com:VFMR/batchprocessing.git
-	branch = main
-[submodule "cluster_tfidf"]
-	path = cluster_tfidf
-	url = git@github.com:VFMR/cluster_tfidf.git

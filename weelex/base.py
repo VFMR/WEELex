@@ -11,13 +11,13 @@ import pandas as pd
 import numpy as np
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
+import batchprocessing
 
 from weelex import lexicon
 from weelex import embeddings
 from weelex.tfidf import BasicTfidf
 from weelex.predictor import PredictionProcessor
-from cluster_tfidf.cluster_tfidf.ctfidf import ClusterTfidfVectorizer
-from batchprocessing import batchprocessing
+from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class BasePredictor(BaseEstimator, TransformerMixin):
