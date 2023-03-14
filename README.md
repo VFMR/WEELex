@@ -13,8 +13,8 @@ paper:
 ```
 conda create --name weelex python pip
 conda activate weelex
-python -m spacy download de_core_news_lg
 python -m pip install .
+python -m spacy download de_core_news_lg
 ```
 
 
