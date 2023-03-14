@@ -13,6 +13,7 @@ python -m spacy download de_core_news_lg
 conda install pytest
 conda install sphinx
 conda install sphinx_rtd_theme
+pip install pre-commit
 ```
 
 
@@ -21,5 +22,3 @@ conda install sphinx_rtd_theme
 
 ## Updating documentation
 `./docs/make.bat html`
-
-
