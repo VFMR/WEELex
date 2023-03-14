@@ -14,6 +14,8 @@ repos:
         name: run unit tests
         entry: pytest --doctest-modules weelex/
         language: system
-        'types': [python]
+        types: [python]
         pass_filenames: false
         stages: [commit]
+        always_run: true
+        args: ["--doctest-modules", "weelex/"]
