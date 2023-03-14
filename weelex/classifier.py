@@ -5,6 +5,7 @@ from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
 import numpy as np
 from sklearn.exceptions import NotFittedError
+
 # from tqdm import tqdm
 import batchprocessing
 
@@ -14,36 +15,39 @@ from weelex import ensemble
 from weelex import base
 from weelex.trainer import TrainProcessor
 from weelex.tfidf import BasicTfidf
+
 # from weelex.predictor import PredictionProcessor
 from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class WEELexClassifier(base.BasePredictor):
-    def __init__(self,
-                 embeds: Union[dict, embeddings.Embeddings],
-                 tfidf: Union[str, BasicTfidf] = None,
-                 ctfidf: Union[str, ClusterTfidfVectorizer] = None,
-                 use_ctfidf: bool = True,
-                 word_level_aggregation: bool = True,
-                 test_size: float = None,
-                 random_state: int = None,
-                 n_jobs: int = 1,
-                 progress_bar: bool = False,
-                 relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
-                 min_df: Union[int, float] = 5,
-                 max_df: Union[int, float] = 0.95,
-                 spacy_model: str = 'de_core_news_lg',
-                 n_docs: int = 2000000,
-                 corpus_path: str = None,
-                 corpus_path_encoding: str = 'latin1',
-                 load_clustering: bool = False,
-                 checkterm: str = 'Politik',
-                 n_top_clusters: int = 3,
-                 cluster_share: float = 0.2,
-                 clustermethod: str = 'agglomerative',
-                 distance_threshold: float = 0.5,
-                 n_words: int = 40000,
-                 **train_params) -> None:
+    def __init__(
+        self,
+        embeds: Union[dict, embeddings.Embeddings],
+        tfidf: Union[str, BasicTfidf] = None,
+        ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+        use_ctfidf: bool = True,
+        word_level_aggregation: bool = True,
+        test_size: float = None,
+        random_state: int = None,
+        n_jobs: int = 1,
+        progress_bar: bool = False,
+        relevant_pos: List[str] = ["ADJ", "ADV", "NOUN", "VERB"],
+        min_df: Union[int, float] = 5,
+        max_df: Union[int, float] = 0.95,
+        spacy_model: str = "de_core_news_lg",
+        n_docs: int = 2000000,
+        corpus_path: str = None,
+        corpus_path_encoding: str = "latin1",
+        load_clustering: bool = False,
+        checkterm: str = "Politik",
+        n_top_clusters: int = 3,
+        cluster_share: float = 0.2,
+        clustermethod: str = "agglomerative",
+        distance_threshold: float = 0.5,
+        n_words: int = 40000,
+        **train_params,
+    ) -> None:
         super().__init__(
             embeds=embeds,
             tfidf=tfidf,
@@ -67,7 +71,7 @@ class WEELexClassifier(base.BasePredictor):
             cluster_share=cluster_share,
             clustermethod=clustermethod,
             distance_threshold=distance_threshold,
-            n_words=n_words
+            n_words=n_words,
         )
         self._model = ensemble.FullEnsemble
         self._test_size = test_size
@@ -84,7 +88,9 @@ class WEELexClassifier(base.BasePredictor):
         self._results = {}
 
         if self._use_tfidf is False and self._use_ctfidf is False:
-            raise ValueError('Both "use_tfidf" and "use_tfidf" are set to False. This is currently not implemented.')
+            raise ValueError(
+                'Both "use_tfidf" and "use_tfidf" are set to False. This is currently not implemented.'
+            )
 
     def set_params(self, **params):
         trainparams = {}
@@ -97,19 +103,21 @@ class WEELexClassifier(base.BasePredictor):
         self._train_params = trainparams
         return self
 
-    def fit(self,
-            X: Union[pd.Series, np.ndarray],
-            lex: Union[lexicon.Lexicon, dict, str],
-            support_lex: Union[lexicon.Lexicon, dict, str] = None,
-            main_keys: Iterable[str] = None,
-            support_keys: Iterable[str] = None,
-            hp_tuning: bool = False,
-            n_iter: int = 150,
-            cv: int = 5,
-            param_grid: dict = None,
-            fixed_params: dict = None,
-            n_best_params: int = 3,
-            progress_bar: bool = False) -> None:
+    def fit(
+        self,
+        X: Union[pd.Series, np.ndarray],
+        lex: Union[lexicon.Lexicon, dict, str],
+        support_lex: Union[lexicon.Lexicon, dict, str] = None,
+        main_keys: Iterable[str] = None,
+        support_keys: Iterable[str] = None,
+        hp_tuning: bool = False,
+        n_iter: int = 150,
+        cv: int = 5,
+        param_grid: dict = None,
+        fixed_params: dict = None,
+        n_best_params: int = 3,
+        progress_bar: bool = False,
+    ) -> None:
         self._lex = lex
         self._support_lex = support_lex
         self._fit_predictprocessor(X=X)
@@ -120,27 +128,31 @@ class WEELexClassifier(base.BasePredictor):
         models = {}
         pb = self._set_progress_bar()
         for cat in pb(self._main_keys):
-        # for cat in self._main_keys:
+            # for cat in self._main_keys:
             if hp_tuning:
-                self._hyperparameter_tuning(cat=cat,
-                                            n_iter=n_iter,
-                                            param_grid=param_grid,
-                                            fixed_params=fixed_params,
-                                            n_best_params=n_best_params,
-                                            cv=cv)
+                self._hyperparameter_tuning(
+                    cat=cat,
+                    n_iter=n_iter,
+                    param_grid=param_grid,
+                    fixed_params=fixed_params,
+                    n_best_params=n_best_params,
+                    cv=cv,
+                )
 
             model_params = self._tuned_params.get(cat)
             if fixed_params is not None:
                 fixed_params_dct = fixed_params
             else:
                 fixed_params_dct = {}
-            fixed_params_dct.update({'input_shape': input_shape})
+            fixed_params_dct.update({"input_shape": input_shape})
 
-            model = self._model(cat,
-                                categories=self._trainprocessor.main_keys,
-                                outside_categories=self._trainprocessor.support_keys,
-                                param_set=model_params,
-                                **fixed_params_dct)
+            model = self._model(
+                cat,
+                categories=self._trainprocessor.main_keys,
+                outside_categories=self._trainprocessor.support_keys,
+                param_set=model_params,
+                **fixed_params_dct,
+            )
             model.fit(*self._trainprocessor.feed_cat_Xy(cat=cat, train=True))
             models.update({cat: model})
         self._models = models
@@ -154,53 +166,56 @@ class WEELexClassifier(base.BasePredictor):
     def save(self, path) -> None:
         super().save(path)
         if self._support_lex is not None:
-            self._support_lex.save(os.path.join(path, 'support_lex'))
+            self._support_lex.save(os.path.join(path, "support_lex"))
 
     def load(self, path) -> None:
         super().load(path)
         # TODO: load support lex
 
-    def _setup_trainprocessor(self,
-                              lex: Union[lexicon.Lexicon, dict, str],
-                              support_lex: Union[lexicon.Lexicon, dict, str] = None,
-                              main_keys: Iterable[str] = None,
-                              support_keys: Iterable[str] = None,) -> None:
-        self._trainprocessor = TrainProcessor(lex=lex,
-                                              support_lex=support_lex,
-                                              main_keys=main_keys,
-                                              support_keys=support_keys,
-                                              embeddings=self._embeddings,
-                                              test_size=self._test_size,
-                                              random_state=self._random_state)
+    def _setup_trainprocessor(
+        self,
+        lex: Union[lexicon.Lexicon, dict, str],
+        support_lex: Union[lexicon.Lexicon, dict, str] = None,
+        main_keys: Iterable[str] = None,
+        support_keys: Iterable[str] = None,
+    ) -> None:
+        self._trainprocessor = TrainProcessor(
+            lex=lex,
+            support_lex=support_lex,
+            main_keys=main_keys,
+            support_keys=support_keys,
+            embeddings=self._embeddings,
+            test_size=self._test_size,
+            random_state=self._random_state,
+        )
         self._trainprocessor.make_train_test_data()
         self._main_keys = self._trainprocessor.main_keys
         self._support_keys = self._trainprocessor.support_keys
 
-    def _hyperparameter_tuning(self,
-                               cat,
-                               n_iter,
-                               param_grid,
-                               fixed_params,
-                               cv: int = 5,
-                               n_best_params=3):
+    def _hyperparameter_tuning(
+        self, cat, n_iter, param_grid, fixed_params, cv: int = 5, n_best_params=3
+    ):
         if param_grid is None:
-            raise ValueError('No parameter grid set for tuning.')
+            raise ValueError("No parameter grid set for tuning.")
 
         if fixed_params is not None:
             fixed_params_dct = fixed_params
         else:
             fixed_params_dct = {}
         search = RandomizedSearchCV(
-                estimator=ensemble.AugmentedEnsemble(cat,
-                                                     categories=self._main_keys,
-                                                     outside_categories=self._support_keys,
-                                                     **fixed_params_dct),
-                param_distributions=param_grid,
-                n_iter=n_iter,
-                n_jobs=self._n_jobs,
-                cv=cv,
-                scoring=None,
-                random_state=self._random_state)
+            estimator=ensemble.AugmentedEnsemble(
+                cat,
+                categories=self._main_keys,
+                outside_categories=self._support_keys,
+                **fixed_params_dct,
+            ),
+            param_distributions=param_grid,
+            n_iter=n_iter,
+            n_jobs=self._n_jobs,
+            cv=cv,
+            scoring=None,
+            random_state=self._random_state,
+        )
 
         X, y = self._trainprocessor.feed_cat_Xy(cat=cat, train=True)
         search.fit(X, y)
@@ -215,7 +230,7 @@ class WEELexClassifier(base.BasePredictor):
 
     @staticmethod
     def _nonmissing_mean(results: dict) -> list:
-        """ Returns the mean test scores from non-missing cross validation results.
+        """Returns the mean test scores from non-missing cross validation results.
         Only averages the results of splits with valid test scores.
 
         Examples:
@@ -231,7 +246,14 @@ class WEELexClassifier(base.BasePredictor):
         Returns:
             list: mean test scores
         """
-        test_scores = [list(value) for key, value in results.items() if 'test_score' in key and not 'mean' in key and not 'std' in key and not 'rank' in key]
+        test_scores = [
+            list(value)
+            for key, value in results.items()
+            if "test_score" in key
+            and not "mean" in key
+            and not "std" in key
+            and not "rank" in key
+        ]
         mean_test_scores = []
         for i in range(len(test_scores[0])):
             lst = np.array([x[i] for x in test_scores if not np.isnan(x[i])])
@@ -266,8 +288,7 @@ class WEELexClassifier(base.BasePredictor):
             results (dict): truncated parameter set
         """
         result_params = []
-        for x, y in zip(ranks,
-                        results['params']):
+        for x, y in zip(ranks, results["params"]):
             if x < n_best_params and len(result_params) < n_best_params:
                 result_params.append(y)
         return result_params
@@ -276,18 +297,20 @@ class WEELexClassifier(base.BasePredictor):
         catpreds_binary = {}
         for cat in self._main_keys:
             if len(probas[cat].shape) == 2:
-                pred = (probas[cat][:,0] >= cutoff).astype(int)
+                pred = (probas[cat][:, 0] >= cutoff).astype(int)
             else:
                 pred = (probas[cat] >= cutoff).astype(int)
             catpreds_binary.update({cat: pred})
         return pd.DataFrame(catpreds_binary)
 
     @batchprocessing.batch_predict
-    def predict_words(self,
-                X: pd.DataFrame,
-                cutoff: float = 0.5,
-                n_batches: int = None,
-                checkpoint_path: str = None) -> pd.DataFrame:
+    def predict_words(
+        self,
+        X: pd.DataFrame,
+        cutoff: float = 0.5,
+        n_batches: int = None,
+        checkpoint_path: str = None,
+    ) -> pd.DataFrame:
         catpreds = self.predict_proba_words(X=X)
         return self._probas_to_binary(catpreds, cutoff=cutoff)
 
@@ -300,17 +323,21 @@ class WEELexClassifier(base.BasePredictor):
         return catpreds
 
     @batchprocessing.batch_predict
-    def predict_docs(self,
-                       X: pd.DataFrame,
-                       cutoff: float = 0.5,
-                       n_batches: int = None,
-                       checkpoint_path: str = None) -> pd.DataFrame:
+    def predict_docs(
+        self,
+        X: pd.DataFrame,
+        cutoff: float = 0.5,
+        n_batches: int = None,
+        checkpoint_path: str = None,
+    ) -> pd.DataFrame:
         preds = self.predict_proba_docs(X=X)
         return self._probas_to_binary(preds, cutoff=cutoff)
 
     def predict_proba_docs(self, X: pd.DataFrame) -> pd.DataFrame:
         if self._is_fit is False:
-            raise NotFittedError(f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
+            raise NotFittedError(
+                f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+            )
         vects = self._predictprocessor.transform(X)
         return self.predict_proba_words(vects)
 
@@ -318,7 +345,7 @@ class WEELexClassifier(base.BasePredictor):
         super().save(path)
         # TODO: Expand save() method beyond base class
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # properties
     @property
     def main_keys(self) -> list:
@@ -335,7 +362,7 @@ class WEELexClassifier(base.BasePredictor):
             vocab += self._support_lex.vocabulary
         return list(set(vocab))
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # classmethods:
     @classmethod
     def load(cls, path):

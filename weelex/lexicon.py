@@ -12,14 +12,15 @@ import numpy as np
 @dataclass
 class BaseLexicon:
     # TODO: Allow for train_test_split to work
-    def __init__(self,
-                 dictionary: Union[dict, str, pd.DataFrame],
-                 sep: str = None,
-                 encoding: str = None):
+    def __init__(
+        self,
+        dictionary: Union[dict, str, pd.DataFrame],
+        sep: str = None,
+        encoding: str = None,
+    ):
         self._embeddings = None
         if dictionary is not None:
-            self._dictionary_df = self._build_dictionary(
-                dictionary, sep, encoding)
+            self._dictionary_df = self._build_dictionary(dictionary, sep, encoding)
 
     def __copy__(self):
         obj = type(self).__new__(self.__class__)
@@ -30,10 +31,12 @@ class BaseLexicon:
         obj = copy.copy(self)
         return obj
 
-    def _build_dictionary(self, dictionary: Union[dict, str, pd.DataFrame],
-                          sep: str = None,
-                          encoding: str = None
-                          ) -> pd.DataFrame:
+    def _build_dictionary(
+        self,
+        dictionary: Union[dict, str, pd.DataFrame],
+        sep: str = None,
+        encoding: str = None,
+    ) -> pd.DataFrame:
         """Processes the input lexicon and returns it in a pandas DataFrame.
 
         Args:
@@ -57,8 +60,8 @@ class BaseLexicon:
             pd.DataFrame: lexicon matrix
         """
         if isinstance(dictionary, str):
-            if dictionary.endswith('.json'):
-                with open(dictionary, 'r') as f:
+            if dictionary.endswith(".json"):
+                with open(dictionary, "r") as f:
                     my_dct = json.loads(f.read())
                     dct_df = self._dict_to_df(my_dct)
             else:
@@ -94,7 +97,7 @@ class BaseLexicon:
         Returns:
             pd.Series: Array without stars
         """
-        return array.str.replace('*', '', regex=False)
+        return array.str.replace("*", "", regex=False)
 
     @staticmethod
     def _embed_word(term, embeddings):
@@ -129,7 +132,8 @@ class BaseLexicon:
     def embed(self, embeddings) -> None:
         dict_df_shape = self._dictionary_df.shape
         embedding_tensor = np.zeros(
-            shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim))
+            shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim)
+        )
         for j, key in enumerate(self._dictionary_df.columns):
             for i, x in enumerate(self._dictionary_df[key]):
                 embedding_tensor[i][j] = self._embed_word(x, embeddings)
@@ -154,11 +158,7 @@ class BaseLexicon:
         vocab = [x for x in vocab if isinstance(x, str)]  # removal of np.nans
         return sorted(list(set(vocab)))
 
-
-    def _append_values(self,
-                       lex: 'Lexicon',
-                       key: str,
-                       values: pd.Series) -> pd.Series:
+    def _append_values(self, lex: "Lexicon", key: str, values: pd.Series) -> pd.Series:
         maxlen = lex._dictionary_df.shape[0]
         collen = len(lex._dictionary_df[~lex._dictionary_df[key].isna()])
         # TODO: Implement rest of method _append_values()
@@ -176,13 +176,12 @@ class BaseLexicon:
             dict: dict with the lexicon key-value pairs
         """
         out_dict = {
-            key: list(
-                self._dictionary_df[key]
-                ) for key in self._dictionary_df.columns}
+            key: list(self._dictionary_df[key]) for key in self._dictionary_df.columns
+        }
         return out_dict
 
     def _get_properties(self):
-        properties = {'name': self.__class__.__name__}
+        properties = {"name": self.__class__.__name__}
         return properties
 
     def save(self, path: str) -> None:
@@ -192,12 +191,13 @@ class BaseLexicon:
             path (str): Output file path
         """
         os.makedirs(path, exist_ok=True)
-        self._dictionary_df.to_csv(os.path.join(path, 'dictionary_df.csv.gz'),
-                                   compression='gzip', index=False)
+        self._dictionary_df.to_csv(
+            os.path.join(path, "dictionary_df.csv.gz"), compression="gzip", index=False
+        )
 
-        np.save(os.path.join(path, 'embeddings'), self._embeddings, allow_pickle=False)
+        np.save(os.path.join(path, "embeddings"), self._embeddings, allow_pickle=False)
 
-        with open(os.path.join(path, 'properties.json'), 'w') as f:
+        with open(os.path.join(path, "properties.json"), "w") as f:
             json.dump(self._get_properties(), f)
 
     # ------------------------------- Properties
@@ -225,10 +225,7 @@ class BaseLexicon:
     # ------------------------------ Class methods
 
     @classmethod
-    def load(cls,
-             path: str,
-             properties: dict = None,
-             archive: ZipFile = None):
+    def load(cls, path: str, properties: dict = None, archive: ZipFile = None):
         """Load a previously saved Lexicon instance
 
         Args:
@@ -236,27 +233,29 @@ class BaseLexicon:
         """
         if properties is None:
             if archive is None:
-                with open(os.path.join(path, 'properties.json'), 'r') as f:
+                with open(os.path.join(path, "properties.json"), "r") as f:
                     properties = json.load(f)
             else:
-                with archive.open(path+'properties.json', 'r') as f:
+                with archive.open(path + "properties.json", "r") as f:
                     properties = json.load(f)
-        propertyname = properties['name']
-        if  propertyname != cls.__name__:
-            raise ValueError(f"Attempted to load a saved {propertyname} instance when a {cls.__name__} instance is required.")
+        propertyname = properties["name"]
+        if propertyname != cls.__name__:
+            raise ValueError(
+                f"Attempted to load a saved {propertyname} instance when a {cls.__name__} instance is required."
+            )
 
         if archive is None:
-            dictionary_df = pd.read_csv(os.path.join(path, 'dictionary_df.csv.gz'))
-            embeddings = np.load(os.path.join(path, 'embeddings.npy'))
+            dictionary_df = pd.read_csv(os.path.join(path, "dictionary_df.csv.gz"))
+            embeddings = np.load(os.path.join(path, "embeddings.npy"))
         else:
-            with archive.open(path+'dictionary_df.csv.gz', 'r') as f:
+            with archive.open(path + "dictionary_df.csv.gz", "r") as f:
                 try:
-                    dictionary_df = pd.read_csv(f, compression='gzip')
+                    dictionary_df = pd.read_csv(f, compression="gzip")
                 except UnicodeDecodeError:
-                    dictionary_df = pd.read_csv(f,
-                                                encoding='latin1',
-                                                compression='gzip')
-            with archive.open(path+'embeddings.npy') as f:
+                    dictionary_df = pd.read_csv(
+                        f, encoding="latin1", compression="gzip"
+                    )
+            with archive.open(path + "embeddings.npy") as f:
                 embeddings = np.load(f)
 
         instance = cls(dictionary=None)
@@ -266,15 +265,13 @@ class BaseLexicon:
 
 
 class WeightedLexicon(BaseLexicon):
-    def __init__(self,
-                 dictionary: Union[dict, str, pd.DataFrame],
-                 sep: str = None,
-                 encoding: str = None) -> None:
-        super().__init__(
-           dictionary=dictionary,
-           sep=sep,
-           encoding=encoding
-        )
+    def __init__(
+        self,
+        dictionary: Union[dict, str, pd.DataFrame],
+        sep: str = None,
+        encoding: str = None,
+    ) -> None:
+        super().__init__(dictionary=dictionary, sep=sep, encoding=encoding)
         if dictionary is not None:
             df, weights = self._build_weighted_dictionary(self._dictionary_df)
             self._dictionary_df = df
@@ -308,15 +305,22 @@ class WeightedLexicon(BaseLexicon):
         Returns:
             dict: Dictionary with word-weight pairs.
         """
-        return "{" + ", ".join([f"'{word}': {weight}" for word, weight in self._word2weight.items()]) + "}"
+        return (
+            "{"
+            + ", ".join(
+                [f"'{word}': {weight}" for word, weight in self._word2weight.items()]
+            )
+            + "}"
+        )
 
     @staticmethod
     def _dict_to_df(dict):
         return pd.DataFrame([[key, value] for key, value in dict.items()])
 
     @staticmethod
-    def _build_weighted_dictionary(raw_dict: pd.DataFrame
-                                   ) -> Tuple[pd.DataFrame, pd.Series]:
+    def _build_weighted_dictionary(
+        raw_dict: pd.DataFrame,
+    ) -> Tuple[pd.DataFrame, pd.Series]:
         """The dictionary is expected to be a key-value pair with of the form
         {word: weight} or a table or DataFrame where the first column
         contains the words and the second one contains the scores.
@@ -342,12 +346,12 @@ class WeightedLexicon(BaseLexicon):
         Returns:
             (pd.DataFrame, pd.Series): lexicon matrix
         """
-        dictionary_df = pd.DataFrame(raw_dict.iloc[:,0])
-        weights = raw_dict.iloc[:,1]
+        dictionary_df = pd.DataFrame(raw_dict.iloc[:, 0])
+        weights = raw_dict.iloc[:, 1]
         return dictionary_df, weights
 
     def _get_word2weight(self) -> Dict[str, Union[float, int]]:
-        words = list(self._dictionary_df.iloc[:,0])
+        words = list(self._dictionary_df.iloc[:, 0])
         weights = list(self._weights)
         return {x: y for x, y in zip(words, weights)}
 
@@ -359,19 +363,20 @@ class WeightedLexicon(BaseLexicon):
 
     def embed(self, embeddings) -> None:
         super().embed(embeddings)
-        self._embeddings = self._embeddings[:,0,:]
+        self._embeddings = self._embeddings[:, 0, :]
 
     def _get_properties(self):
         properties = super()._get_properties()
-        properties.update({'_word2weight': self._word2weight})
+        properties.update({"_word2weight": self._word2weight})
         return properties
 
     def save(self, path):
         super().save(path)
-        self._weights.to_csv(os.path.join(path, 'weights.csv.gz'),
-                             compression='gzip', index=False)
+        self._weights.to_csv(
+            os.path.join(path, "weights.csv.gz"), compression="gzip", index=False
+        )
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Properties:
     @property
     def weights(self):
@@ -380,36 +385,36 @@ class WeightedLexicon(BaseLexicon):
     @property
     def vocabulary(self) -> list:
         # overwrite such that order is unchanged
-        return list(self._dictionary_df.iloc[:,0])
+        return list(self._dictionary_df.iloc[:, 0])
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Classmethods:
     @classmethod
     def load(cls, path, properties, archive: ZipFile = None):
         instance = super().load(path, properties, archive=archive)
         if archive is None:
-            weights = pd.read_csv(os.path.join(path, 'weights.csv.gz')).iloc[:,0]
+            weights = pd.read_csv(os.path.join(path, "weights.csv.gz")).iloc[:, 0]
         else:
-            with archive.open(path + 'weights.csv.gz') as f:
+            with archive.open(path + "weights.csv.gz") as f:
                 try:
-                    weights = pd.read_csv(f, compression='gzip').iloc[:,0]
+                    weights = pd.read_csv(f, compression="gzip").iloc[:, 0]
                 except UnicodeDecodeError:
-                    weights = pd.read_csv(f, encoding='latin1', compression='gzip').iloc[:,0]
+                    weights = pd.read_csv(
+                        f, encoding="latin1", compression="gzip"
+                    ).iloc[:, 0]
         instance._weights = weights
-        instance._word2weight = properties['_word2weight']
+        instance._word2weight = properties["_word2weight"]
         return instance
 
 
 class Lexicon(BaseLexicon):
-    def __init__(self,
-                 dictionary: Union[dict, str, pd.DataFrame],
-                 sep: str = None,
-                 encoding: str = None):
-        super().__init__(
-           dictionary=dictionary,
-           sep=sep,
-           encoding=encoding
-        )
+    def __init__(
+        self,
+        dictionary: Union[dict, str, pd.DataFrame],
+        sep: str = None,
+        encoding: str = None,
+    ):
+        super().__init__(dictionary=dictionary, sep=sep, encoding=encoding)
 
     def __getitem__(self, key: str) -> pd.Series:
         """getter for simple data retrieval
@@ -462,9 +467,11 @@ class Lexicon(BaseLexicon):
         """
         return self._dictionary_df.__repr__()
 
-    def merge(self,
-              lexica: Union['BaseLexicon', Iterable['BaseLexicon']],
-              inplace: bool=True) -> None:
+    def merge(
+        self,
+        lexica: Union["BaseLexicon", Iterable["BaseLexicon"]],
+        inplace: bool = True,
+    ) -> None:
         if inplace:
             obj = self
         else:
@@ -479,15 +486,17 @@ class Lexicon(BaseLexicon):
         if not inplace:
             return obj
 
-    def _merge_one(self, lex: 'BaseLexicon') -> None:
+    def _merge_one(self, lex: "BaseLexicon") -> None:
         old_dct = self._dictionary_df.copy()
         old_keys = old_dct.keys()
         new_keys = lex.keys
         update_keys = [x for x in new_keys if x in old_keys]
         append_keys = [x for x in new_keys if x not in old_keys]
-        new_dct = pd.concat([old_dct, lex._dictionary_df.loc[:, append_keys]],
-                            # ignore_index=True,
-                            axis=1)
+        new_dct = pd.concat(
+            [old_dct, lex._dictionary_df.loc[:, append_keys]],
+            # ignore_index=True,
+            axis=1,
+        )
         self._dictionary_df = new_dct
         # TODO: allow for merge of existing keys
 
@@ -554,27 +563,32 @@ def merge_lexica(lexica: Iterable[Lexicon]) -> Lexicon:
             lex1.merge(lex)
     return lex1
 
-def load(path: str,
-         archive: ZipFile = None,
-         ) -> Union['BaseLexicon', 'WeightedLexicon', 'Lexicon']:
+
+def load(
+    path: str,
+    archive: ZipFile = None,
+) -> Union["BaseLexicon", "WeightedLexicon", "Lexicon"]:
     if archive is None:
-        with open(os.path.join(path, 'properties.json'), 'r') as f:
+        with open(os.path.join(path, "properties.json"), "r") as f:
             properties = json.load(f)
     else:
-        if path.endswith('/'):
-            filepath = path + 'properties.json'
+        if path.endswith("/"):
+            filepath = path + "properties.json"
         else:
-            filepath = path + '/properties.json'
-        with archive.open(filepath, 'r') as f:
+            filepath = path + "/properties.json"
+        with archive.open(filepath, "r") as f:
             properties = json.load(f)
 
-    propertyname = properties['name']
-    if propertyname == 'BaseLexicon':
+    propertyname = properties["name"]
+    if propertyname == "BaseLexicon":
         instance = BaseLexicon.load(path, properties, archive=archive)
-    elif propertyname == 'WeightedLexicon':
+    elif propertyname == "WeightedLexicon":
         instance = WeightedLexicon.load(path, properties, archive=archive)
-    elif propertyname == 'Lexicon':
+    elif propertyname == "Lexicon":
         instance = Lexicon.load(path, properties, archive=archive)
     else:
-        raise ValueError(f'Attempted to load an instance of {propertyname} when one of'+' {"BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.')
+        raise ValueError(
+            f"Attempted to load an instance of {propertyname} when one of"
+            + ' {"BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.'
+        )
     return instance

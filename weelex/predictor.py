@@ -13,30 +13,33 @@ from weelex.tfidf import BasicTfidf
 from weelex import embeddings
 from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
+
 class PredictionProcessor:
-    def __init__(self,
-                 data: Union[np.ndarray, pd.Series] = None,
-                 embeddings: embeddings.Embeddings = None,
-                 tfidf: Union[str, BasicTfidf] = None,
-                 ctfidf: Union[str, ClusterTfidfVectorizer] = None,
-                 use_tfidf: bool =True,
-                 use_ctfidf: bool = True,
-                 aggregate_word_level: bool = True,
-                 relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
-                 min_df: Union[int, float] = 5,
-                 max_df: Union[int, float] = 0.95,
-                 spacy_model: str = 'de_core_news_lg',
-                 n_docs: int = 2000000,
-                 corpus_path: str = None,
-                 corpus_path_encoding: str = 'latin1',
-                 load_clustering: bool = False,
-                 checkterm: str = 'Politik',
-                 n_top_clusters: int = 3,
-                 cluster_share: float = 0.2,
-                 clustermethod: str = 'agglomerative',
-                 distance_threshold: float = 0.5,
-                 n_words: int = 40000,
-                 n_jobs: int = 1) -> None:
+    def __init__(
+        self,
+        data: Union[np.ndarray, pd.Series] = None,
+        embeddings: embeddings.Embeddings = None,
+        tfidf: Union[str, BasicTfidf] = None,
+        ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+        use_tfidf: bool = True,
+        use_ctfidf: bool = True,
+        aggregate_word_level: bool = True,
+        relevant_pos: List[str] = ["ADJ", "ADV", "NOUN", "VERB"],
+        min_df: Union[int, float] = 5,
+        max_df: Union[int, float] = 0.95,
+        spacy_model: str = "de_core_news_lg",
+        n_docs: int = 2000000,
+        corpus_path: str = None,
+        corpus_path_encoding: str = "latin1",
+        load_clustering: bool = False,
+        checkterm: str = "Politik",
+        n_top_clusters: int = 3,
+        cluster_share: float = 0.2,
+        clustermethod: str = "agglomerative",
+        distance_threshold: float = 0.5,
+        n_words: int = 40000,
+        n_jobs: int = 1,
+    ) -> None:
         self._data = data
         self._embeddings = embeddings
         self._use_tfidf = use_tfidf
@@ -60,8 +63,7 @@ class PredictionProcessor:
 
         self._is_fit = False
 
-        self._embedding_dim = self._get_embedding_dim(self._embeddings,
-                                                      self._checkterm)
+        self._embedding_dim = self._get_embedding_dim(self._embeddings, self._checkterm)
 
         if tfidf is not None:
             if isinstance(tfidf, str):
@@ -69,10 +71,12 @@ class PredictionProcessor:
             elif isinstance(tfidf, BasicTfidf):
                 self._tfidf = tfidf
             else:
-                raise ValueError(f"""
+                raise ValueError(
+                    f"""
                     Expected 'tfidf' to be of type 'str' or 'BasicTfidf'.
                     Got {type(tfidf)} instead.
-                """)
+                """
+                )
         else:
             self._tfidf = None
 
@@ -82,92 +86,99 @@ class PredictionProcessor:
             elif isinstance(ctfidf, ClusterTfidfVectorizer):
                 self._ctfidf = ctfidf
             else:
-                raise ValueError(f"""
+                raise ValueError(
+                    f"""
                     Expected 'ctfidf' to be of type 'str' or 'ClusterTfidfVectorizer'.
                     Got {type(ctfidf)} instead.
-                """)
+                """
+                )
         else:
             self._ctfidf = None
 
     def _get_properties(self):
         properties = {
             # 'data': self._data,
-            'use_ctfidf': self._use_ctfidf,
-            'aggregate_word_level': self._aggregate_word_level,
-            'relevant_pos': self._relevant_pos,
-            'min_df': self._min_df,
-            'max_df': self._max_df,
-            'spacy_model': self._spacy_model,
-            'n_docs': self._n_docs,
-            'corpus_path': self._corpus_path,
-            'corpus_path_encoding': self._corpus_path_encoding,
-            'load_clustering': self._load_clustering,
-            'checkterm': self._checkterm,
-            'n_top_clusters': self._n_top_clusters,
-            'cluster_share': self._cluster_share,
-            'clustermethod': self._clustermethod,
-            'distance_threshold': self._distance_threshold,
-            'n_words': self._n_words,
-            'n_jobs': self._n_jobs,
-            'is_fit': self._is_fit,
-            'embedding_dim': self._embedding_dim
+            "use_ctfidf": self._use_ctfidf,
+            "aggregate_word_level": self._aggregate_word_level,
+            "relevant_pos": self._relevant_pos,
+            "min_df": self._min_df,
+            "max_df": self._max_df,
+            "spacy_model": self._spacy_model,
+            "n_docs": self._n_docs,
+            "corpus_path": self._corpus_path,
+            "corpus_path_encoding": self._corpus_path_encoding,
+            "load_clustering": self._load_clustering,
+            "checkterm": self._checkterm,
+            "n_top_clusters": self._n_top_clusters,
+            "cluster_share": self._cluster_share,
+            "clustermethod": self._clustermethod,
+            "distance_threshold": self._distance_threshold,
+            "n_words": self._n_words,
+            "n_jobs": self._n_jobs,
+            "is_fit": self._is_fit,
+            "embedding_dim": self._embedding_dim,
         }
         return properties
 
     def _set_properties(self, properties):
-        self._use_ctfidf = properties['use_ctfidf']
-        self._aggregate_word_level = properties['aggregate_word_level']
-        self._relevant_pos =  properties['relevant_pos']
-        self._min_df =  properties['min_df']
-        self._max_df =  properties['max_df']
-        self._spacy_model =  properties['spacy_model']
-        self._n_docs =  properties['n_docs']
-        self._corpus_path =  properties['corpus_path']
-        self._corpus_path_encoding =  properties['corpus_path_encoding']
-        self._load_clustering =  properties['load_clustering']
-        self._checkterm =  properties['checkterm']
-        self._n_top_clusters =  properties['n_top_clusters']
-        self._cluster_share =  properties['cluster_share']
-        self._clustermethod =  properties['clustermethod']
-        self._distance_threshold =  properties['distance_threshold']
-        self._n_words =  properties['n_words']
-        self._n_jobs =  properties['n_jobs']
-        self._is_fit =  properties['is_fit']
-        self._embedding_dim =  properties['embedding_dim']
+        self._use_ctfidf = properties["use_ctfidf"]
+        self._aggregate_word_level = properties["aggregate_word_level"]
+        self._relevant_pos = properties["relevant_pos"]
+        self._min_df = properties["min_df"]
+        self._max_df = properties["max_df"]
+        self._spacy_model = properties["spacy_model"]
+        self._n_docs = properties["n_docs"]
+        self._corpus_path = properties["corpus_path"]
+        self._corpus_path_encoding = properties["corpus_path_encoding"]
+        self._load_clustering = properties["load_clustering"]
+        self._checkterm = properties["checkterm"]
+        self._n_top_clusters = properties["n_top_clusters"]
+        self._cluster_share = properties["cluster_share"]
+        self._clustermethod = properties["clustermethod"]
+        self._distance_threshold = properties["distance_threshold"]
+        self._n_words = properties["n_words"]
+        self._n_jobs = properties["n_jobs"]
+        self._is_fit = properties["is_fit"]
+        self._embedding_dim = properties["embedding_dim"]
 
     def _instantiate_tfidf(self):
-        tfidf = BasicTfidf(relevant_pos=self._relevant_pos,
-                            min_df=self._min_df,
-                            max_df=self._max_df,
-                            spacy_model=self._spacy_model)
+        tfidf = BasicTfidf(
+            relevant_pos=self._relevant_pos,
+            min_df=self._min_df,
+            max_df=self._max_df,
+            spacy_model=self._spacy_model,
+        )
         return tfidf
 
     def _instantiate_ctfidf(self) -> ClusterTfidfVectorizer:
         if isinstance(self._tfidf, BasicTfidf):
             tfidf = self._tfidf.vectorizer
         vectorizer = ClusterTfidfVectorizer(
-                    vectorizer=tfidf,
-                    embeddings=self._embeddings,
-                    n_docs=self._n_docs,
-                    corpus_path=self._corpus_path,
-                    corpus_path_encoding=self._corpus_path_encoding,
-                    load_clustering=self._load_clustering,
-                    embedding_dim=self._embedding_dim,
-                    checkterm=self._checkterm,
-                    n_top_clusters=self._n_top_clusters,
-                    cluster_share=self._cluster_share,
-                    clustermethod=self._clustermethod,
-                    distance_threshold=self._distance_threshold,
-                    n_words=self._n_words,
-                    n_jobs=self._n_jobs)
+            vectorizer=tfidf,
+            embeddings=self._embeddings,
+            n_docs=self._n_docs,
+            corpus_path=self._corpus_path,
+            corpus_path_encoding=self._corpus_path_encoding,
+            load_clustering=self._load_clustering,
+            embedding_dim=self._embedding_dim,
+            checkterm=self._checkterm,
+            n_top_clusters=self._n_top_clusters,
+            cluster_share=self._cluster_share,
+            clustermethod=self._clustermethod,
+            distance_threshold=self._distance_threshold,
+            n_words=self._n_words,
+            n_jobs=self._n_jobs,
+        )
         return vectorizer
 
     @staticmethod
     def _checksize(array: np.ndarray) -> None:
         if len(array.shape) != 1:
-            raise ValueError(f"""
+            raise ValueError(
+                f"""
                 Expected 1 dimensional array. Got array of shape {array.shape}.
-            """)
+            """
+            )
 
     def _get_usedata(self, data):
         if data is None:
@@ -186,7 +197,9 @@ class PredictionProcessor:
 
     def _vectorize(self, data):
         if self._use_ctfidf:
-            return self._ctfidf.transform(data, aggregate_word_level=self._aggregate_word_level)
+            return self._ctfidf.transform(
+                data, aggregate_word_level=self._aggregate_word_level
+            )
         else:
             return self._tfidf.transform(data)
 
@@ -199,14 +212,14 @@ class PredictionProcessor:
     def save_tfidf(self, path: str) -> None:
         self._tfidf.save(path)
 
-    def load_tfidf(self,
-                   path: str,
-                   zip_archive: ZipFile = None) -> None:
-        tfidf = BasicTfidf(stopwords_file=None,
-                           relevant_pos=self._relevant_pos,
-                           min_df=self._min_df,
-                           max_df=self._max_df,
-                           spacy_model=self._spacy_model)
+    def load_tfidf(self, path: str, zip_archive: ZipFile = None) -> None:
+        tfidf = BasicTfidf(
+            stopwords_file=None,
+            relevant_pos=self._relevant_pos,
+            min_df=self._min_df,
+            max_df=self._max_df,
+            spacy_model=self._spacy_model,
+        )
         tfidf.load(path=path, zip_archive=zip_archive)
         self._tfidf = tfidf
 
@@ -214,69 +227,73 @@ class PredictionProcessor:
         self._ctfidf.save(dir)
 
     def load_ctfidf(self, path: str, archive: ZipFile = None) -> None:
-        ctfidf = ClusterTfidfVectorizer(vectorizer=self._tfidf.vectorizer,
-                                        embeddings=self._embeddings,
-                                        n_docs=self._n_docs,
-                                        corpus_path=self._corpus_path,
-                                        corpus_path_encoding=self._corpus_path_encoding,
-                                        load_clustering=self._load_clustering,
-                                        embedding_dim=self._embedding_dim,
-                                        checkterm=self._checkterm,
-                                        n_top_clusters=self._n_top_clusters,
-                                        cluster_share=self._cluster_share,
-                                        clustermethod=self._clustermethod,
-                                        distance_threshold=self._distance_threshold,
-                                        n_words=self._n_words)
+        ctfidf = ClusterTfidfVectorizer(
+            vectorizer=self._tfidf.vectorizer,
+            embeddings=self._embeddings,
+            n_docs=self._n_docs,
+            corpus_path=self._corpus_path,
+            corpus_path_encoding=self._corpus_path_encoding,
+            load_clustering=self._load_clustering,
+            embedding_dim=self._embedding_dim,
+            checkterm=self._checkterm,
+            n_top_clusters=self._n_top_clusters,
+            cluster_share=self._cluster_share,
+            clustermethod=self._clustermethod,
+            distance_threshold=self._distance_threshold,
+            n_words=self._n_words,
+        )
         ctfidf.load(path, archive)
         self._ctfidf = ctfidf
 
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
         if self._use_tfidf:
-            self._tfidf.save(os.path.join(path, 'tfidf.joblib'))
+            self._tfidf.save(os.path.join(path, "tfidf.joblib"))
         if self._ctfidf is not None:
             self._ctfidf.save(path)
         properties = self._get_properties()
-        with open(os.path.join(path, 'properties.json'), 'w') as f:
+        with open(os.path.join(path, "properties.json"), "w") as f:
             json.dump(properties, f)
 
     def load(self, path: str) -> None:
-        with open(os.path.join(path, 'properties.json'), 'r') as f:
+        with open(os.path.join(path, "properties.json"), "r") as f:
             properties = json.load(f)
         self._set_properties(properties)
 
         if self._use_tfidf is True:
-            self.load_tfidf(os.path.join(path, 'tfidf.joblib'))
+            self.load_tfidf(os.path.join(path, "tfidf.joblib"))
 
         if self._use_ctfidf is True:
             try:
-                self.load_ctfidf(os.path.join(path, 'clustertfidf'))
+                self.load_ctfidf(os.path.join(path, "clustertfidf"))
             except FileNotFoundError:
-                print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
+                print(
+                    "Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without."
+                )
 
         self._is_fit = True
 
     def _archive_saved_folder(self, path: str) -> None:
-        shutil.make_archive(path, 'gztar', path)
+        shutil.make_archive(path, "gztar", path)
         shutil.rmtree(path)
 
     def _unpack_saved_folder(self, path: str) -> None:
-        if path.endswith('.tar.gz'):
-            extract_dir = path.replace('.tar.gz', '')
+        if path.endswith(".tar.gz"):
+            extract_dir = path.replace(".tar.gz", "")
         else:
             extract_dir = path
         shutil.unpack_archive(path, extract_dir=extract_dir)
 
     def _remove_unpacked_savefolder(self, path: str) -> None:
-        if path.endswith('.tar.gz'):
-            extract_dir = path.replace('.tar.gz', '')
+        if path.endswith(".tar.gz"):
+            extract_dir = path.replace(".tar.gz", "")
         else:
             extract_dir = path
         shutil.rmtree(extract_dir)
 
-    def fit(self,
-            X: Union[np.ndarray, pd.Series],
-            keepwords: Iterable[str]= None) -> None:
+    def fit(
+        self, X: Union[np.ndarray, pd.Series], keepwords: Iterable[str] = None
+    ) -> None:
         if self._use_tfidf:
             self.fit_tfidf(data=X)
             tfidf_vocab = list(self._tfidf.vocabulary_.keys())
@@ -378,7 +395,7 @@ class PredictionProcessor:
         embedding_shape = self._embedding_dim
         index2word = {i: term for term, i in self._tfidf.vocabulary_.items()}
 
-        print('{} rows to process'.format(vects.shape[0]))
+        print("{} rows to process".format(vects.shape[0]))
         if self._aggregate_word_level:
             allvects = np.zeros((vects.shape[0], embedding_shape))
             i = 0
@@ -387,7 +404,9 @@ class PredictionProcessor:
                 i += 1
         else:
             # TODO: Implement tfidf without word level aggregation
-            raise NotImplementedError('TFIDF without word level aggregation is not implemented yet')
+            raise NotImplementedError(
+                "TFIDF without word level aggregation is not implemented yet"
+            )
 
         return allvects
 
@@ -401,23 +420,24 @@ class PredictionProcessor:
 
     @classmethod
     def load_from_weelexarchive(cls, zipfile: ZipFile):
-        embeds = embeddings.Embeddings.load_filtered('embeddings.npz',
-                                                     archive=zipfile)
+        embeds = embeddings.Embeddings.load_filtered("embeddings.npz", archive=zipfile)
 
         instance = cls(embeddings=embeds)
 
-        with zipfile.open('predictprocessor/properties.json', 'r') as f:
+        with zipfile.open("predictprocessor/properties.json", "r") as f:
             properties = json.load(f)
         instance._set_properties(properties)
 
         if instance._use_tfidf is True:
-            instance.load_tfidf(path='predictprocessor/tfidf.joblib',
-                                zip_archive=zipfile)
+            instance.load_tfidf(
+                path="predictprocessor/tfidf.joblib", zip_archive=zipfile
+            )
 
         if instance._use_ctfidf is True:
             try:
-                instance.load_ctfidf(path='predictprocessor/clustertfidf',
-                                     archive=zipfile)
+                instance.load_ctfidf(
+                    path="predictprocessor/clustertfidf", archive=zipfile
+                )
                 # random_int = str(random.randint(0, 99999999))
                 # random_int = random_int.zfill(8)
                 # zipfile.extract('predictprocessor/clustertfidf',
@@ -426,7 +446,9 @@ class PredictionProcessor:
                 # shutil.rmtree(os.path.join('weelexextract'+random_int))
             except FileNotFoundError as e:
                 print(e)
-                print("Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without.")
+                print(
+                    "Only a saved 'tfidf' but no saved 'ctfidf' instance found. Continuing without."
+                )
 
         instance._is_fit = True
         return instance
