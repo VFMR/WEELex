@@ -151,6 +151,7 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">sklearn.exceptions</span> <span class="kn">import</span> <span class="n">NotFittedError</span>
+
 <span class="c1"># from tqdm import tqdm</span>
 <span class="kn">import</span> <span class="nn">batchprocessing</span>
 
@@ -160,36 +161,39 @@
 <span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">base</span>
 <span class="kn">from</span> <span class="nn">weelex.trainer</span> <span class="kn">import</span> <span class="n">TrainProcessor</span>
 <span class="kn">from</span> <span class="nn">weelex.tfidf</span> <span class="kn">import</span> <span class="n">BasicTfidf</span>
+
 <span class="c1"># from weelex.predictor import PredictionProcessor</span>
 <span class="kn">from</span> <span class="nn">cluster_tfidf.ctfidf</span> <span class="kn">import</span> <span class="n">ClusterTfidfVectorizer</span>
 
 
 <div class="viewcode-block" id="WEELexClassifier"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier">[docs]</a><span class="k">class</span> <span class="nc">WEELexClassifier</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">BasePredictor</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">embeds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">],</span>
-                 <span class="n">tfidf</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BasicTfidf</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">ctfidf</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ClusterTfidfVectorizer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">use_ctfidf</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                 <span class="n">word_level_aggregation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                 <span class="n">test_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                 <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">relevant_pos</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ADJ&#39;</span><span class="p">,</span> <span class="s1">&#39;ADV&#39;</span><span class="p">,</span> <span class="s1">&#39;NOUN&#39;</span><span class="p">,</span> <span class="s1">&#39;VERB&#39;</span><span class="p">],</span>
-                 <span class="n">min_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-                 <span class="n">max_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
-                 <span class="n">spacy_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;de_core_news_lg&#39;</span><span class="p">,</span>
-                 <span class="n">n_docs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000000</span><span class="p">,</span>
-                 <span class="n">corpus_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">corpus_path_encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">,</span>
-                 <span class="n">load_clustering</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">checkterm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Politik&#39;</span><span class="p">,</span>
-                 <span class="n">n_top_clusters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-                 <span class="n">cluster_share</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
-                 <span class="n">clustermethod</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;agglomerative&#39;</span><span class="p">,</span>
-                 <span class="n">distance_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
-                 <span class="n">n_words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40000</span><span class="p">,</span>
-                 <span class="o">**</span><span class="n">train_params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embeds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">],</span>
+        <span class="n">tfidf</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BasicTfidf</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ctfidf</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ClusterTfidfVectorizer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_ctfidf</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">word_level_aggregation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">test_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">relevant_pos</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ADJ&quot;</span><span class="p">,</span> <span class="s2">&quot;ADV&quot;</span><span class="p">,</span> <span class="s2">&quot;NOUN&quot;</span><span class="p">,</span> <span class="s2">&quot;VERB&quot;</span><span class="p">],</span>
+        <span class="n">min_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">max_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">spacy_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;de_core_news_lg&quot;</span><span class="p">,</span>
+        <span class="n">n_docs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000000</span><span class="p">,</span>
+        <span class="n">corpus_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">corpus_path_encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;latin1&quot;</span><span class="p">,</span>
+        <span class="n">load_clustering</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">checkterm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Politik&quot;</span><span class="p">,</span>
+        <span class="n">n_top_clusters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">cluster_share</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">clustermethod</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;agglomerative&quot;</span><span class="p">,</span>
+        <span class="n">distance_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">n_words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40000</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">train_params</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">embeds</span><span class="o">=</span><span class="n">embeds</span><span class="p">,</span>
             <span class="n">tfidf</span><span class="o">=</span><span class="n">tfidf</span><span class="p">,</span>
@@ -213,7 +217,7 @@
             <span class="n">cluster_share</span><span class="o">=</span><span class="n">cluster_share</span><span class="p">,</span>
             <span class="n">clustermethod</span><span class="o">=</span><span class="n">clustermethod</span><span class="p">,</span>
             <span class="n">distance_threshold</span><span class="o">=</span><span class="n">distance_threshold</span><span class="p">,</span>
-            <span class="n">n_words</span><span class="o">=</span><span class="n">n_words</span>
+            <span class="n">n_words</span><span class="o">=</span><span class="n">n_words</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">FullEnsemble</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span> <span class="o">=</span> <span class="n">test_size</span>
@@ -230,7 +234,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_tfidf</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Both &quot;use_tfidf&quot; and &quot;use_tfidf&quot; are set to False. This is currently not implemented.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Both &quot;use_tfidf&quot; and &quot;use_tfidf&quot; are set to False. This is currently not implemented.&#39;</span>
+            <span class="p">)</span>
 
 <div class="viewcode-block" id="WEELexClassifier.set_params"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.set_params">[docs]</a>    <span class="k">def</span> <span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
         <span class="n">trainparams</span> <span class="o">=</span> <span class="p">{}</span>
@@ -243,19 +249,21 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="n">trainparams</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="WEELexClassifier.fit"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-            <span class="n">X</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
-            <span class="n">lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-            <span class="n">support_lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">hp_tuning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="n">n_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span>
-            <span class="n">cv</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-            <span class="n">param_grid</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">fixed_params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">n_best_params</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-            <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="WEELexClassifier.fit"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">support_lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">hp_tuning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">n_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span>
+        <span class="n">cv</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">param_grid</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">fixed_params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_best_params</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span> <span class="o">=</span> <span class="n">lex</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="o">=</span> <span class="n">support_lex</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_predictprocessor</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
@@ -266,27 +274,31 @@
         <span class="n">models</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">pb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_progress_bar</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">pb</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">):</span>
-        <span class="c1"># for cat in self._main_keys:</span>
+            <span class="c1"># for cat in self._main_keys:</span>
             <span class="k">if</span> <span class="n">hp_tuning</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_hyperparameter_tuning</span><span class="p">(</span><span class="n">cat</span><span class="o">=</span><span class="n">cat</span><span class="p">,</span>
-                                            <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">,</span>
-                                            <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
-                                            <span class="n">fixed_params</span><span class="o">=</span><span class="n">fixed_params</span><span class="p">,</span>
-                                            <span class="n">n_best_params</span><span class="o">=</span><span class="n">n_best_params</span><span class="p">,</span>
-                                            <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hyperparameter_tuning</span><span class="p">(</span>
+                    <span class="n">cat</span><span class="o">=</span><span class="n">cat</span><span class="p">,</span>
+                    <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">,</span>
+                    <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
+                    <span class="n">fixed_params</span><span class="o">=</span><span class="n">fixed_params</span><span class="p">,</span>
+                    <span class="n">n_best_params</span><span class="o">=</span><span class="n">n_best_params</span><span class="p">,</span>
+                    <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span>
+                <span class="p">)</span>
 
             <span class="n">model_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tuned_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fixed_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">fixed_params_dct</span> <span class="o">=</span> <span class="n">fixed_params</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">fixed_params_dct</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">fixed_params_dct</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;input_shape&#39;</span><span class="p">:</span> <span class="n">input_shape</span><span class="p">})</span>
+            <span class="n">fixed_params_dct</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;input_shape&quot;</span><span class="p">:</span> <span class="n">input_shape</span><span class="p">})</span>
 
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span>
-                                <span class="n">categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">main_keys</span><span class="p">,</span>
-                                <span class="n">outside_categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">support_keys</span><span class="p">,</span>
-                                <span class="n">param_set</span><span class="o">=</span><span class="n">model_params</span><span class="p">,</span>
-                                <span class="o">**</span><span class="n">fixed_params_dct</span><span class="p">)</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">(</span>
+                <span class="n">cat</span><span class="p">,</span>
+                <span class="n">categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">main_keys</span><span class="p">,</span>
+                <span class="n">outside_categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">support_keys</span><span class="p">,</span>
+                <span class="n">param_set</span><span class="o">=</span><span class="n">model_params</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">fixed_params_dct</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">feed_cat_Xy</span><span class="p">(</span><span class="n">cat</span><span class="o">=</span><span class="n">cat</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
             <span class="n">models</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="n">model</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_models</span> <span class="o">=</span> <span class="n">models</span>
@@ -300,53 +312,56 @@
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;support_lex&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;support_lex&quot;</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="c1"># TODO: load support lex</span>
 
-    <span class="k">def</span> <span class="nf">_setup_trainprocessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                              <span class="n">lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-                              <span class="n">support_lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                              <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                              <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span> <span class="o">=</span> <span class="n">TrainProcessor</span><span class="p">(</span><span class="n">lex</span><span class="o">=</span><span class="n">lex</span><span class="p">,</span>
-                                              <span class="n">support_lex</span><span class="o">=</span><span class="n">support_lex</span><span class="p">,</span>
-                                              <span class="n">main_keys</span><span class="o">=</span><span class="n">main_keys</span><span class="p">,</span>
-                                              <span class="n">support_keys</span><span class="o">=</span><span class="n">support_keys</span><span class="p">,</span>
-                                              <span class="n">embeddings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">,</span>
-                                              <span class="n">test_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span><span class="p">,</span>
-                                              <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_setup_trainprocessor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">support_lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span> <span class="o">=</span> <span class="n">TrainProcessor</span><span class="p">(</span>
+            <span class="n">lex</span><span class="o">=</span><span class="n">lex</span><span class="p">,</span>
+            <span class="n">support_lex</span><span class="o">=</span><span class="n">support_lex</span><span class="p">,</span>
+            <span class="n">main_keys</span><span class="o">=</span><span class="n">main_keys</span><span class="p">,</span>
+            <span class="n">support_keys</span><span class="o">=</span><span class="n">support_keys</span><span class="p">,</span>
+            <span class="n">embeddings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">,</span>
+            <span class="n">test_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">make_train_test_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">main_keys</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">support_keys</span>
 
-    <span class="k">def</span> <span class="nf">_hyperparameter_tuning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                               <span class="n">cat</span><span class="p">,</span>
-                               <span class="n">n_iter</span><span class="p">,</span>
-                               <span class="n">param_grid</span><span class="p">,</span>
-                               <span class="n">fixed_params</span><span class="p">,</span>
-                               <span class="n">cv</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-                               <span class="n">n_best_params</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_hyperparameter_tuning</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">cat</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">,</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">fixed_params</span><span class="p">,</span> <span class="n">cv</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">n_best_params</span><span class="o">=</span><span class="mi">3</span>
+    <span class="p">):</span>
         <span class="k">if</span> <span class="n">param_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No parameter grid set for tuning.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No parameter grid set for tuning.&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">fixed_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fixed_params_dct</span> <span class="o">=</span> <span class="n">fixed_params</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">fixed_params_dct</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span>
-                <span class="n">estimator</span><span class="o">=</span><span class="n">ensemble</span><span class="o">.</span><span class="n">AugmentedEnsemble</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span>
-                                                     <span class="n">categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">,</span>
-                                                     <span class="n">outside_categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span><span class="p">,</span>
-                                                     <span class="o">**</span><span class="n">fixed_params_dct</span><span class="p">),</span>
-                <span class="n">param_distributions</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
-                <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">,</span>
-                <span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span>
-                <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span>
-                <span class="n">scoring</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">)</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">ensemble</span><span class="o">.</span><span class="n">AugmentedEnsemble</span><span class="p">(</span>
+                <span class="n">cat</span><span class="p">,</span>
+                <span class="n">categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">,</span>
+                <span class="n">outside_categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">fixed_params_dct</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">param_distributions</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
+            <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">,</span>
+            <span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span>
+            <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span>
+            <span class="n">scoring</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span><span class="o">.</span><span class="n">feed_cat_Xy</span><span class="p">(</span><span class="n">cat</span><span class="o">=</span><span class="n">cat</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">search</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
@@ -361,7 +376,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_nonmissing_mean</span><span class="p">(</span><span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Returns the mean test scores from non-missing cross validation results.</span>
+        <span class="sd">&quot;&quot;&quot;Returns the mean test scores from non-missing cross validation results.</span>
 <span class="sd">        Only averages the results of splits with valid test scores.</span>
 
 <span class="sd">        Examples:</span>
@@ -377,7 +392,14 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            list: mean test scores</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">test_scores</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="s1">&#39;test_score&#39;</span> <span class="ow">in</span> <span class="n">key</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s1">&#39;mean&#39;</span> <span class="ow">in</span> <span class="n">key</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s1">&#39;std&#39;</span> <span class="ow">in</span> <span class="n">key</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s1">&#39;rank&#39;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]</span>
+        <span class="n">test_scores</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;test_score&quot;</span> <span class="ow">in</span> <span class="n">key</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;mean&quot;</span> <span class="ow">in</span> <span class="n">key</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;std&quot;</span> <span class="ow">in</span> <span class="n">key</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;rank&quot;</span> <span class="ow">in</span> <span class="n">key</span>
+        <span class="p">]</span>
         <span class="n">mean_test_scores</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_scores</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
             <span class="n">lst</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">test_scores</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])])</span>
@@ -412,8 +434,7 @@
 <span class="sd">            results (dict): truncated parameter set</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">result_params</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span>
-                        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]):</span>
             <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">n_best_params</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result_params</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">n_best_params</span><span class="p">:</span>
                 <span class="n">result_params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result_params</span>
@@ -422,18 +443,20 @@
         <span class="n">catpreds_binary</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">probas</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">probas</span><span class="p">[</span><span class="n">cat</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">probas</span><span class="p">[</span><span class="n">cat</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">probas</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
             <span class="n">catpreds_binary</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="n">pred</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">catpreds_binary</span><span class="p">)</span>
 
 <div class="viewcode-block" id="WEELexClassifier.predict_words"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.predict_words">[docs]</a>    <span class="nd">@batchprocessing</span><span class="o">.</span><span class="n">batch_predict</span>
-    <span class="k">def</span> <span class="nf">predict_words</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-                <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
-                <span class="n">n_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">predict_words</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">n_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="n">catpreds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba_words</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probas_to_binary</span><span class="p">(</span><span class="n">catpreds</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span></div>
 
@@ -446,17 +469,21 @@
         <span class="k">return</span> <span class="n">catpreds</span></div>
 
 <div class="viewcode-block" id="WEELexClassifier.predict_docs"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.predict_docs">[docs]</a>    <span class="nd">@batchprocessing</span><span class="o">.</span><span class="n">batch_predict</span>
-    <span class="k">def</span> <span class="nf">predict_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                       <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-                       <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
-                       <span class="n">n_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                       <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">predict_docs</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">n_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba_docs</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probas_to_binary</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WEELexClassifier.predict_proba_docs"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.predict_proba_docs">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;This </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> instance is not fitted yet. Call &quot;fit&quot; with appropriate arguments before using this estimator.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;This </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> instance is not fitted yet. Call &quot;fit&quot; with appropriate arguments before using this estimator.&#39;</span>
+            <span class="p">)</span>
         <span class="n">vects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba_words</span><span class="p">(</span><span class="n">vects</span><span class="p">)</span></div>
 
@@ -464,7 +491,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
         <span class="c1"># TODO: Expand save() method beyond base class</span>
 
-    <span class="c1">#---------------------------------------------------------------------------</span>
+    <span class="c1"># ---------------------------------------------------------------------------</span>
     <span class="c1"># properties</span>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">main_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
@@ -481,7 +508,7 @@
             <span class="n">vocab</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="o">.</span><span class="n">vocabulary</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">vocab</span><span class="p">))</span>
 
-    <span class="c1">#---------------------------------------------------------------------------</span>
+    <span class="c1"># ---------------------------------------------------------------------------</span>
     <span class="c1"># classmethods:</span>
 <div class="viewcode-block" id="WEELexClassifier.load"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.load">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>

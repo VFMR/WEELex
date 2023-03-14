@@ -9,23 +9,22 @@ from weelex import embeddings
 
 
 class TrainProcessor:
-    def __init__(self,
-                 lex: lexicon.Lexicon,
-                 support_lex: lexicon.Lexicon=None,
-                 main_keys: Iterable[str]=None,
-                 support_keys: Iterable[str]=None,
-                 embeddings: embeddings.Embeddings=None,
-                 test_size: Union[float, int]=0.2,
-                 checkterm: str = 'Politik',
-                 random_state: int=None):
+    def __init__(
+        self,
+        lex: lexicon.Lexicon,
+        support_lex: lexicon.Lexicon = None,
+        main_keys: Iterable[str] = None,
+        support_keys: Iterable[str] = None,
+        embeddings: embeddings.Embeddings = None,
+        test_size: Union[float, int] = 0.2,
+        checkterm: str = "Politik",
+        random_state: int = None,
+    ):
         # self._lex = lex
         # self._support_lex = support_lex
         # self._main_keys = main_keys
         # self._support_keys = support_keys
-        self._handle_lexica(lex,
-                            support_lex,
-                            main_keys,
-                            support_keys)
+        self._handle_lexica(lex, support_lex, main_keys, support_keys)
         self._embeddings = embeddings
         self._test_size = test_size
         self._random_state = random_state
@@ -62,11 +61,13 @@ class TrainProcessor:
     #     full_lex = base_lex.merge(lexica[1:])
     #     return full_lex
 
-    def _handle_lexica(self,
-                       main_lex: Union[lexicon.Lexicon, dict, str],
-                       support_lex: Union[lexicon.Lexicon, dict, str]=None,
-                       main_keys: Iterable[str]=None,
-                       support_keys: Iterable[str]=None) -> None:
+    def _handle_lexica(
+        self,
+        main_lex: Union[lexicon.Lexicon, dict, str],
+        support_lex: Union[lexicon.Lexicon, dict, str] = None,
+        main_keys: Iterable[str] = None,
+        support_keys: Iterable[str] = None,
+    ) -> None:
         # create lexica as Lexicon Instances:
         _main_lex = self._make_lexicon(main_lex)
         if support_lex is not None:
@@ -123,9 +124,9 @@ class TrainProcessor:
             catw = lex[cat]
             nomiss = lex._nonmissarray(catw)
 
-            df = df.iloc[:len(nomiss), :]
-            df.index = cat+':'+nomiss
-            df.index = df.index.str.replace('*', '', regex=False)
+            df = df.iloc[: len(nomiss), :]
+            df.index = cat + ":" + nomiss
+            df.index = df.index.str.replace("*", "", regex=False)
             dfs.append(df)
         df_full = pd.concat(dfs)
         return df_full
@@ -149,9 +150,10 @@ class TrainProcessor:
         # term2cat = pd.DataFrame(terms, columns=['terms'])
         # categories = df_full.index.str.extract(r'([A-Za-z0-9]*)\:')
         # term2cat['categories'] = categories
-        term2cat = embedding_df.index.str.split(':', expand=True, n=1)\
-                                         .to_frame(index=False)
-        term2cat.columns = ['categories', 'terms']
+        term2cat = embedding_df.index.str.split(":", expand=True, n=1).to_frame(
+            index=False
+        )
+        term2cat.columns = ["categories", "terms"]
         return term2cat
 
     def _prepare_inputs(self):
@@ -171,22 +173,31 @@ class TrainProcessor:
 
         for cat in self._main_keys:
             # separate terms from the current category and other categories
-            cat_terms = self._term2cat[self._term2cat['categories']==cat].loc[:, ['terms']]
+            cat_terms = self._term2cat[self._term2cat["categories"] == cat].loc[
+                :, ["terms"]
+            ]
             cat_terms[cat] = True
 
             # "other" terms: words that do not belong to current category
             # but are nonetheless in our list of categories to consider.
             other_terms = self._term2cat[
-                (self._term2cat['categories']!=cat) & (self._term2cat['categories'].isin(self._main_keys+self._support_keys))
-            ].loc[:, ['terms', 'categories']]
+                (self._term2cat["categories"] != cat)
+                & (
+                    self._term2cat["categories"].isin(
+                        self._main_keys + self._support_keys
+                    )
+                )
+            ].loc[:, ["terms", "categories"]]
 
             # handle words that appear in multiple categories: remove from other category
-            other_terms = other_terms[~other_terms['terms'].isin(list(cat_terms['terms']))]
+            other_terms = other_terms[
+                ~other_terms["terms"].isin(list(cat_terms["terms"]))
+            ]
             other_terms[cat] = False
 
             y = pd.concat([cat_terms, other_terms], ignore_index=False, axis=0)
-            terms_classes.update({cat: y['terms']})
-            del y['terms']
+            terms_classes.update({cat: y["terms"]})
+            del y["terms"]
             y_classes.update({cat: y})
 
         return y_classes
@@ -200,27 +211,28 @@ class TrainProcessor:
             X_classes.update({cat: X_class_this})
         return X_classes
 
-    def _make_data(self) -> Tuple[Dict[str, pd.DataFrame],
-                                  Dict[str, pd.DataFrame]]:
+    def _make_data(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]:
         self._prepare_inputs()
         y_classes = self._make_y()
         x_classes = self._make_X(y_classes)
         return x_classes, y_classes
 
-    def _train_test_split(self,
-                          X: pd.DataFrame,
-                          y: pd.DataFrame,
-                          test_size: float = 0.2,
-                          random_state: int = None) -> None:
+    def _train_test_split(
+        self,
+        X: pd.DataFrame,
+        y: pd.DataFrame,
+        test_size: float = 0.2,
+        random_state: int = None,
+    ) -> None:
         trains = {}
         tests = {}
         for cat in self._main_keys:
             _X = X[cat]
             _y = y[cat]
             if test_size is not None and test_size is not False:
-                X_train, X_test, y_train, y_test = train_test_split(_X, _y,
-                                                                    test_size=test_size,
-                                                                    random_state=random_state)
+                X_train, X_test, y_train, y_test = train_test_split(
+                    _X, _y, test_size=test_size, random_state=random_state
+                )
             else:
                 X_train = _X
                 X_test = None
@@ -233,23 +245,26 @@ class TrainProcessor:
         self.tests = tests
         self._train_test_drawn = True
 
-    def transform(self) -> Tuple[Dict[str, pd.DataFrame],
-                                 Dict[str, pd.DataFrame]]:
+    def transform(self) -> Tuple[Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]:
         return self._make_data()
 
     def make_train_test_data(self) -> None:
         X_transf, y_transf = self.transform()
         if self._test_size and self._test_size is not None:
-            self._train_test_split(X_transf, y_transf,
-                                  test_size=self._test_size,
-                                  random_state=self._random_state)
+            self._train_test_split(
+                X_transf,
+                y_transf,
+                test_size=self._test_size,
+                random_state=self._random_state,
+            )
         else:
-            self._train_test_split(X_transf, y_transf,
-                                  test_size=None,
-                                  random_state=self._random_state)
+            self._train_test_split(
+                X_transf, y_transf, test_size=None, random_state=self._random_state
+            )
 
-    def feed_cat_Xy(self, cat: str, train: bool = True) -> Tuple[pd.DataFrame,
-                                                                 pd.DataFrame]:
+    def feed_cat_Xy(
+        self, cat: str, train: bool = True
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         if self._test_size is not None:
             if self.trains is None:
                 self.make_train_test_data()

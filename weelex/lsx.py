@@ -17,33 +17,34 @@ from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class LatentSemanticScaling(base.BasePredictor):
-    def __init__(self,
-                 embeds: Union[dict, embeddings.Embeddings],
-                #  polarity_lexicon: lexicon.Lexicon,
-                 word_level_aggregation: bool = False,
-                 tfidf: Union[str, BasicTfidf] = None,
-                 ctfidf: Union[str, ClusterTfidfVectorizer] = None,
-                 use_tfidf: bool = True,
-                 use_ctfidf: bool = True,
-                 random_state: int = None,
-                 progress_bar: bool = False,
-                 relevant_pos: List[str] = ['ADJ', 'ADV', 'NOUN', 'VERB'],
-                 min_df: Union[int, float] = 5,
-                 max_df: Union[int, float] = 0.95,
-                 spacy_model: str = 'de_core_news_lg',
-                 n_docs: int = 2000000,
-                 corpus_path: str = None,
-                 corpus_path_encoding: str = 'latin1',
-                 load_clustering: bool = False,
-                 checkterm: str = 'Politik',
-                 n_top_clusters: int = 3,
-                 cluster_share: float = 0.2,
-                 clustermethod: str = 'agglomerative',
-                 distance_threshold: float = 0.5,
-                 n_words: int = 40000,
-                 scale_results: bool = True,
-                 scaler: Union[str, callable] = 'standard'
-                 ) -> None:
+    def __init__(
+        self,
+        embeds: Union[dict, embeddings.Embeddings],
+        #  polarity_lexicon: lexicon.Lexicon,
+        word_level_aggregation: bool = False,
+        tfidf: Union[str, BasicTfidf] = None,
+        ctfidf: Union[str, ClusterTfidfVectorizer] = None,
+        use_tfidf: bool = True,
+        use_ctfidf: bool = True,
+        random_state: int = None,
+        progress_bar: bool = False,
+        relevant_pos: List[str] = ["ADJ", "ADV", "NOUN", "VERB"],
+        min_df: Union[int, float] = 5,
+        max_df: Union[int, float] = 0.95,
+        spacy_model: str = "de_core_news_lg",
+        n_docs: int = 2000000,
+        corpus_path: str = None,
+        corpus_path_encoding: str = "latin1",
+        load_clustering: bool = False,
+        checkterm: str = "Politik",
+        n_top_clusters: int = 3,
+        cluster_share: float = 0.2,
+        clustermethod: str = "agglomerative",
+        distance_threshold: float = 0.5,
+        n_words: int = 40000,
+        scale_results: bool = True,
+        scaler: Union[str, callable] = "standard",
+    ) -> None:
         super().__init__(
             embeds=embeds,
             tfidf=tfidf,
@@ -65,37 +66,37 @@ class LatentSemanticScaling(base.BasePredictor):
             cluster_share=cluster_share,
             clustermethod=clustermethod,
             distance_threshold=distance_threshold,
-            n_words=n_words
+            n_words=n_words,
         )
         self._use_result_scaling = scale_results
-        self._use_tfidf =  use_tfidf
+        self._use_tfidf = use_tfidf
         self._scaler = self._get_scaler(scaler)
 
     @staticmethod
     def _get_scaler(scaler: Union[str, callable]):
         if isinstance(scaler, str):
-            if scaler == 'standard':
+            if scaler == "standard":
                 return StandardScaler()
-            elif scaler == 'minmax':
+            elif scaler == "minmax":
                 return MinMaxScaler()
         else:
             return scaler()
 
     def _get_properties(self):
-        properties =  super()._get_properties()
-        properties.update({'use_result_scaling': self._use_result_scaling})
+        properties = super()._get_properties()
+        properties.update({"use_result_scaling": self._use_result_scaling})
         return properties
 
     def _set_properties(self, properties):
         super()._set_properties(properties)
-        self._use_result_scaling = properties['use_result_scaling']
+        self._use_result_scaling = properties["use_result_scaling"]
 
-    def _scale_results(self,
-                       polarity_scores: Union[float, np.ndarray]
-                       ) -> Union[float, np.ndarray]:
+    def _scale_results(
+        self, polarity_scores: Union[float, np.ndarray]
+    ) -> Union[float, np.ndarray]:
         if self._use_result_scaling:
             if isinstance(polarity_scores, float) or isinstance(polarity_scores, int):
-                score_array = np.array([polarity_scores]).reshape(-1,1)
+                score_array = np.array([polarity_scores]).reshape(-1, 1)
                 result = self._scaler.transform(score_array).reshape(-1)[0]
             elif isinstance(polarity_scores, np.ndarray):
                 score_array = polarity_scores.reshape(-1, 1)
@@ -106,92 +107,93 @@ class LatentSemanticScaling(base.BasePredictor):
 
     def polarity(self, word: str) -> float:
         if self._is_fit is False:
-            raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
+            raise NotFittedError(
+                'This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+            )
         return self._scale_results(self._compute_polarity_word(word))
 
     def doc_polarity(self, doc: str) -> float:
         if self._use_ctfidf:
             if self._predictprocessor is None:
-                raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
+                raise NotFittedError(
+                    'This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+                )
             result = self._compute_polarity_ctfidf_doc(doc)
         elif self._use_tfidf:
-            raise NotImplementedError('Prediction for tfidf but without ctfidf is not yet implemented.')
+            raise NotImplementedError(
+                "Prediction for tfidf but without ctfidf is not yet implemented."
+            )
         else:
             lexicon_embeddings = self._lex.embeddings
             weights = self._lex.weights
-            result = self._predict_doc_allwords(doc=doc,
-                                                lexicon_embeddings=lexicon_embeddings,
-                                                weights=weights)
+            result = self._predict_doc_allwords(
+                doc=doc, lexicon_embeddings=lexicon_embeddings, weights=weights
+            )
         return self._scale_results(result)
 
     def _compute_polarity_ctfidf_doc(self, doc: str) -> float:
         vec_w = self._predictprocessor.transform(pd.Series(np.array([doc])))
-        vectors = vec_w['vectors'][0]
-        ctfidf_weights = vec_w['weights'][0]
+        vectors = vec_w["vectors"][0]
+        ctfidf_weights = vec_w["weights"][0]
         lexicon_embeddings = self._lex.embeddings
         polarity_weights = self._lex.weights
         polarity = self._compute_polarity_ctfidf_vecs(
             ctfidf_vectors=vectors,
             ctfidf_weights=ctfidf_weights,
             lexicon_embeddings=lexicon_embeddings,
-            polarity_weights=polarity_weights
+            polarity_weights=polarity_weights,
         )
         return polarity
 
-    def _compute_polarity_ctfidf_vecs(self,
-                                      ctfidf_vectors,
-                                      ctfidf_weights,
-                                      lexicon_embeddings,
-                                      polarity_weights) -> float:
+    def _compute_polarity_ctfidf_vecs(
+        self, ctfidf_vectors, ctfidf_weights, lexicon_embeddings, polarity_weights
+    ) -> float:
         polarity = 0
         for i, vf in enumerate(ctfidf_vectors):
-            polarity += ctfidf_weights[i]*self._polarity_function(
-                                            vf=vf,
-                                            Vs=lexicon_embeddings,
-                                            P=polarity_weights)
+            polarity += ctfidf_weights[i] * self._polarity_function(
+                vf=vf, Vs=lexicon_embeddings, P=polarity_weights
+            )
         return polarity
 
     def _compute_polarity_ctfidf_corpus(self, corpus: pd.Series) -> np.ndarray:
-        result = np.zeros( (len(corpus)) )
+        result = np.zeros((len(corpus)))
         vec_w = self._predictprocessor.transform(corpus)
         lexicon_embeddings = self._lex.embeddings
         polarity_weights = self._lex.weights
 
         for i in range(len(corpus)):
-            ctfidf_vectors = vec_w['vectors'][i]
-            ctfidf_weights = vec_w['weights'][i]
+            ctfidf_vectors = vec_w["vectors"][i]
+            ctfidf_weights = vec_w["weights"][i]
             result[i] = self._compute_polarity_ctfidf_vecs(
                 ctfidf_vectors=ctfidf_vectors,
                 ctfidf_weights=ctfidf_weights,
                 lexicon_embeddings=lexicon_embeddings,
-                polarity_weights=polarity_weights
-                )
+                polarity_weights=polarity_weights,
+            )
         return result
 
     def _compute_polarity_vector(self, vector: np.ndarray) -> float:
         lexicon_embeddings = self._lex.embeddings
         weights = self._lex.weights
-        return self._polarity_function(vf=vector,
-                                       Vs=lexicon_embeddings,
-                                       P=weights)
+        return self._polarity_function(vf=vector, Vs=lexicon_embeddings, P=weights)
 
     def _compute_polarity_word(self, word: str) -> float:
         vector = self._embeddings[word]
         return self._compute_polarity_vector(vector=vector)
 
     @staticmethod
-    def _polarity_function(vf: np.ndarray,
-                           Vs: np.ndarray,
-                           P: np.ndarray) -> float:
+    def _polarity_function(vf: np.ndarray, Vs: np.ndarray, P: np.ndarray) -> float:
         cosine_sum = 0
         for i in range(Vs.shape[0]):
-            cosine_sum += _cosine_simil(Vs[i,:], vf)*P[i]
+            cosine_sum += _cosine_simil(Vs[i, :], vf) * P[i]
         return (1 / Vs.shape[0]) * cosine_sum
 
-    def fit(self,
-            polarity_lexicon: lexicon.WeightedLexicon,
-            X=Union[pd.Series, np.ndarray],
-            y=None):
+    def fit(
+        self,
+        polarity_lexicon: lexicon.WeightedLexicon,
+        X=Union[pd.Series, np.ndarray],
+        y=None,
+    ):
         self._lex = polarity_lexicon
         self._lex.embed(self._embeddings)
 
@@ -201,7 +203,7 @@ class LatentSemanticScaling(base.BasePredictor):
 
         # making prediction on X to fit scaler:
         preds = self._predict_docs_unscaled(X)
-        self._scaler.fit(preds.reshape(-1,1))
+        self._scaler.fit(preds.reshape(-1, 1))
 
     def _transform_doc_unweighted(self, doc: str) -> np.ndarray:
         splits = doc.split()
@@ -216,83 +218,88 @@ class LatentSemanticScaling(base.BasePredictor):
         row_scores = []
         for x in row_vects:
             row_scores.append(
-                self._polarity_function(vf=x,
-                                        Vs=lexicon_embeddings,
-                                        P=weights))
+                self._polarity_function(vf=x, Vs=lexicon_embeddings, P=weights)
+            )
         return np.mean(row_scores)
 
     def _predict_docs_unscaled(self, X: Union[pd.Series, np.ndarray]) -> np.ndarray:
         if self._predictprocessor is None:
-            raise NotFittedError('This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.')
+            raise NotFittedError(
+                'This LatentSemanticScaling instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+            )
 
         if self._use_ctfidf or self._use_tfidf:
             preds = self._compute_polarity_ctfidf_corpus(X)
         else:
             lexicon_embeddings = self._lex.embeddings
             weights = self._lex.weights
-            preds = np.zeros( (X.shape[0]))
+            preds = np.zeros((X.shape[0]))
             for i in range(X.shape[0]):
                 doc = X[i]
                 preds[i] = self._predict_doc_allwords(
-                    doc=doc,
-                    lexicon_embeddings=lexicon_embeddings,
-                    weights=weights)
+                    doc=doc, lexicon_embeddings=lexicon_embeddings, weights=weights
+                )
         return preds
 
-
     @batchprocessing.batch_predict
-    def predict_docs(self,
-                     X: Union[pd.Series, np.ndarray],
-                     n_batches: int = None,
-                     checkpoint_path: str = None,
-                     n_jobs: int = 1) -> np.ndarray:
+    def predict_docs(
+        self,
+        X: Union[pd.Series, np.ndarray],
+        n_batches: int = None,
+        checkpoint_path: str = None,
+        n_jobs: int = 1,
+    ) -> np.ndarray:
         preds = self._predict_docs_unscaled(X=X)
         return self._scale_results(preds)
 
     @batchprocessing.batch_predict
-    def predict_words(self,
-                       X: Union[pd.Series, np.ndarray],
-                       n_batches: int = None,
-                       checkpoint_path: str = None) -> np.ndarray:
+    def predict_words(
+        self,
+        X: Union[pd.Series, np.ndarray],
+        n_batches: int = None,
+        checkpoint_path: str = None,
+    ) -> np.ndarray:
         vectors = np.zeros((X.shape[0], self._embeddings.dim))
         for i in range(X.shape[0]):
             vectors[i] = self._embeddings[X[i]]
         return self.predict_vectors(X=vectors)
 
     @batchprocessing.batch_predict
-    def predict_vectors(self,
-                        X: Union[pd.Series, np.ndarray],
-                        n_batches: int = None,
-                        checkpoint_path: str = None) -> np.ndarray:
+    def predict_vectors(
+        self,
+        X: Union[pd.Series, np.ndarray],
+        n_batches: int = None,
+        checkpoint_path: str = None,
+    ) -> np.ndarray:
         lexicon_embeddings = self._lex.embeddings
         weights = self._lex.weights
         scores = np.zeros((X.shape[0]))
         if self._word_level_aggregation:
             for i in range(X.shape[0]):
-                scores[i] = self._polarity_function(vf=X[i,:],
-                                                Vs=lexicon_embeddings,
-                                                P=weights)
+                scores[i] = self._polarity_function(
+                    vf=X[i, :], Vs=lexicon_embeddings, P=weights
+                )
         else:
             for i in range(X.shape[0]):
-                row_vectors = X['vectors'][i]
-                row_weights = X['weights'][i]
+                row_vectors = X["vectors"][i]
+                row_weights = X["weights"][i]
                 row_score = 0
                 for j, x in enumerate(row_vectors):
-                    row_score += row_weights[j] * self._polarity_function(vf=x,
-                                                         Vs=lexicon_embeddings,
-                                                         P=weights)
+                    row_score += row_weights[j] * self._polarity_function(
+                        vf=x, Vs=lexicon_embeddings, P=weights
+                    )
                 scores[i] = row_score
 
         return self._scale_results(scores)
 
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # classmethods:
     @classmethod
-    def load(cls, path: str) -> 'LatentSemanticScaling':
+    def load(cls, path: str) -> "LatentSemanticScaling":
         instance = super().load(path)
         usepath = cls._check_zippath(path)
         with ZipFile(usepath) as myzip:
-            with myzip.open('scaler.joblib', 'r') as f:
+            with myzip.open("scaler.joblib", "r") as f:
                 instance._scaler = joblib.load(f)
         return instance
 

@@ -5,6 +5,7 @@ from weelex.classifier import WEELexClassifier
 
 # TODO: positional arguments 'fit', 'predict' -> execute methods accordingly
 
+
 class WEELexCli:
     def __init__(self):
         classifier = WEELexClassifier
