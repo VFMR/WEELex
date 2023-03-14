@@ -17,7 +17,7 @@ conda install sphinx_rtd_theme
 
 
 ## Running Tests:
-`pytest --doctest-modules --ignore=batchprocessing/tests/ tests/myunittests.py weelex/`
+`pytest --doctest-modules weelex/`
 
 ## Updating documentation
 `./docs/make.bat html`
