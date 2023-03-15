@@ -16,9 +16,6 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-# from gensim.models.callbacks import CallbackAny2Vec
-# from scipy.sparse import vstack
-
 
 def make_agg_sample(X: np.ndarray, n: int = 3) -> np.ndarray:
     """Draw n vectors randomly and return the linear
