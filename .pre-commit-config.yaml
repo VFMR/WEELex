@@ -8,25 +8,32 @@ repos:
     -   id: check-added-large-files
     -   id: check-ast  # checks if files parse as valid python
     -   id: check-docstring-first  # checks for docstring defined after code
--   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v2.0.2 
-    hooks:
-    -   id: autopep8
 -   repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
     -   id: black
+-   repo: https://github.com/pre-commit/mirrors-autopep8
+    rev: v2.0.2 
+    hooks:
+    -   id: autopep8
 -   repo: local
     hooks:
     -   id: unittests
         name: run unit tests
-        entry: pytest --doctest-modules weelex/
+        entry: pytest #--doctest-modules weelex/
         language: system
         types: [python]
         pass_filenames: false
         stages: [commit]
         always_run: true
         args: ["--doctest-modules", "weelex/"]
+    # -   id: linting
+    #     name: run linter and export output
+    #     language: system
+    #     entry: pylint weelex/ > linter_output.txt
+    #     pass_filenames: false
+    #     stages: [commit]
+    #     always_run: true
     # -   id: documentation
     #     name: update documentation
     #     entry: docs/make.bat html

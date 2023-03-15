@@ -8,10 +8,10 @@ from zipfile import ZipFile
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex.tfidf import BasicTfidf
 from weelex import embeddings
-from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class PredictionProcessor:

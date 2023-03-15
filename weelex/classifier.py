@@ -5,9 +5,8 @@ from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
 import numpy as np
 from sklearn.exceptions import NotFittedError
-
-# from tqdm import tqdm
 import batchprocessing
+from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex import lexicon
 from weelex import embeddings
@@ -15,9 +14,6 @@ from weelex import ensemble
 from weelex import base
 from weelex.trainer import TrainProcessor
 from weelex.tfidf import BasicTfidf
-
-# from weelex.predictor import PredictionProcessor
-from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class WEELexClassifier(base.BasePredictor):

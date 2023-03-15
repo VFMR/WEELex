@@ -8,12 +8,12 @@ from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 import batchprocessing
+from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex import lexicon
 from weelex import embeddings
 from weelex import base
 from weelex.tfidf import BasicTfidf
-from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 
 class LatentSemanticScaling(base.BasePredictor):
