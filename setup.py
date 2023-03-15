@@ -20,6 +20,16 @@ setup(
               'batchprocessing @ git+https://github.com/VFMR/batchprocessing.git#egg=batchprocessing-0.1',
               'cluster_tfidf @ git+https://github.com/VFMR/cluster_tfidf.git#egg=cluster_tfidf.1'
             ],
+        extras_require={
+            'dev': [
+                'pytest',
+                'sphinx',
+                'sphinx_rtd_theme',
+                'black',
+                'pylint',
+                'pre-commit'
+                ]
+            },
         package_dir={
             '': '.',
             }
