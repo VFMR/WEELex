@@ -8,6 +8,9 @@ repos:
     -   id: check-added-large-files
     -   id: check-ast  # checks if files parse as valid python
     -   id: check-docstring-first  # checks for docstring defined after code
+    -   id: debug-statements  # check for breakpoints()
+    -   id: no-commit-to-branch
+        args: ['--branch', 'main']
 -   repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
