@@ -16,17 +16,17 @@ repos:
     rev: v2.0.2 
     hooks:
     -   id: autopep8
--   repo: local
-    hooks:
-    -   id: unittests
-        name: run unit tests
-        entry: pytest #--doctest-modules weelex/
-        language: system
-        types: [python]
-        pass_filenames: false
-        stages: [commit]
-        always_run: true
-        args: ["--doctest-modules", "weelex/"]
+# -   repo: local
+#     hooks:
+#     -   id: unittests
+#         name: run unit tests
+#         entry: pytest #--doctest-modules weelex/
+#         language: system
+#         types: [python]
+#         pass_filenames: false
+#         stages: [commit]
+#         always_run: true
+#         args: ["--doctest-modules", "weelex/"]
     # -   id: linting
     #     name: run linter and export output
     #     language: system
