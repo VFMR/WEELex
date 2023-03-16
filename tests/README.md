@@ -14,7 +14,7 @@ python -m spacy download de_core_news_lg
 
 
 ## Running Tests:
-`pytest --doctest-modules weelex/`
+`pytest --doctest-modules weelex/ tests/myunittests.py`
 
 ## Updating documentation
 `./docs/make.bat html`
