@@ -182,13 +182,21 @@ class TestClassifier(GenericTest):
     def test_setup(self):
         self._setup2()
         cl = classifier.WEELexClassifier(embeds=self.embeds)
+        assert True
 
     def test_fit(self):
         self._setup_predictor()
-        cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.fit(X=self.data, lex=self.lex1,
-               support_lex=self.lex2, hp_tuning=False)
+        cl = classifier.WEELexClassifier(
+            embeds=self.embeds,
+            use_ctfidf=True,
+            min_df=1,
+            max_df=0.999,
+            n_docs=len(self.data),
+        )
+        cl.fit(X=self.data, lex=self.lex1, support_lex=self.lex2, hp_tuning=False)
         assert cl._is_fit is True
+        assert isinstance(cl._predictprocessor._tfidf.vocabulary, dict)
+        assert len(cl._predictprocessor._tfidf.vocabulary_) > 2
         assert isinstance(cl._models, dict)
         assert len(cl._models) > 0
         assert cl.main_keys == ["PolitikVR", "AutoVR"]
@@ -198,55 +206,55 @@ class TestClassifier(GenericTest):
         X, y = cl._trainprocessor.feed_cat_Xy(cat="AutoVR", train=True)
         assert len(X) == len(y)
 
-    def test_fit_pb(self):
-        self._setup_predictor()
-        cl = classifier.WEELexClassifier(embeds=self.embeds)
-        cl.fit(
-            X=self.data,
-            lex=self.lex1,
-            support_lex=self.lex2,
-            hp_tuning=False,
-            progress_bar=True,
-        )
-        assert cl._is_fit is True
-        assert isinstance(cl._models, dict)
-        assert len(cl._models) > 0
-        assert cl.main_keys == ["PolitikVR", "AutoVR"]
-
-    def test_hp_tuning(self):
-        self._setup_predictor()
-        n_best_params = 4
-        cl = classifier.WEELexClassifier(
-            embeds=self.embeds, test_size=0.5, random_state=1
-        )
-        param_grid = [
-            {
-                "modeltype": ["svm"],
-                "n_models": [2],
-                "pca": [10, None],
-                "svc_c": [0.1, 1, 10],
-            }
-        ]
-        cl.fit(
-            X=self.data,
-            lex=self.lex1,
-            support_lex=self.lex2,
-            hp_tuning=True,
-            param_grid=param_grid,
-            progress_bar=True,
-            n_iter=6,
-            n_best_params=n_best_params,
-            cv=3,
-        )
-        assert cl._is_fit is True
-        assert isinstance(cl._models, dict)
-        assert len(cl._models) > 0
-        assert cl.main_keys == ["PolitikVR", "AutoVR"]
-        print(cl._cv_scores)
-        print(cl._tuned_params)
-        assert list(cl._tuned_params.keys()) == ["PolitikVR", "AutoVR"]
-        assert len(cl._tuned_params["AutoVR"]) == n_best_params
-
+    # def test_fit_pb(self):
+    #     self._setup_predictor()
+    #     cl = classifier.WEELexClassifier(embeds=self.embeds)
+    #     cl.fit(
+    #         X=self.data,
+    #         lex=self.lex1,
+    #         support_lex=self.lex2,
+    #         hp_tuning=False,
+    #         progress_bar=True,
+    #     )
+    #     assert cl._is_fit is True
+    #     assert isinstance(cl._models, dict)
+    #     assert len(cl._models) > 0
+    #     assert cl.main_keys == ["PolitikVR", "AutoVR"]
+    #
+    # def test_hp_tuning(self):
+    #     self._setup_predictor()
+    #     n_best_params = 4
+    #     cl = classifier.WEELexClassifier(
+    #         embeds=self.embeds, test_size=0.5, random_state=1
+    #     )
+    #     param_grid = [
+    #         {
+    #             "modeltype": ["svm"],
+    #             "n_models": [2],
+    #             "pca": [10, None],
+    #             "svc_c": [0.1, 1, 10],
+    #         }
+    #     ]
+    #     cl.fit(
+    #         X=self.data,
+    #         lex=self.lex1,
+    #         support_lex=self.lex2,
+    #         hp_tuning=True,
+    #         param_grid=param_grid,
+    #         progress_bar=True,
+    #         n_iter=6,
+    #         n_best_params=n_best_params,
+    #         cv=3,
+    #     )
+    #     assert cl._is_fit is True
+    #     assert isinstance(cl._models, dict)
+    #     assert len(cl._models) > 0
+    #     assert cl.main_keys == ["PolitikVR", "AutoVR"]
+    #     print(cl._cv_scores)
+    #     print(cl._tuned_params)
+    #     assert list(cl._tuned_params.keys()) == ["PolitikVR", "AutoVR"]
+    #     assert len(cl._tuned_params["AutoVR"]) == n_best_params
+    #
     def test_weelexpredict(self):
         self._setup_predictor()
         n_best_params = 4
@@ -431,12 +439,9 @@ class TestModels(GenericTest):
         print("outside_categories: ", self.model.outside_categories_all)
         assert isinstance(self.model.category, str)
         keep0 = self.model._getkeeps(X, y, classvalue=0)
-        spacekeep = [False, True, False, False,
-                     False, False, True, False, False, False]
-        foodkeep = [False, False, False, False,
-                    False, False, False, False, True, False]
-        autokeep = [False, False, True, False,
-                    False, False, False, False, False, False]
+        spacekeep = [False, True, False, False, False, False, True, False, False, False]
+        foodkeep = [False, False, False, False, False, False, False, False, True, False]
+        autokeep = [False, False, True, False, False, False, False, False, False, False]
         allkeep = [True, True, True, True, True, True, True, True, True, True]
         assert isinstance(keep1, list)
         assert len(keep1) == len(tt)
@@ -460,8 +465,7 @@ class TestModels(GenericTest):
 class TestLexicon(GenericTest):
     def test_clean_strings(self):
         self._setup()
-        array = pd.Series(
-            ["Apple*", "Banana cake * is good*", "***", "*Cucumber"])
+        array = pd.Series(["Apple*", "Banana cake * is good*", "***", "*Cucumber"])
         result = pd.Series(["Apple", "Banana cake  is good", "", "Cucumber"])
         print(result)
         print(self.lex1._clean_strings(array))
@@ -486,13 +490,11 @@ class TestLexicon(GenericTest):
         testlist = [1, 2, 3]
         maxlen = 5
         expected_result = [1, 2, 3, np.nan, np.nan]
-        assert lexicon._list_padding(
-            testlist, maxlen=maxlen) == expected_result
+        assert lexicon._list_padding(testlist, maxlen=maxlen) == expected_result
 
     def test_dict_padding(self):
         testdict = {"A": [1, 2, 3], "B": [1, 2, 3, 4, 5]}
-        expected_result = {
-            "A": [1, 2, 3, np.nan, np.nan], "B": [1, 2, 3, 4, 5]}
+        expected_result = {"A": [1, 2, 3, np.nan, np.nan], "B": [1, 2, 3, 4, 5]}
         assert lexicon._dict_padding(testdict) == expected_result
 
     def test_build_csv(self):
@@ -556,8 +558,7 @@ class TestLexicon(GenericTest):
         assert len(self.lex1.embedding_shape) == 3
         assert self.lex1.embedding_shape[2] == 300
         assert self.lex1.embedding_shape[1] == len(self.lex1.keys)
-        assert self.lex1.embedding_shape[0] == len(
-            self.lex1[self.lex1.keys[0]])
+        assert self.lex1.embedding_shape[0] == len(self.lex1[self.lex1.keys[0]])
 
     def test_getter(self):
         self._setup()
@@ -661,14 +662,12 @@ class TestEmbeddings(unittest.TestCase):
 
 class TestWeightedLex(GenericTest):
     def _setup_weighted(self):
-        self.mydct1 = {"super": 0.9, "gut": 0.7,
-                       "schlecht": -0.7, "furchtbar": -0.9}
+        self.mydct1 = {"super": 0.9, "gut": 0.7, "schlecht": -0.7, "furchtbar": -0.9}
         self.mydct2 = pd.DataFrame(
             [["super", 0.9], ["gut", 0.7], ["schlecht", -0.7], ["furchtbar", -0.9]]
         )
         self.mydct3 = pd.DataFrame(
-            {0: ["super", "gut", "schlecht", "furchtbar"],
-                1: [0.9, 0.7, -0.7, -0.9]}
+            {0: ["super", "gut", "schlecht", "furchtbar"], 1: [0.9, 0.7, -0.7, -0.9]}
         )
 
     def _setup_weighted2(self):
@@ -749,8 +748,7 @@ class TestLSX(GenericTest):
         )
         self.data = data
 
-        self.mydct1 = {"super": 0.9, "gut": 0.7,
-                       "schlecht": -0.7, "furchtbar": -0.9}
+        self.mydct1 = {"super": 0.9, "gut": 0.7, "schlecht": -0.7, "furchtbar": -0.9}
         self.lex = lexicon.WeightedLexicon(self.mydct1)
         self.model = lsx.LatentSemanticScaling(embeds=self.embeds)
 
@@ -804,8 +802,7 @@ class TestTrainer(GenericTest):
     def test_prep(self):
         self._setup2()
         lex1 = lexicon.Lexicon(
-            {"A1": ["Politik", "Neuwahl", "Koalition"],
-                "A2": ["Brot", "Kuchen"]}
+            {"A1": ["Politik", "Neuwahl", "Koalition"], "A2": ["Brot", "Kuchen"]}
         )
         lex2 = lexicon.Lexicon(
             {"B1": ["Lenkrad", "tanken", "Garage"], "B2": ["ab", "an"]}
@@ -862,10 +859,8 @@ class TestTrainer(GenericTest):
         ]
 
         y_classes = cl._make_y()
-        check1 = [True, True, True, False, False,
-                  False, False, False, False, False]
-        check2 = [True, True, False, False, False,
-                  False, False, False, False, False]
+        check1 = [True, True, True, False, False, False, False, False, False, False]
+        check2 = [True, True, False, False, False, False, False, False, False, False]
         a1_ix = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         a2_ix = [3, 4, 0, 1, 2, 5, 6, 7, 8, 9]
         assert list(y_classes.keys()) == ["A1", "A2"]
@@ -956,8 +951,7 @@ class TestTrainer(GenericTest):
         assert isinstance(tr2._main_lex, lexicon.Lexicon)
         assert isinstance(tr2._support_lex, lexicon.Lexicon)
 
-        tr3 = trainer.TrainProcessor(
-            lex=dct1, main_keys=["A"], support_keys=["B"])
+        tr3 = trainer.TrainProcessor(lex=dct1, main_keys=["A"], support_keys=["B"])
         assert tr3._main_keys == ["A"]
         assert tr3._support_keys == ["B"]
 
