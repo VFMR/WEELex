@@ -153,6 +153,9 @@ class PredictionProcessor:
     def _instantiate_ctfidf(self) -> ClusterTfidfVectorizer:
         if isinstance(self._tfidf, BasicTfidf):
             tfidf = self._tfidf.vectorizer
+        else:
+            tfidf = self._tfidf
+
         vectorizer = ClusterTfidfVectorizer(
             vectorizer=tfidf,
             embeddings=self._embeddings,

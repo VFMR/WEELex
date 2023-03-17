@@ -88,7 +88,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             spacy.cli.download(self._spacy_model)
             spacy.load(self._spacy_model)
 
-    def get_params(self, deep: bool = True) -> dict:
+    def get_params(self) -> dict:
         return self.__dict__
 
     def _setup_predictprocessor(self):
@@ -142,7 +142,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         # TODO: directly write into zip archive instead of rmtree()
         if self._is_fit is False:
             raise NotFittedError(
-                f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+                f"""This {self.__class__.__name__} instance is not fitted yet.
+                Call "fit" with appropriate arguments before using_
+                this estimator."""
             )
 
         os.makedirs(path, exist_ok=True)
@@ -218,8 +220,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     def _set_progress_bar(self):
         if self._use_progress_bar:
             return tqdm
-        else:
-            return self._emptyfunc
+        return self._emptyfunc
 
     @staticmethod
     def _emptyfunc(array):
@@ -235,16 +236,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             my_embeds = embeds
         return my_embeds
 
-    def _get_full_vocab(self) -> list:
-        v1 = self._lexicon.get_vocabulary()
-        return v1
-
     def _filter_embeddings(self) -> None:
         vocab = self._get_full_vocab()
         self._embeddings.filter_terms(vocab)
-
-    def __repr__(self, N_CHAR_MAX=700):
-        return super().__repr__(N_CHAR_MAX)
 
     @staticmethod
     def _check_zippath(path: str) -> str:
@@ -282,9 +276,8 @@ class BasePredictor(BaseEstimator, TransformerMixin):
                 properties = json.load(f)
             instance._set_properties(properties=properties)
 
-            instance._embeddings = embeddings.Embeddings.load_filtered(
-                myzip.open("embeddings.npz", "r")
-            )
+            with myzip.open("embeddings.npz", "r") as f:
+                instance._embeddings = embeddings.Embeddings.load_filtered(f)
             instance._load_predictprocessor(myzip)
             instance._lex = lexicon.load(path="lex/", archive=myzip)
 
