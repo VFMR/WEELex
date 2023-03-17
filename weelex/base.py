@@ -78,6 +78,15 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._lex = None
         self._scaler = None
 
+        # load spacy or download alternatively:
+        try:
+            spacy.load(self._spacy_model)
+        except OSError as e:
+            print(e)
+            print(f"Downloading spacy model {self._spacy_model}.")
+            spacy.cli.download(self._spacy_model)
+            spacy.load(self._spacy_model)
+
     def get_params(self, deep: bool = True) -> dict:
         return self.__dict__
 
