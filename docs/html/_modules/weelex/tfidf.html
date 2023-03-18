@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weelex.tfidf &mdash; Weelex 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Weelex
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Weelex</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">weelex.tfidf</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for weelex.tfidf</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">joblib</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">TfidfVectorizer</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">import</span> <span class="nn">spacy</span>
+<span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>
+
+<span class="n">SPACY_MODEL</span> <span class="o">=</span> <span class="s2">&quot;de_core_news_lg&quot;</span>
+
+
+<div class="viewcode-block" id="remove_urls"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.remove_urls">[docs]</a><span class="k">def</span> <span class="nf">remove_urls</span><span class="p">(</span><span class="n">texts</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to remove URLs found in strings via regular expressions</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        texts (pandas.Series): Array with strings</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (pandas.Series): Array with urls removed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">url_regex</span> <span class="o">=</span> <span class="s2">&quot;(https?\:\/\/)?www[1-9]?\.[^ ]&quot;</span>
+    <span class="n">html_regex</span> <span class="o">=</span> <span class="s1">&#39;(&lt;?a )?href=&quot;[^&quot;]*&quot;( rel=&quot;[^&quot;]*&quot;)?( target=&quot;[^&quot;]*&quot;)?&gt;&#39;</span>
+
+    <span class="c1"># start by replacing some false positives:</span>
+    <span class="n">texts_clean</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;^\.</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+        <span class="s2">&quot;\.</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+    <span class="n">texts_clean</span> <span class="o">=</span> <span class="n">texts_clean</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">html_regex</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># the &quot;proper&quot; url regex can easily match typos (i.e. missing spaces)</span>
+    <span class="c1"># hence, a less robust url search is implemented</span>
+    <span class="n">texts_clean</span> <span class="o">=</span> <span class="n">texts_clean</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">url_regex</span><span class="p">,</span> <span class="s2">&quot;&lt;URL&gt;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts_clean</span> <span class="o">=</span> <span class="n">texts_clean</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;/a&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">texts_clean</span></div>
+
+
+<div class="viewcode-block" id="TfidfCleaner"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.TfidfCleaner">[docs]</a><span class="k">class</span> <span class="nc">TfidfCleaner</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="TfidfCleaner.fit"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.TfidfCleaner.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="TfidfCleaner.transform"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.TfidfCleaner.transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tfidf_cleanup</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="tfidf_cleanup"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.tfidf_cleanup">[docs]</a><span class="k">def</span> <span class="nf">tfidf_cleanup</span><span class="p">(</span><span class="n">texts</span><span class="p">):</span>
+    <span class="n">parties</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;CDU&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Cdu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cdu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;CSU&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Csu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;csu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AFD&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Afd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AfD&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;afd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SPD&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Spd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;spd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Grünen&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Bündnis90&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Piratenpartei&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;FDP&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Fdp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fdp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;NPD&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Npd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;npd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ÖDP&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ödp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ödp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;FPÖ&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Fpö&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fpö&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SPÖ&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Spö&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;spö&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ÖVP&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Övp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;övp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;die Linke&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Republikaner&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Republicans&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;republikaner&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;republicans&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Demokraten&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Democrats&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;demokraten&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;democrats&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">teams</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Borussia&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;borussia&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;borussen&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Borussen&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BVB&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;bvb&quot;</span> <span class="s2">&quot;FCB&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;FC Bayern&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fc bayern&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fcb&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Werder Bremen&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Werder&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;werder&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; TSV&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; tsv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Eintracht&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;VfB&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hertha BSC&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hertha bsc&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hertha&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Arminia Bielefeld&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;EffZee Köln&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">replacement_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;FIFA&quot;</span><span class="p">:</span> <span class="s2">&quot;Fußball Verband&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fifa&quot;</span><span class="p">:</span> <span class="s2">&quot;Fußball Verband&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;DFB&quot;</span><span class="p">:</span> <span class="s2">&quot;Fußball Verband&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;dfb&quot;</span><span class="p">:</span> <span class="s2">&quot;Fußball Verband&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BuLi&quot;</span><span class="p">:</span> <span class="s2">&quot;Bundesliga&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;IOC&quot;</span><span class="p">:</span> <span class="s2">&quot;Olympisches Komitee&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BuLa&quot;</span><span class="p">:</span> <span class="s2">&quot;Bundesland&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;NRW&quot;</span><span class="p">:</span> <span class="s2">&quot;Bundesland&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;kmh&quot;</span><span class="p">:</span> <span class="s2">&quot;Geschwindigkeit&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;km/h&quot;</span><span class="p">:</span> <span class="s2">&quot;Geschwindigkeit&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5km&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Kilometer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 km&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Kilometer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 Km&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Kilometer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;kwh&quot;</span><span class="p">:</span> <span class="s2">&quot;Kilowatt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;kWh&quot;</span><span class="p">:</span> <span class="s2">&quot;Kilowatt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;kcal&quot;</span><span class="p">:</span> <span class="s2">&quot;Kalorien&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; OS &quot;</span><span class="p">:</span> <span class="s2">&quot; Betriebssystem &quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5kg&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Kilogramm&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 kg&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Kilogramm&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LKA&quot;</span><span class="p">:</span> <span class="s2">&quot;Kriminalamt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BKA&quot;</span><span class="p">:</span> <span class="s2">&quot;Kriminalamt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PLZ&quot;</span><span class="p">:</span> <span class="s2">&quot;Postleitzahl&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Tesla&quot;</span><span class="p">:</span> <span class="s2">&quot;Auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5EUR&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 EUR&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 Eur&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; EUR &quot;</span><span class="p">:</span> <span class="s2">&quot; Euro &quot;</span><span class="p">,</span>
+        <span class="s2">&quot; EUR.&quot;</span><span class="p">:</span> <span class="s2">&quot; Euro.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; EUR,&quot;</span><span class="p">:</span> <span class="s2">&quot; Euro,&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5mm&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Milimeter&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 mm&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Milimeter&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 ltr&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Liter&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5 Ltr&quot;</span><span class="p">:</span> <span class="s2">&quot;5 Liter&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;D Mark&quot;</span><span class="p">:</span> <span class="s2">&quot;Euro&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;D-Mark&quot;</span><span class="p">:</span> <span class="s2">&quot;Euro&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;DMark&quot;</span><span class="p">:</span> <span class="s2">&quot;Euro&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SUV&quot;</span><span class="p">:</span> <span class="s2">&quot;Auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; IT &quot;</span><span class="p">:</span> <span class="s2">&quot; Informationstechnologie &quot;</span><span class="p">,</span>
+        <span class="s2">&quot;NGO&quot;</span><span class="p">:</span> <span class="s2">&quot;Organisation&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;MWST&quot;</span><span class="p">:</span> <span class="s2">&quot;Mehrwertsteuer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mwst&quot;</span><span class="p">:</span> <span class="s2">&quot;Mehrwertsteuer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;MwSt&quot;</span><span class="p">:</span> <span class="s2">&quot;Mehrwertsteuer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;den Nagel auf den Kopf&quot;</span><span class="p">:</span> <span class="s2">&quot;richtig&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ZDF&quot;</span><span class="p">:</span> <span class="s2">&quot;Fernsehsender&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ARD&quot;</span><span class="p">:</span> <span class="s2">&quot;Fernsehsender&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;RTL&quot;</span><span class="p">:</span> <span class="s2">&quot;Fernsehsender&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Pkw&quot;</span><span class="p">:</span> <span class="s2">&quot;Auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Lkw&quot;</span><span class="p">:</span> <span class="s2">&quot;Auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PKW&quot;</span><span class="p">:</span> <span class="s2">&quot;Auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LKW&quot;</span><span class="p">:</span> <span class="s2">&quot;Auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Know-How&quot;</span><span class="p">:</span> <span class="s2">&quot;Wissen&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Knowhow&quot;</span><span class="p">:</span> <span class="s2">&quot;Wissen&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ã¤&quot;</span><span class="p">:</span> <span class="s2">&quot;ä&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ã¼&quot;</span><span class="p">:</span> <span class="s2">&quot;ü&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ã¶&quot;</span><span class="p">:</span> <span class="s2">&quot;ö&quot;</span><span class="p">,</span>
+        <span class="c1"># &#39;Ã\\x9c&#39;: &#39;Ü&#39;,´</span>
+        <span class="s2">&quot;ã</span><span class="se">\x9f</span><span class="s2">&quot;</span><span class="p">:</span> <span class="s2">&quot;ß&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ã</span><span class="se">\\</span><span class="s2">x9f&quot;</span><span class="p">:</span> <span class="s2">&quot;ß&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã</span><span class="se">\x9c</span><span class="s2">&quot;</span><span class="p">:</span> <span class="s2">&quot;Ü&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã</span><span class="se">\\</span><span class="s2">x9c&quot;</span><span class="p">:</span> <span class="s2">&quot;Ü&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã¼&quot;</span><span class="p">:</span> <span class="s2">&quot;Ü&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã¶&quot;</span><span class="p">:</span> <span class="s2">&quot;Ö&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã</span><span class="se">\x96</span><span class="s2">&quot;</span><span class="p">:</span> <span class="s2">&quot;Ö&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã</span><span class="se">\\</span><span class="s2">x96&quot;</span><span class="p">:</span> <span class="s2">&quot;Ö&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s2">&quot;Ã\x84&quot;</span><span class="p">:</span> <span class="s2">&quot;Ä&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã</span><span class="se">\x84</span><span class="s2">&quot;</span><span class="p">:</span> <span class="s2">&quot;Ä&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Ã</span><span class="se">\\</span><span class="s2">x84&quot;</span><span class="p">:</span> <span class="s2">&quot;Ä&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">removes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;&amp;gt,&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>  <span class="c1"># otherwise encoding issues.</span>
+
+    <span class="c1"># replace some of the most prominent politicians names with their profession</span>
+    <span class="c1"># this is done 1) with first and last name and 2) only with last name to</span>
+    <span class="c1"># avoid having gramatically incorrect remaining texts like</span>
+    <span class="c1"># &quot;Angela Kanzlerin&quot;.</span>
+    <span class="c1"># We need mostly functioning grammar for the tfidf-analyzer to do</span>
+    <span class="c1"># successful part of speech tagging and named entity recognition.</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Angela Merkel&quot;</span><span class="p">,</span> <span class="s2">&quot;Kanzlerin&quot;</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Donald Trump&quot;</span><span class="p">,</span> <span class="s2">&quot;Präsident&quot;</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Merkel&quot;</span><span class="p">,</span> <span class="s2">&quot;Kanzlerin&quot;</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Trump&quot;</span><span class="p">,</span> <span class="s2">&quot;Präsident&quot;</span><span class="p">)</span>
+
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[Aa]+ber&quot;</span><span class="p">,</span> <span class="s2">&quot;aber&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;NUM&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;5&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;5 [Mm]rd\.?&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Milliarden&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;5 [Mm]io\.?&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Millionen&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;5</span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;5 </span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;5T</span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;5T </span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;5M</span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;5M </span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;5 Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;Millionen </span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;Millionen Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;Milliarden </span><span class="se">\\</span><span class="s2">xc5</span><span class="se">\\</span><span class="s2">x5&quot;</span><span class="p">,</span> <span class="s2">&quot;Millionen Euro&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[MSD]eine Frau &quot;</span><span class="p">,</span> <span class="s2">&quot;Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; [msd]eine Frau&quot;</span><span class="p">,</span> <span class="s2">&quot; Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[MSD]ein Mann &quot;</span><span class="p">,</span> <span class="s2">&quot;Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; [msd]ein Mann&quot;</span><span class="p">,</span> <span class="s2">&quot; Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ex-Mann&quot;</span><span class="p">,</span> <span class="s2">&quot;Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1">#</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ex-Männer&quot;</span><span class="p">,</span> <span class="s2">&quot;Ehemänner&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ex-Frau&quot;</span><span class="p">,</span> <span class="s2">&quot;Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ihre Frauen &quot;</span><span class="p">,</span> <span class="s2">&quot;Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; ihre Frauen&quot;</span><span class="p">,</span> <span class="s2">&quot; Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ihre Männer &quot;</span><span class="p">,</span> <span class="s2">&quot;Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; ihre Männer&quot;</span><span class="p">,</span> <span class="s2">&quot; Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ihre Frau &quot;</span><span class="p">,</span> <span class="s2">&quot;Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; ihre Frau&quot;</span><span class="p">,</span> <span class="s2">&quot; Ehefrau&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Ihr Mann &quot;</span><span class="p">,</span> <span class="s2">&quot;Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; ihr Mann&quot;</span><span class="p">,</span> <span class="s2">&quot; Ehemann&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">texts</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;xcx&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Xcx&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;XCX&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;GroKo&quot;</span><span class="p">,</span> <span class="s2">&quot;Koalition&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;groko&quot;</span><span class="p">,</span> <span class="s2">&quot;Koalition&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Groko&quot;</span><span class="p">,</span> <span class="s2">&quot;Koalition&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># capture remaining URLs</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">remove_urls</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
+
+    <span class="c1"># split words on hyphens</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="n">parties</span><span class="p">:</span>
+        <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">party</span><span class="p">,</span> <span class="s2">&quot;Partei&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">team</span> <span class="ow">in</span> <span class="n">teams</span><span class="p">:</span>
+        <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">team</span><span class="p">,</span> <span class="s2">&quot;Verein&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">replacement_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">removes</span><span class="p">:</span>
+        <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">texts</span></div>
+
+
+<div class="viewcode-block" id="BasicTfidf"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf">[docs]</a><span class="k">class</span> <span class="nc">BasicTfidf</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stopwords_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">relevant_pos</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ADJ&quot;</span><span class="p">,</span> <span class="s2">&quot;ADV&quot;</span><span class="p">,</span> <span class="s2">&quot;NOUN&quot;</span><span class="p">,</span> <span class="s2">&quot;VERB&quot;</span><span class="p">],</span>
+        <span class="n">min_df</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">max_df</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">spacy_model</span><span class="o">=</span><span class="n">SPACY_MODEL</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stopwords_file</span> <span class="o">=</span> <span class="n">stopwords_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_df</span> <span class="o">=</span> <span class="n">min_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_df</span> <span class="o">=</span> <span class="n">max_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spacy_model_name</span> <span class="o">=</span> <span class="n">spacy_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spacy_model</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">spacy_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retrieve_stopwords</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">stopwords_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relevant_pos</span> <span class="o">=</span> <span class="n">relevant_pos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_retrieve_stopwords</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">custom_sw</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="nb">set</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()])</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">custom_sw</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">sw</span> <span class="o">=</span> <span class="n">stopwords</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="s2">&quot;german&quot;</span><span class="p">)</span>
+        <span class="n">sw</span> <span class="o">=</span> <span class="n">sw</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">custom_sw</span>
+        <span class="k">return</span> <span class="n">sw</span>
+
+    <span class="k">def</span> <span class="nf">_get_params_from_child</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_analyzer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comment</span><span class="p">):</span>
+        <span class="c1"># setting up things for speedup</span>
+        <span class="n">relevant_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relevant_pos</span>
+        <span class="n">capitalize</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">capitalize</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">lower</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;[\-\.\,\#&#39;</span><span class="se">\&quot;</span><span class="s2">\+\~\*\=\?\!\$\§\%\&amp;\/\(\)\[\]\{\}\&lt;\&gt;\|\^\°\_\:</span><span class="se">\\</span><span class="s2">\;]&quot;</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">append</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">append</span>
+        <span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sw</span>
+
+        <span class="c1"># tokenization</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spacy_model</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+
+        <span class="c1"># selecting words:</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">pos_</span>
+            <span class="n">ent_type</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">ent_type_</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">relevant_pos</span> <span class="ow">and</span> <span class="n">ent_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PER&quot;</span><span class="p">,</span> <span class="s2">&quot;LOC&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">ent_type</span> <span class="o">==</span> <span class="s2">&quot;ADJ&quot;</span> <span class="ow">and</span> <span class="n">pos</span> <span class="o">==</span> <span class="s2">&quot;MISC&quot;</span><span class="p">):</span>  <span class="c1"># capture nationalities</span>
+                    <span class="n">word</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">lemma_</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="s2">&quot;NOUN&quot;</span><span class="p">:</span>
+                        <span class="n">word</span> <span class="o">=</span> <span class="n">capitalize</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">word</span> <span class="o">=</span> <span class="n">lower</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sw</span>
+                        <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;xcx&quot;</span> <span class="ow">in</span> <span class="n">word</span>
+                        <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;Xcx&quot;</span> <span class="ow">in</span> <span class="n">word</span>
+                        <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;5&quot;</span> <span class="ow">in</span> <span class="n">word</span>
+                    <span class="p">):</span>
+                        <span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tokens</span>
+
+<div class="viewcode-block" id="BasicTfidf.load"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">zip_archive</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">zip_archive</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">zip_archive</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.fit"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fit vectorizer&quot;</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">vectorizer_only</span> <span class="o">=</span> <span class="n">TfidfVectorizer</span><span class="p">(</span>
+            <span class="n">analyzer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_analyzer</span><span class="p">,</span>
+            <span class="c1"># stop_words=stopwords.words(&#39;german&#39;),  # not used if analyzer is callable</span>
+            <span class="n">min_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_df</span><span class="p">,</span>
+            <span class="n">max_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_df</span><span class="p">,</span>
+            <span class="n">lowercase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+            <span class="n">steps</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;cleaner&quot;</span><span class="p">,</span> <span class="n">TfidfCleaner</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;vectorizer&quot;</span><span class="p">,</span> <span class="n">vectorizer_only</span><span class="p">)]</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time to vectorize: </span><span class="si">{:0.2f}</span><span class="s2"> minutes&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="mi">60</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_params_from_child</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.transform"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.fit_transform"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.check_fit"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.check_fit">[docs]</a>    <span class="k">def</span> <span class="nf">check_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.save"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="c1"># exporting the different results from vectorization:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">joblib</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
+
+    <span class="c1"># for compatibility, include all the other methods of the TfidfVectorizer class</span>
+<div class="viewcode-block" id="BasicTfidf.get_feature_names"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.get_feature_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_feature_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_feature_names</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.get_feature_names_out"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.get_feature_names_out">[docs]</a>    <span class="k">def</span> <span class="nf">get_feature_names_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_features</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_feature_names</span><span class="p">(</span>
+            <span class="n">input_features</span><span class="o">=</span><span class="n">input_features</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.get_params"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.get_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">dct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="n">deep</span><span class="p">)</span>
+        <span class="n">dct</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;spacy_model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">spacy_model_name</span><span class="p">,</span>
+                <span class="s2">&quot;stopwords_file&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stopwords_file</span><span class="p">,</span>
+                <span class="s2">&quot;relevant_pos&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relevant_pos</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dct</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.get_stop_words"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.get_stop_words">[docs]</a>    <span class="k">def</span> <span class="nf">get_stop_words</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sw</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.inverse_transform"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.set_params"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.set_params">[docs]</a>    <span class="k">def</span> <span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;spacy_model&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spacy_model_name</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;spacy_model&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spacy_model</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;spacy_model&quot;</span><span class="p">])</span>
+            <span class="k">del</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;spacy_model&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;stopwords_file&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stopwords_file</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;stopwords_file&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retrieve_stopwords</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stopwords_file</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;stopwords_file&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;relevant_pos&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">relevant_pos</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;relevant_pos&quot;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;relevant_pos&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.build_analyzer"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.build_analyzer">[docs]</a>    <span class="k">def</span> <span class="nf">build_analyzer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calls TfidfVectorizer build_analyzer() method.</span>
+<span class="sd">        Does not include the proprocessing thus far.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">build_analyzer</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.build_preprocessor"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.build_preprocessor">[docs]</a>    <span class="k">def</span> <span class="nf">build_preprocessor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.build_tokenizer"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.build_tokenizer">[docs]</a>    <span class="k">def</span> <span class="nf">build_tokenizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calls TfidfVectorizer build_tokenizer() method.</span>
+<span class="sd">        Does not include the preprocessing thus far.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">build_tokenizer</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BasicTfidf.decode"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vocabulary_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">vocabulary_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fixed_vocabulary_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">fixed_vocabulary_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">idf_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">idf_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stop_words_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">stop_words_</span><span class="p">)))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, VFMR.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
