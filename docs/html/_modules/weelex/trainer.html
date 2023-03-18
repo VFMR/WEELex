@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weelex.trainer &mdash; Weelex 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Weelex
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Weelex</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">weelex.trainer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for weelex.trainer</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+
+<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">lexicon</span>
+<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">embeddings</span>
+
+
+<div class="viewcode-block" id="TrainProcessor"><a class="viewcode-back" href="../../weelex.html#weelex.trainer.TrainProcessor">[docs]</a><span class="k">class</span> <span class="nc">TrainProcessor</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lex</span><span class="p">:</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span>
+        <span class="n">support_lex</span><span class="p">:</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">embeddings</span><span class="p">:</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">test_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">checkterm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Politik&quot;</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># self._lex = lex</span>
+        <span class="c1"># self._support_lex = support_lex</span>
+        <span class="c1"># self._main_keys = main_keys</span>
+        <span class="c1"># self._support_keys = support_keys</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handle_lexica</span><span class="p">(</span><span class="n">lex</span><span class="p">,</span> <span class="n">support_lex</span><span class="p">,</span> <span class="n">main_keys</span><span class="p">,</span> <span class="n">support_keys</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="n">embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span> <span class="o">=</span> <span class="n">test_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_train_test_drawn</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkterm</span> <span class="o">=</span> <span class="n">checkterm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trains</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tests</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_make_lexicon</span><span class="p">(</span><span class="n">lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create proper Lexicon instance from the passed input lexicon</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lexicon (dict, str or pd.DataFrame): The key-value pairs to use</span>
+<span class="sd">                for the lexicon. If str is passed, it should be the path to</span>
+<span class="sd">                a csv (containing tabular data) or json</span>
+<span class="sd">                (containig key-value pairs) file.</span>
+<span class="sd">                If the file ends with &quot;.json&quot;, it will attempt to read the</span>
+<span class="sd">                file with the json module. Otherwise pd.read_csv is attempted.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            lexicon.Lexicon: lexicon.Lexicon instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lex</span><span class="p">,</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">):</span>
+            <span class="n">my_lex</span> <span class="o">=</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">(</span><span class="n">lex</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">my_lex</span> <span class="o">=</span> <span class="n">lex</span>
+        <span class="k">return</span> <span class="n">my_lex</span>
+
+    <span class="c1"># REMOVE</span>
+    <span class="c1"># @staticmethod</span>
+    <span class="c1"># def _merge_lexica(lexica: Iterable[lexicon.Lexicon]) -&gt; lexicon.Lexicon:</span>
+    <span class="c1">#     base_lex = lexica[0]</span>
+    <span class="c1">#     full_lex = base_lex.merge(lexica[1:])</span>
+    <span class="c1">#     return full_lex</span>
+
+    <span class="k">def</span> <span class="nf">_handle_lexica</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">main_lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">support_lex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># create lexica as Lexicon Instances:</span>
+        <span class="n">_main_lex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_lexicon</span><span class="p">(</span><span class="n">main_lex</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">support_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_support_lex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_lexicon</span><span class="p">(</span><span class="n">support_lex</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_support_lex</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># get keys:</span>
+        <span class="k">if</span> <span class="n">main_keys</span> <span class="ow">and</span> <span class="n">main_keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_main_keys</span> <span class="o">=</span> <span class="n">main_keys</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_main_keys</span> <span class="o">=</span> <span class="n">_main_lex</span><span class="o">.</span><span class="n">keys</span>
+
+        <span class="k">if</span> <span class="n">support_keys</span> <span class="ow">and</span> <span class="n">support_keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_support_keys</span> <span class="o">=</span> <span class="n">support_keys</span>
+        <span class="k">elif</span> <span class="n">support_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_support_keys</span> <span class="o">=</span> <span class="n">_support_lex</span><span class="o">.</span><span class="n">keys</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_support_keys</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Remove any overlapping keys:</span>
+        <span class="n">_support_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">_support_keys</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_main_keys</span><span class="p">]</span>
+
+        <span class="c1"># Merge lexica:</span>
+        <span class="c1"># _full_lex = self._merge_lexica([_main_lex, _support_lex])</span>
+
+        <span class="c1"># self._lexicon = _full_lex</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_main_lex</span> <span class="o">=</span> <span class="n">_main_lex</span>
+        <span class="c1"># self._full_lex = _full_lex</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="o">=</span> <span class="n">_support_lex</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span> <span class="o">=</span> <span class="n">_main_keys</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span> <span class="o">=</span> <span class="n">_support_keys</span>
+
+    <span class="k">def</span> <span class="nf">_handle_outliers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># TODO: make method to remove outliers (usually 2 character abbrevs.)</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># REMOVE</span>
+    <span class="c1"># @staticmethod</span>
+    <span class="c1"># def _prepare_input_data(lex: lexicon.Lexicon):</span>
+    <span class="c1">#     for cat in lex.keys:</span>
+    <span class="c1">#         lex[cat] = lex._clean_strings(lex[cat])</span>
+
+    <span class="c1">#     lex.embed()</span>
+    <span class="c1">#     return lex</span>
+
+    <span class="k">def</span> <span class="nf">_get_embedding_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lex</span><span class="p">:</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">lex</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">)</span>
+        <span class="n">dfs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cat</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lex</span><span class="o">.</span><span class="n">keys</span><span class="p">):</span>
+            <span class="c1"># for j, word in enumerate(self[cat]):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">lex</span><span class="o">.</span><span class="n">embeddings</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+            <span class="c1"># get nomissings:</span>
+            <span class="n">catw</span> <span class="o">=</span> <span class="n">lex</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span>
+            <span class="n">nomiss</span> <span class="o">=</span> <span class="n">lex</span><span class="o">.</span><span class="n">_nonmissarray</span><span class="p">(</span><span class="n">catw</span><span class="p">)</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">nomiss</span><span class="p">),</span> <span class="p">:]</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">cat</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="n">nomiss</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="n">df_full</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">dfs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df_full</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_make_id_term_mapping</span><span class="p">(</span><span class="n">embedding_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; A = pd.DataFrame(np.zeros((4,10)))</span>
+<span class="sd">            &gt;&gt;&gt; A.index = [&#39;Cars:Vehicle&#39;, &#39;Politics:Politician&#39;, &#39;Food:Bread&#39;, &#39;Food:a:b&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; TrainProcessor._make_id_term_mapping(A)</span>
+<span class="sd">              categories       terms</span>
+<span class="sd">            0       Cars     Vehicle</span>
+<span class="sd">            1   Politics  Politician</span>
+<span class="sd">            2       Food       Bread</span>
+<span class="sd">            3       Food         a:b</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># terms = embedding_df.index.str.replace(r&#39;[A-Za-z0-9]*\:&#39;, &#39;&#39;,</span>
+        <span class="c1">#                                        regex=True)</span>
+        <span class="c1"># term2cat = pd.DataFrame(terms, columns=[&#39;terms&#39;])</span>
+        <span class="c1"># categories = df_full.index.str.extract(r&#39;([A-Za-z0-9]*)\:&#39;)</span>
+        <span class="c1"># term2cat[&#39;categories&#39;] = categories</span>
+        <span class="n">term2cat</span> <span class="o">=</span> <span class="n">embedding_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">term2cat</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;categories&quot;</span><span class="p">,</span> <span class="s2">&quot;terms&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">term2cat</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lex_full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_lex</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lex_full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_lex</span>
+        <span class="n">embedding_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_embedding_df</span><span class="p">(</span><span class="n">lex_full</span><span class="p">)</span>
+        <span class="n">term2cat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_id_term_mapping</span><span class="p">(</span><span class="n">embedding_df</span><span class="p">)</span>
+        <span class="c1"># self._lex_full = lex_full</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embedding_df</span> <span class="o">=</span> <span class="n">embedding_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_term2cat</span> <span class="o">=</span> <span class="n">term2cat</span>
+
+    <span class="k">def</span> <span class="nf">_make_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">y_classes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">terms_classes</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">:</span>
+            <span class="c1"># separate terms from the current category and other categories</span>
+            <span class="n">cat_terms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_term2cat</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_term2cat</span><span class="p">[</span><span class="s2">&quot;categories&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cat</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="p">:,</span> <span class="p">[</span><span class="s2">&quot;terms&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+            <span class="n">cat_terms</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="c1"># &quot;other&quot; terms: words that do not belong to current category</span>
+            <span class="c1"># but are nonetheless in our list of categories to consider.</span>
+            <span class="n">other_terms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_term2cat</span><span class="p">[</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_term2cat</span><span class="p">[</span><span class="s2">&quot;categories&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">cat</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_term2cat</span><span class="p">[</span><span class="s2">&quot;categories&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;terms&quot;</span><span class="p">,</span> <span class="s2">&quot;categories&quot;</span><span class="p">]]</span>
+
+            <span class="c1"># handle words that appear in multiple categories: remove from other category</span>
+            <span class="n">other_terms</span> <span class="o">=</span> <span class="n">other_terms</span><span class="p">[</span>
+                <span class="o">~</span><span class="n">other_terms</span><span class="p">[</span><span class="s2">&quot;terms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">cat_terms</span><span class="p">[</span><span class="s2">&quot;terms&quot;</span><span class="p">]))</span>
+            <span class="p">]</span>
+            <span class="n">other_terms</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="n">y</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">cat_terms</span><span class="p">,</span> <span class="n">other_terms</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">terms_classes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="n">y</span><span class="p">[</span><span class="s2">&quot;terms&quot;</span><span class="p">]})</span>
+            <span class="k">del</span> <span class="n">y</span><span class="p">[</span><span class="s2">&quot;terms&quot;</span><span class="p">]</span>
+            <span class="n">y_classes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="n">y</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">y_classes</span>
+
+    <span class="k">def</span> <span class="nf">_make_X</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_classes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+        <span class="n">X_full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embedding_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">X_full</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_full</span><span class="p">))</span>
+        <span class="n">X_classes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">:</span>
+            <span class="n">X_class_this</span> <span class="o">=</span> <span class="n">X_full</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">y_classes</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">X_classes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="n">X_class_this</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">X_classes</span>
+
+    <span class="k">def</span> <span class="nf">_make_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_inputs</span><span class="p">()</span>
+        <span class="n">y_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_y</span><span class="p">()</span>
+        <span class="n">x_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_X</span><span class="p">(</span><span class="n">y_classes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x_classes</span><span class="p">,</span> <span class="n">y_classes</span>
+
+    <span class="k">def</span> <span class="nf">_train_test_split</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">test_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">trains</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">tests</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">:</span>
+            <span class="n">_X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span>
+            <span class="n">_y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">test_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">test_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+                    <span class="n">_X</span><span class="p">,</span> <span class="n">_y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="n">test_size</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">X_train</span> <span class="o">=</span> <span class="n">_X</span>
+                <span class="n">X_test</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">y_train</span> <span class="o">=</span> <span class="n">_y</span>
+                <span class="n">y_test</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">trains</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)})</span>
+            <span class="n">tests</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cat</span><span class="p">:</span> <span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trains</span> <span class="o">=</span> <span class="n">trains</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tests</span> <span class="o">=</span> <span class="n">tests</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_train_test_drawn</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="TrainProcessor.transform"><a class="viewcode-back" href="../../weelex.html#weelex.trainer.TrainProcessor.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_data</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TrainProcessor.make_train_test_data"><a class="viewcode-back" href="../../weelex.html#weelex.trainer.TrainProcessor.make_train_test_data">[docs]</a>    <span class="k">def</span> <span class="nf">make_train_test_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">X_transf</span><span class="p">,</span> <span class="n">y_transf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_train_test_split</span><span class="p">(</span>
+                <span class="n">X_transf</span><span class="p">,</span>
+                <span class="n">y_transf</span><span class="p">,</span>
+                <span class="n">test_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_train_test_split</span><span class="p">(</span>
+                <span class="n">X_transf</span><span class="p">,</span> <span class="n">y_transf</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="TrainProcessor.feed_cat_Xy"><a class="viewcode-back" href="../../weelex.html#weelex.trainer.TrainProcessor.feed_cat_Xy">[docs]</a>    <span class="k">def</span> <span class="nf">feed_cat_Xy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">cat</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">train</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trains</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">make_train_test_data</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">train</span><span class="p">:</span>
+            <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trains</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tests</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">main_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">support_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">embedding_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkterm</span><span class="p">])</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, VFMR.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

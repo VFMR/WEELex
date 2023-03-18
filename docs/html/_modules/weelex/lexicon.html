@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weelex.lexicon &mdash; Weelex 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Weelex
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Weelex</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">weelex.lexicon</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for weelex.lexicon</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">zipfile</span> <span class="kn">import</span> <span class="n">ZipFile</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="BaseLexicon"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">BaseLexicon</span><span class="p">:</span>
+    <span class="c1"># TODO: Allow for train_test_split to work</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dictionary</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">dictionary</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_dictionary</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+<div class="viewcode-block" id="BaseLexicon.copy"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+    <span class="k">def</span> <span class="nf">_build_dictionary</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dictionary</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Processes the input lexicon and returns it in a pandas DataFrame.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dictionary (dict, str or pd.DataFrame): The key-value pairs to use</span>
+<span class="sd">                for the lexicon. If str is passed, it should be the path to</span>
+<span class="sd">                a csv (containing tabular data) or json (containig key-value</span>
+<span class="sd">                pairs) file.</span>
+<span class="sd">                If the file ends with &quot;.json&quot;, it will attempt to read the</span>
+<span class="sd">                file with the json module. Otherwise pd.read_csv is attempted.</span>
+<span class="sd">            sep (str, optional): separator character when reading csv file</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; my_dct = {&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;]}</span>
+<span class="sd">            &gt;&gt;&gt; l = BaseLexicon(my_dct)</span>
+<span class="sd">            &gt;&gt;&gt; l._build_dictionary(my_dct)</span>
+<span class="sd">               A  B</span>
+<span class="sd">            0  a  c</span>
+<span class="sd">            1  b  d</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: lexicon matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.json&quot;</span><span class="p">):</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">my_dct</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                    <span class="n">dct_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict_to_df</span><span class="p">(</span><span class="n">my_dct</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dct_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">sep</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">dct_df</span> <span class="o">=</span> <span class="n">dictionary</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">dct_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict_to_df</span><span class="p">(</span><span class="n">dictionary</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dct_df</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_dict_to_df</span><span class="p">(</span><span class="n">dictionary</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">_dict_padding</span><span class="p">(</span><span class="n">dictionary</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_clean_strings</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace the &#39;*&#39;-symbols from terms that may be used for</span>
+<span class="sd">        matching different terms. These are not meaningful for the</span>
+<span class="sd">        embedding method.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; array = pd.Series([&#39;Test*&#39;, &#39;Te*st&#39;, &#39;*test&#39;])</span>
+<span class="sd">            &gt;&gt;&gt; BaseLexicon._clean_strings(array)</span>
+<span class="sd">            0    Test</span>
+<span class="sd">            1    Test</span>
+<span class="sd">            2    test</span>
+<span class="sd">            dtype: object</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array (pd.Series): pandas Series containing strings</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.Series: Array without stars</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_embed_word</span><span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">term</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">term</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">[</span><span class="n">term</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">empty_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">embeddings</span><span class="o">.</span><span class="n">dim</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">empty_array</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_nonmissarray</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; array = pd.Series([&#39;one&#39;, &#39;two&#39;, &#39;three&#39;, np.nan, np.nan])</span>
+<span class="sd">            &gt;&gt;&gt; BaseLexicon._nonmissarray(array)</span>
+<span class="sd">            0      one</span>
+<span class="sd">            1      two</span>
+<span class="sd">            2    three</span>
+<span class="sd">            dtype: object</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array (pd.Series): Array to be get elements that are not nan</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.Series: Array containing only non-nan elements</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nonmiss</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="o">~</span><span class="n">array</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="n">nonmiss</span>
+
+<div class="viewcode-block" id="BaseLexicon.embed"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dict_df_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">embedding_tensor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">dict_df_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dict_df_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="n">key</span><span class="p">]):</span>
+                <span class="n">embedding_tensor</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_word</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="n">embedding_tensor</span></div>
+
+<div class="viewcode-block" id="BaseLexicon.get_vocabulary"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon.get_vocabulary">[docs]</a>    <span class="k">def</span> <span class="nf">get_vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a sorted list of all the lexicon categories</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; my_dct = {&#39;Food&#39;: [&#39;Bread&#39;, &#39;Salad&#39;], &#39;Animal&#39;: [&#39;Dog&#39;, &#39;Cat&#39;]}</span>
+<span class="sd">            &gt;&gt;&gt; l = BaseLexicon(my_dct)</span>
+<span class="sd">            &gt;&gt;&gt; l.get_vocabulary()</span>
+<span class="sd">            [&#39;Bread&#39;, &#39;Cat&#39;, &#39;Dog&#39;, &#39;Salad&#39;]</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: Sorted array of categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">:</span>
+            <span class="n">vocab</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">vocab</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)]</span>  <span class="c1"># removal of np.nans</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">vocab</span><span class="p">)))</span></div>
+
+    <span class="k">def</span> <span class="nf">_append_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lex</span><span class="p">:</span> <span class="s2">&quot;Lexicon&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+        <span class="n">maxlen</span> <span class="o">=</span> <span class="n">lex</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">collen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lex</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="o">~</span><span class="n">lex</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()])</span>
+        <span class="c1"># TODO: Implement rest of method _append_values()</span>
+
+<div class="viewcode-block" id="BaseLexicon.to_dict"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the lexicon in dictionary format.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; my_dct = {&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;]}</span>
+<span class="sd">            &gt;&gt;&gt; l = BaseLexicon(my_dct)</span>
+<span class="sd">            &gt;&gt;&gt; l.to_dict()</span>
+<span class="sd">            {&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;]}</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: dict with the lexicon key-value pairs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">out_dict</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">properties</span>
+
+<div class="viewcode-block" id="BaseLexicon.save"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save lexicon to disk</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Output file path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;dictionary_df.csv.gz&quot;</span><span class="p">),</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;embeddings&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;properties.json&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_properties</span><span class="p">(),</span> <span class="n">f</span><span class="p">)</span></div>
+
+    <span class="c1"># ------------------------------- Properties</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">embedding_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_vocabulary</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_embedded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="c1"># ------------------------------ Class methods</span>
+
+<div class="viewcode-block" id="BaseLexicon.load"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.BaseLexicon.load">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">archive</span><span class="p">:</span> <span class="n">ZipFile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a previously saved Lexicon instance</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Path of saved Lexicon instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">properties</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">archive</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;properties.json&quot;</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">properties</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">archive</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;properties.json&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">properties</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">propertyname</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">propertyname</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Attempted to load a saved </span><span class="si">{</span><span class="n">propertyname</span><span class="si">}</span><span class="s2"> instance when a </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> instance is required.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">archive</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dictionary_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;dictionary_df.csv.gz&quot;</span><span class="p">))</span>
+            <span class="n">embeddings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;embeddings.npy&quot;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">archive</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;dictionary_df.csv.gz&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">dictionary_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                    <span class="n">dictionary_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+                        <span class="n">f</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin1&quot;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span>
+                    <span class="p">)</span>
+            <span class="k">with</span> <span class="n">archive</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;embeddings.npy&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">embeddings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">dictionary</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="n">embeddings</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">_dictionary_df</span> <span class="o">=</span> <span class="n">dictionary_df</span>
+        <span class="k">return</span> <span class="n">instance</span></div></div>
+
+
+<div class="viewcode-block" id="WeightedLexicon"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.WeightedLexicon">[docs]</a><span class="k">class</span> <span class="nc">WeightedLexicon</span><span class="p">(</span><span class="n">BaseLexicon</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dictionary</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dictionary</span><span class="o">=</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">sep</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dictionary</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_weighted_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span> <span class="o">=</span> <span class="n">df</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span> <span class="o">=</span> <span class="n">weights</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_word2weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_word2weight</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;getter for simple data retrieval</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; lex = WeightedLexicon({&#39;a&#39;: 0.1, &#39;b&#39;: 0.2})</span>
+<span class="sd">            &gt;&gt;&gt; lex[&#39;a&#39;]</span>
+<span class="sd">            0.1</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): Term</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Uniont[float, int]: weight value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_word_value</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;repr</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; lex = WeightedLexicon({&#39;a&#39;: 0.1, &#39;b&#39;: 0.2})</span>
+<span class="sd">            &gt;&gt;&gt; lex</span>
+<span class="sd">            {&#39;a&#39;: 0.1, &#39;b&#39;: 0.2}</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: Dictionary with word-weight pairs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">&quot;{&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">weight</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_word2weight</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_dict_to_df</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">dict</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_build_weighted_dictionary</span><span class="p">(</span>
+        <span class="n">raw_dict</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The dictionary is expected to be a key-value pair with of the form</span>
+<span class="sd">        {word: weight} or a table or DataFrame where the first column</span>
+<span class="sd">        contains the words and the second one contains the scores.</span>
+<span class="sd">        This method splits the table into a matrix with words and an array</span>
+<span class="sd">        of weights. Words are contained in a single column DataFrame to ensure</span>
+<span class="sd">        compatibility with the base class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            raw_dict (pd.DataFrame): result from the _build_dictionary method</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; my_dct = pd.DataFrame({0: [&#39;a&#39;, &#39;b&#39;], 1: [0.1, 0.2]})</span>
+<span class="sd">            &gt;&gt;&gt; x, y = WeightedLexicon._build_weighted_dictionary(my_dct)</span>
+<span class="sd">            &gt;&gt;&gt; print(x)</span>
+<span class="sd">               0</span>
+<span class="sd">            0  a</span>
+<span class="sd">            1  b</span>
+<span class="sd">            &gt;&gt;&gt; print(y)</span>
+<span class="sd">            0    0.1</span>
+<span class="sd">            1    0.2</span>
+<span class="sd">            Name: 1, dtype: float64</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (pd.DataFrame, pd.Series): lexicon matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dictionary_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">raw_dict</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">raw_dict</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dictionary_df</span><span class="p">,</span> <span class="n">weights</span>
+
+    <span class="k">def</span> <span class="nf">_get_word2weight</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_weights</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">weights</span><span class="p">)}</span>
+
+    <span class="k">def</span> <span class="nf">_get_word_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_word2weight</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
+
+<div class="viewcode-block" id="WeightedLexicon.to_dict"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.WeightedLexicon.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_word2weight</span></div>
+
+<div class="viewcode-block" id="WeightedLexicon.embed"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.WeightedLexicon.embed">[docs]</a>    <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_properties</span><span class="p">()</span>
+        <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;_word2weight&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_word2weight</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">properties</span>
+
+<div class="viewcode-block" id="WeightedLexicon.save"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.WeightedLexicon.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;weights.csv.gz&quot;</span><span class="p">),</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span></div>
+
+    <span class="c1"># ---------------------------------------------------------------------------</span>
+    <span class="c1"># Properties:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="c1"># overwrite such that order is unchanged</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># ---------------------------------------------------------------------------</span>
+    <span class="c1"># Classmethods:</span>
+<div class="viewcode-block" id="WeightedLexicon.load"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.WeightedLexicon.load">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">archive</span><span class="p">:</span> <span class="n">ZipFile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">archive</span><span class="o">=</span><span class="n">archive</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">archive</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;weights.csv.gz&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">archive</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;weights.csv.gz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">weights</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                    <span class="n">weights</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+                        <span class="n">f</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin1&quot;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">_weights</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">_word2weight</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;_word2weight&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">instance</span></div></div>
+
+
+<div class="viewcode-block" id="Lexicon"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.Lexicon">[docs]</a><span class="k">class</span> <span class="nc">Lexicon</span><span class="p">(</span><span class="n">BaseLexicon</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dictionary</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dictionary</span><span class="o">=</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">sep</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;getter for simple data retrieval</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; lex = Lexicon({&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;, &#39;e&#39;]})</span>
+<span class="sd">            &gt;&gt;&gt; lex[&#39;A&#39;]</span>
+<span class="sd">            0      a</span>
+<span class="sd">            1      b</span>
+<span class="sd">            2    NaN</span>
+<span class="sd">            Name: A, dtype: object</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): Lexicon key/category</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.Series: Array containing the words</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;setter method to add lexicon keys/categories</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; lex = Lexicon({&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;]})</span>
+<span class="sd">            &gt;&gt;&gt; lex[&#39;B&#39;] = [&#39;c&#39;, &#39;d&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; print(lex._dictionary_df)</span>
+<span class="sd">               A  B</span>
+<span class="sd">            0  a  c</span>
+<span class="sd">            1  b  d</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): Name of the category</span>
+<span class="sd">            value (Iterable[str]): Array containing the terms</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;repr</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; lex = Lexicon({&#39;A&#39;: [&#39;a&#39;, &#39;b&#39;], &#39;B&#39;: [&#39;c&#39;, &#39;d&#39;]})</span>
+<span class="sd">            &gt;&gt;&gt; lex</span>
+<span class="sd">               A  B</span>
+<span class="sd">            0  a  c</span>
+<span class="sd">            1  b  d</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: Matrix of categories and terms</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Lexicon.merge"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.Lexicon.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lexica</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;BaseLexicon&quot;</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="s2">&quot;BaseLexicon&quot;</span><span class="p">]],</span>
+        <span class="n">inplace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lexica</span><span class="p">,</span> <span class="n">Lexicon</span><span class="p">):</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">_merge_one</span><span class="p">(</span><span class="n">lexica</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">lex</span> <span class="ow">in</span> <span class="n">lexica</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">_merge_one</span><span class="p">(</span><span class="n">lex</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span></div>
+
+    <span class="k">def</span> <span class="nf">_merge_one</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lex</span><span class="p">:</span> <span class="s2">&quot;BaseLexicon&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">old_dct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">old_keys</span> <span class="o">=</span> <span class="n">old_dct</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">new_keys</span> <span class="o">=</span> <span class="n">lex</span><span class="o">.</span><span class="n">keys</span>
+        <span class="n">update_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">new_keys</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">old_keys</span><span class="p">]</span>
+        <span class="n">append_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">new_keys</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">old_keys</span><span class="p">]</span>
+        <span class="n">new_dct</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">old_dct</span><span class="p">,</span> <span class="n">lex</span><span class="o">.</span><span class="n">_dictionary_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">append_keys</span><span class="p">]],</span>
+            <span class="c1"># ignore_index=True,</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dictionary_df</span> <span class="o">=</span> <span class="n">new_dct</span></div>
+        <span class="c1"># TODO: allow for merge of existing keys</span>
+
+
+<span class="k">def</span> <span class="nf">_dict_padding</span><span class="p">(</span><span class="n">dictionary</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">filler</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Padding of a dictionary where the values are lists such that these lists</span>
+<span class="sd">    have the same length.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dictionary (dict): Dictionary where the values are lists,</span>
+<span class="sd">            e.g. {&#39;A&#39;: [1,2,3], &#39;B&#39;: [1,2]}</span>
+<span class="sd">        filler: Value to pad with. Defaults to np.nan</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; _dict_padding({&#39;A&#39;: [1,2,3], &#39;B&#39;: [1,2]})</span>
+<span class="sd">        {&#39;A&#39;: [1, 2, 3], &#39;B&#39;: [1, 2, nan]}</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Padded dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lenghts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">dictionary</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+    <span class="n">maxlen</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lenghts</span><span class="p">)</span>
+    <span class="n">padded_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="n">_list_padding</span><span class="p">(</span><span class="n">lst</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">maxlen</span><span class="o">=</span><span class="n">maxlen</span><span class="p">,</span> <span class="n">filler</span><span class="o">=</span><span class="n">filler</span><span class="p">)</span>
+        <span class="n">padded_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">new_list</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">padded_dict</span>
+
+
+<span class="k">def</span> <span class="nf">_list_padding</span><span class="p">(</span><span class="n">lst</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">maxlen</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filler</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Appends a filler value to a list such that the list has the preferred</span>
+<span class="sd">    length, or cut values at the end</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        lst (list): List to fill</span>
+<span class="sd">        maxlen (int): Desired length</span>
+<span class="sd">        filler (optional): Value to fill list with. Defaults to np.nan.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; _list_padding(lst=[1,2], maxlen=4, filler=0)</span>
+<span class="sd">        [1, 2, 0, 0]</span>
+<span class="sd">        &gt;&gt;&gt; _list_padding(lst=[1,2,3], maxlen=2, filler=0)</span>
+<span class="sd">        [1, 2]</span>
+<span class="sd">        &gt;&gt;&gt; _list_padding(lst=[1,2,3], maxlen=5, filler=np.nan)</span>
+<span class="sd">        [1, 2, 3, nan, nan]</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: padded list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">len_diff</span> <span class="o">=</span> <span class="n">maxlen</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">lst</span><span class="p">)</span>
+    <span class="n">new_lst</span> <span class="o">=</span> <span class="n">lst</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">len_diff</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">len_diff</span><span class="p">):</span>
+            <span class="n">new_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filler</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">len_diff</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">new_lst</span> <span class="o">=</span> <span class="n">new_lst</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">maxlen</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">new_lst</span>
+
+
+<div class="viewcode-block" id="merge_lexica"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.merge_lexica">[docs]</a><span class="k">def</span> <span class="nf">merge_lexica</span><span class="p">(</span><span class="n">lexica</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Lexicon</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Lexicon</span><span class="p">:</span>
+    <span class="n">lex1</span> <span class="o">=</span> <span class="n">lexica</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lexica</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">lex</span> <span class="ow">in</span> <span class="n">lexica</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">lex1</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">lex</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lex1</span></div>
+
+
+<div class="viewcode-block" id="load"><a class="viewcode-back" href="../../weelex.html#weelex.lexicon.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">archive</span><span class="p">:</span> <span class="n">ZipFile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;BaseLexicon&quot;</span><span class="p">,</span> <span class="s2">&quot;WeightedLexicon&quot;</span><span class="p">,</span> <span class="s2">&quot;Lexicon&quot;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">archive</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;properties.json&quot;</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">properties</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">):</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;properties.json&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;/properties.json&quot;</span>
+        <span class="k">with</span> <span class="n">archive</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">properties</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">propertyname</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">propertyname</span> <span class="o">==</span> <span class="s2">&quot;BaseLexicon&quot;</span><span class="p">:</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="n">BaseLexicon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">archive</span><span class="o">=</span><span class="n">archive</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">propertyname</span> <span class="o">==</span> <span class="s2">&quot;WeightedLexicon&quot;</span><span class="p">:</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="n">WeightedLexicon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">archive</span><span class="o">=</span><span class="n">archive</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">propertyname</span> <span class="o">==</span> <span class="s2">&quot;Lexicon&quot;</span><span class="p">:</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="n">Lexicon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">archive</span><span class="o">=</span><span class="n">archive</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Attempted to load an instance of </span><span class="si">{</span><span class="n">propertyname</span><span class="si">}</span><span class="s2"> when one of&quot;</span>
+            <span class="o">+</span> <span class="s1">&#39; {&quot;BaseLexicon&quot;, &quot;WeightedLexicon&quot;, &quot;Lexicon&quot;} was expected.&#39;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">instance</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, VFMR.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

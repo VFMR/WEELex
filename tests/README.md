@@ -9,12 +9,11 @@ Changes to the package will be automatically reflected in the package installati
 conda create --name weelex python pip
 conda activate weelex
 python -m pip install -e .[dev]
-python -m spacy download de_core_news_lg
 ```
 
 
 ## Running Tests:
-`pytest --doctest-modules weelex/`
+`pytest --doctest-modules weelex/ tests/myunittests.py`
 
 ## Updating documentation
 `./docs/make.bat html`
