@@ -195,7 +195,7 @@ class TestClassifier(GenericTest):
         )
         cl.fit(X=self.data, lex=self.lex1, support_lex=self.lex2, hp_tuning=False)
         assert cl._is_fit is True
-        assert isinstance(cl._predictprocessor._tfidf.vocabulary, dict)
+        assert isinstance(cl._predictprocessor._tfidf.vocabulary_, dict)
         assert len(cl._predictprocessor._tfidf.vocabulary_) > 2
         assert isinstance(cl._models, dict)
         assert len(cl._models) > 0
