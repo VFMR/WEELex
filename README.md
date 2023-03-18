@@ -15,5 +15,8 @@ conda activate weelex
 python -m pip install .
 ```
 
+## Usage:
+
+- [Documentation](https://vfmr.github.io/WEELex/)
 
 
