@@ -1,3 +1,5 @@
+"""Contains the class for lexica.
+"""
 from dataclasses import dataclass
 from typing import Union, Iterable, Tuple, Dict
 import os
@@ -10,7 +12,9 @@ import numpy as np
 
 
 @dataclass
-class BaseLexicon:
+class _BaseLexicon:
+    """Base class for lexica."""
+
     # TODO: Allow for train_test_split to work
     def __init__(
         self,
@@ -50,7 +54,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = BaseLexicon(my_dct)
+            >>> l = _BaseLexicon(my_dct)
             >>> l._build_dictionary(my_dct)
                A  B
             0  a  c
@@ -85,7 +89,7 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['Test*', 'Te*st', '*test'])
-            >>> BaseLexicon._clean_strings(array)
+            >>> _BaseLexicon._clean_strings(array)
             0    Test
             1    Test
             2    test
@@ -114,7 +118,7 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
-            >>> BaseLexicon._nonmissarray(array)
+            >>> _BaseLexicon._nonmissarray(array)
             0      one
             1      two
             2    three
@@ -145,7 +149,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animal': ['Dog', 'Cat']}
-            >>> l = BaseLexicon(my_dct)
+            >>> l = _BaseLexicon(my_dct)
             >>> l.get_vocabulary()
             ['Bread', 'Cat', 'Dog', 'Salad']
 
@@ -168,7 +172,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = BaseLexicon(my_dct)
+            >>> l = _BaseLexicon(my_dct)
             >>> l.to_dict()
             {'A': ['a', 'b'], 'B': ['c', 'd']}
 
@@ -264,7 +268,7 @@ class BaseLexicon:
         return instance
 
 
-class WeightedLexicon(BaseLexicon):
+class WeightedLexicon(_BaseLexicon):
     def __init__(
         self,
         dictionary: Union[dict, str, pd.DataFrame],
@@ -407,7 +411,7 @@ class WeightedLexicon(BaseLexicon):
         return instance
 
 
-class Lexicon(BaseLexicon):
+class Lexicon(_BaseLexicon):
     def __init__(
         self,
         dictionary: Union[dict, str, pd.DataFrame],
@@ -469,7 +473,7 @@ class Lexicon(BaseLexicon):
 
     def merge(
         self,
-        lexica: Union["BaseLexicon", Iterable["BaseLexicon"]],
+        lexica: Union["_BaseLexicon", Iterable["_BaseLexicon"]],
         inplace: bool = True,
     ) -> None:
         if inplace:
@@ -486,7 +490,7 @@ class Lexicon(BaseLexicon):
         if not inplace:
             return obj
 
-    def _merge_one(self, lex: "BaseLexicon") -> None:
+    def _merge_one(self, lex: "_BaseLexicon") -> None:
         old_dct = self._dictionary_df.copy()
         old_keys = old_dct.keys()
         new_keys = lex.keys
@@ -567,7 +571,7 @@ def merge_lexica(lexica: Iterable[Lexicon]) -> Lexicon:
 def load(
     path: str,
     archive: ZipFile = None,
-) -> Union["BaseLexicon", "WeightedLexicon", "Lexicon"]:
+) -> Union["_BaseLexicon", "WeightedLexicon", "Lexicon"]:
     if archive is None:
         with open(os.path.join(path, "properties.json"), "r") as f:
             properties = json.load(f)
@@ -580,8 +584,8 @@ def load(
             properties = json.load(f)
 
     propertyname = properties["name"]
-    if propertyname == "BaseLexicon":
-        instance = BaseLexicon.load(path, properties, archive=archive)
+    if propertyname == "_BaseLexicon":
+        instance = _BaseLexicon.load(path, properties, archive=archive)
     elif propertyname == "WeightedLexicon":
         instance = WeightedLexicon.load(path, properties, archive=archive)
     elif propertyname == "Lexicon":
@@ -589,6 +593,6 @@ def load(
     else:
         raise ValueError(
             f"Attempted to load an instance of {propertyname} when one of"
-            + ' {"BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.'
+            + ' {"_BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.'
         )
     return instance
