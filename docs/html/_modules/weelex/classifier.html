@@ -227,23 +227,23 @@
 
 <span class="sd">        Example:</span>
 <span class="sd">            &gt;&gt;&gt; embeds = {&#39;dog&#39;: [0,0,0], &#39;cat&#39;: [0,0,0]}</span>
-<span class="sd">            &gt;&gt;&gt; model = WEELexClassifier(embeds=embeds)</span>
-<span class="sd">            &gt;&gt;&gt; model.get_params()[&#39;n_jobs&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; model = WEELexClassifier(embeds=embeds, checkterm=&#39;dog&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; model.get_params()[&#39;_n_jobs&#39;]</span>
 <span class="sd">            1</span>
 <span class="sd">            &gt;&gt;&gt; model.set_params(n_jobs=2, min_df=1, n_words=1000)</span>
-<span class="sd">            &gt;&gt;&gt; model.get_params()[&#39;n_jobs&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; model.get_params()[&#39;_n_jobs&#39;]</span>
 <span class="sd">            2</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">trainparams</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># CHECKME: check if this is a valid approach</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">trainparams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="n">trainparams</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="n">trainparams</span></div>
 
 <div class="viewcode-block" id="WEELexClassifier.fit"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
