@@ -1,3 +1,7 @@
+"""
+Contains the base prediction class which is inherited by
+the both the weelex and lsx classifiers.
+"""
 from typing import Union, List
 import os
 import json
@@ -22,6 +26,11 @@ from weelex.predictor import PredictionProcessor
 
 
 class BasePredictor(BaseEstimator, TransformerMixin):
+    """
+    Base prediction class with methods for both the weelex and lsx
+    classifiers.
+    """
+
     def __init__(
         self,
         embeds: Union[dict, embeddings.Embeddings],
@@ -38,9 +47,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         max_df: Union[int, float] = 0.95,
         spacy_model: str = "de_core_news_lg",
         n_docs: int = 2000000,
-        corpus_path: str = None,
-        corpus_path_encoding: str = "latin1",
-        load_clustering: bool = False,
+        corpus_path: str = None,  # TODO: Check if really needed in ctfidf
+        corpus_path_encoding: str = "latin1",  # TODO: Check if needed in ctfidf
+        load_clustering: bool = False,  # CHECKME: Check what this is doing
         checkterm: str = "Politik",
         n_top_clusters: int = 3,
         cluster_share: float = 0.2,
@@ -48,6 +57,76 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         distance_threshold: float = 0.5,
         n_words: int = 40000,
     ) -> None:
+        """Initialization for the class.
+
+        Args:
+            embeds (Union[dict, embeddings.Embeddings]): Word to embedding
+                vectors lookup.
+            tfidf (Union[str, BasicTfidf], optional): Tfidf implementation.
+                Can either be a fitted weelex.tfidf.BasicTfidf instance
+                or the path to a saved instance.
+                If None, a new weelex.tfidf.BasicTfidf instance is instantiated
+                and fitted.
+                Defaults to None.
+            ctfidf (Union[str, ClusterTfidfVectorizer], optional): Cluster Tfidf
+                implementation. Can either be a fitted
+                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance or a path
+                to a saved instance. If None, a new
+                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance is
+                instantiated and fitted. Defaults to None.
+            use_tfidf (bool, optional): Whehter to use tfidf or not.
+                Defaults to True.
+            use_ctfidf (bool, optional): Whether to use Cluster Tfidf or not.
+                Defaults to True.
+            word_level_aggregation (bool, optional): Whether the output
+                of document level inputs shall be aggregated on a word level.
+                Defaults to True.
+            random_state (int, optional): Random seed for replicability.
+                Defaults to None.
+            n_jobs (int, optional): Number of parallel processes to use.
+                insert -1 to use all available cores.
+                Defaults to 1.
+            progress_bar (bool, optional): Whether to show a progress bar.
+                Defaults to False.
+            relevant_pos (List[str], optional): Only words with these Part of
+                Speech (PoS) tags will be utilized. Possible values are
+                "ADJ" for adjectives, "ADV" for adverbs, "NOUN" for nouns, and
+                "VERB" for verbs. Defaults to ["ADJ", "ADV", "NOUN", "VERB"].
+            min_df (Union[int, float], optional): Words need to be in at least
+                this many documents to be considered. Defaults to 5.
+            max_df (Union[int, float], optional): Words must be in fewer than
+                these documents to be considered. `int` for the number of
+                documents and `float` for the share of documents.
+                Defaults to 0.95.
+            spacy_model (str, optional): Name of the spacy model used for
+                POS-tagging.
+                See the (spaCy documentation)[https://spacy.io/usage/models] for
+                info on available models. Defaults to "de_core_news_lg".
+            n_docs (int, optional): Number of documents to use for fitting
+                the tfidf and cluster-tfidf instances. Defaults to 2000000.
+            corpus_path (str, optional): Path to the training corpus.
+                Defaults to None.
+            corpus_path_encoding (str, optional): Encoding of training corpus.
+                Defaults to "latin1".
+            load_clustering (bool, optional): Whether or not the clusters
+                shall be loaded. Defaults to False.
+            checkterm (str, optional): Word to validate the embeddings against.
+                Needs to be included among the embedding vectors.
+                Defaults to "Politik".
+            n_top_clusters (int, optional): Number of top clusters or words to
+                be aggregated. Defaults to 3.
+            cluster_share (float, optional): Defaults to 0.2.
+            clustermethod (str, optional): Method for cluster tfidf word
+                clustering. Currently, only {"agglomerative"} are supported.
+                Defaults to "agglomerative".
+            distance_threshold (float, optional): Distance threshold parameter
+                for cluster-tfidf clustering. Defaults to 0.5.
+            n_words (int, optional): Number of words to cluster. More words
+                come with larger memory requirements. Defaults to 40000.
+
+        Raises:
+            ValueError: If both use_tfidf and use_ctfidf are set to False
+        """
         self._embeddings = self._make_embeddings(embeds)
         # self._model = ensemble.FullEnsemble
         self._random_state = random_state
@@ -73,6 +152,9 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._distance_threshold = distance_threshold
         self._n_words = n_words
 
+        if self._use_tfidf is False and self._use_ctfidf is False:
+            raise ValueError('Both "use_tfidf" and "use_ctfidf" are set to False.')
+
         # initialize properties:
         self._predictprocessor = None
         self._is_fit = False
@@ -89,6 +171,11 @@ class BasePredictor(BaseEstimator, TransformerMixin):
             spacy.load(self._spacy_model)
 
     def get_params(self) -> dict:
+        """Retrieve the parameters for the instance.
+
+        Returns:
+            dict: Set of parameters.
+        """
         return self.__dict__
 
     def _setup_predictprocessor(self):
@@ -128,9 +215,19 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         )
 
     def fit_tfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
+        """Method to fit the tfidf instance given a training corpus.
+
+        Args:
+            data (Union[np.ndarray, pd.Series]): Corpus with training documents.
+        """
         self._predictprocessor.fit_tfidf(data)
 
     def fit_ctfidf(self, data: Union[np.ndarray, pd.Series]) -> None:
+        """Method to fit the cluster-tfidf instance given a training corpus.
+
+        Args:
+            data (Union[np.ndarray, pd.Series]): Corpus with training documents.
+        """
         self._predictprocessor.fit_ctfidf(data)
 
     def _fit_predictprocessor(self, X: Union[pd.Series, np.ndarray]) -> None:
@@ -139,6 +236,11 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         self._predictprocessor.fit(X=X, keepwords=self._lex.vocabulary)
 
     def save(self, path: str) -> None:
+        """Save the trained model to disk into a compressed archive.
+
+        Args:
+            path (str): path to write the model to.
+        """
         # TODO: directly write into zip archive instead of rmtree()
         if self._is_fit is False:
             raise NotFittedError(
@@ -254,21 +356,44 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     # ---------------------------------------------------------------------------
     # properties:
     @property
-    def vocabulary(self):
+    def vocabulary(self) -> List[str]:
+        """List of words that are considered by the model.
+
+        Returns:
+            List[str]: Words in the vocabulary.
+        """
         return list(set(self._lex.vocabulary + self._tfidf.vocabulary_))
 
     @property
-    def embedding_dim(self):
+    def embedding_dim(self) -> int:
+        """Dimensionality of the embedding vectors.
+
+        Returns:
+            int: Number of dimensions.
+        """
         return self._embeddings.dim
 
     @property
-    def is_fit(self):
+    def is_fit(self) -> bool:
+        """Tells whether the model has been fitted already
+
+        Returns:
+            bool: Model is fitted.
+        """
         return self._is_fit
 
     # ---------------------------------------------------------------------------
     # classmethods:
     @classmethod
     def load(cls, path: str) -> "BasePredictor":
+        """Method to load a previously saved instance from disk.
+
+        Args:
+            path (str): Location of saved model.
+
+        Returns:
+            BasePredictor: previously saved instance of the model.
+        """
         instance = cls(embeds=None)
         usepath = cls._check_zippath(path)
         with ZipFile(usepath) as myzip:
