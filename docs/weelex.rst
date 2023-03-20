@@ -11,6 +11,7 @@ weelex.base module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.classifier module
 ------------------------
@@ -19,6 +20,7 @@ weelex.classifier module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.cli module
 -----------------
@@ -27,6 +29,7 @@ weelex.cli module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.embeddings module
 ------------------------
@@ -35,6 +38,7 @@ weelex.embeddings module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.ensemble module
 ----------------------
@@ -43,6 +47,7 @@ weelex.ensemble module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.lexicon module
 ---------------------
@@ -51,6 +56,7 @@ weelex.lexicon module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.lsx module
 -----------------
@@ -59,6 +65,7 @@ weelex.lsx module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.predictor module
 -----------------------
@@ -67,6 +74,7 @@ weelex.predictor module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.tfidf module
 -------------------
@@ -75,6 +83,7 @@ weelex.tfidf module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 weelex.trainer module
 ---------------------
@@ -83,6 +92,7 @@ weelex.trainer module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 Module contents
 ---------------
