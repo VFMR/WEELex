@@ -10,8 +10,6 @@ from zipfile import ZipFile
 import pandas as pd
 import numpy as np
 
-from weelex import embeddings
-
 
 @dataclass
 class _BaseLexicon:
@@ -162,7 +160,7 @@ class _BaseLexicon:
         nonmiss = array[~array.isna()]
         return nonmiss
 
-    def embed(self, embeddings: embeddings.Embeddings) -> None:
+    def embed(self, embeddings) -> None:
         """Retrieve embedding vectors for each of the words in the dictionary.
 
         Args:
@@ -259,7 +257,7 @@ class _BaseLexicon:
         return self._embeddings.shape
 
     @property
-    def embeddings(self) -> embeddings.Embeddings:
+    def embeddings(self):
         """
         Returns:
             embeddings.Embeddings: Embeddings object
@@ -278,8 +276,7 @@ class _BaseLexicon:
     def is_embedded(self) -> bool:
         """
         Returns:
-            bool: Tells whether the embeddings have been looked up for the
-                words in the dictionary.
+            bool: Tells whether the embedding vectors of the words have been looked up.
         """
         return self._embeddings is not None
 
@@ -603,14 +600,12 @@ class Lexicon(_BaseLexicon):
                 Defaults to True.
 
         Example:
-            # With `inplace=True`:
             >>> my_lex1 = Lexicon({'animals': ['cat', 'dog']})
             >>> my_lex2 = Lexicon({'food': ['bread', 'cake']})
             >>> my_lex1.merge(my_lex2, inplace=True)
             >>> my_lex1.keys
             ['animals', 'food']
 
-            # With `inplace=False`:
             >>> my_lex1 = Lexicon({'animals': ['cat', 'dog']})
             >>> my_lex2 = Lexicon({'food': ['bread', 'cake']})
             >>> my_lex1.merge(my_lex2, inplace=False)

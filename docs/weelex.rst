@@ -4,15 +4,6 @@ weelex package
 Submodules
 ----------
 
-weelex.base module
-------------------
-
-.. automodule:: weelex.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :inherited-members:
-
 weelex.classifier module
 ------------------------
 
@@ -22,28 +13,10 @@ weelex.classifier module
    :show-inheritance:
    :inherited-members:
 
-weelex.cli module
------------------
-
-.. automodule:: weelex.cli
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :inherited-members:
-
 weelex.embeddings module
 ------------------------
 
 .. automodule:: weelex.embeddings
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :inherited-members:
-
-weelex.ensemble module
-----------------------
-
-.. automodule:: weelex.ensemble
    :members:
    :undoc-members:
    :show-inheritance:
@@ -67,28 +40,10 @@ weelex.lsx module
    :show-inheritance:
    :inherited-members:
 
-weelex.predictor module
------------------------
-
-.. automodule:: weelex.predictor
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :inherited-members:
-
 weelex.tfidf module
 -------------------
 
 .. automodule:: weelex.tfidf
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :inherited-members:
-
-weelex.trainer module
----------------------
-
-.. automodule:: weelex.trainer
    :members:
    :undoc-members:
    :show-inheritance:

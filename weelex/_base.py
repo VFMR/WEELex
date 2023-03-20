@@ -366,6 +366,7 @@ class _BasePredictor(BaseEstimator, TransformerMixin):
 
         Returns:
             List[str]: Words in the vocabulary.
+
         """
         return list(set(self._lex.vocabulary + self._tfidf.vocabulary_))
 
@@ -375,6 +376,7 @@ class _BasePredictor(BaseEstimator, TransformerMixin):
 
         Returns:
             int: Number of dimensions.
+
         """
         return self._embeddings.dim
 

@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weelex._ensemble &mdash; Weelex 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Weelex
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Weelex</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">weelex._ensemble</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for weelex._ensemble</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">re</span> <span class="kn">import</span> <span class="n">I</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">f1_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
+
+
+<div class="viewcode-block" id="make_agg_sample"><a class="viewcode-back" href="../../weelex.html#weelex._ensemble.make_agg_sample">[docs]</a><span class="k">def</span> <span class="nf">make_agg_sample</span><span class="p">(</span><span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw n vectors randomly and return the linear</span>
+<span class="sd">       combination of these with random weights.</span>
+<span class="sd">       Method to ensure npdarraothe vectors add up to 1 is simplified</span>
+<span class="sd">       by just drawing random integers and taking their relative size.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        X (numpy.array): n-m Matrix with data to draw from.</span>
+<span class="sd">        n (int): Number of vectors to aggregate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.array: Vector with linear combination of shape (m,).</span>
+<span class="sd">            i.e. is only one observation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">input_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="c1"># draw random integers to compute weights:</span>
+    <span class="k">while</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># simple way to repeat drawing if all n weights are 0</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># compute weights by taking relative size</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">])</span>
+
+    <span class="c1"># draw n random vector indices</span>
+    <span class="c1"># random_vect_ix = [random.randint(0, len(X)-1) for _ in range(n)]</span>
+    <span class="n">random_vect_ix</span> <span class="o">=</span> <span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+
+    <span class="c1"># combine the random vectors into a matrix</span>
+    <span class="n">vects</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">input_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">n</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">vects</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">random_vect_ix</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:]</span>
+
+    <span class="c1"># compute linear combination:</span>
+    <span class="n">new_vector</span> <span class="o">=</span> <span class="n">vects</span> <span class="o">@</span> <span class="n">weights</span>
+    <span class="k">return</span> <span class="n">new_vector</span></div>
+
+
+<span class="k">class</span> <span class="nc">_BaseEnsemble</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_bar_func</span><span class="p">(</span><span class="n">progress_bar</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_progress_bar_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress_bar</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">progress_bar</span><span class="p">:</span>
+            <span class="n">progress_bar_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_progress_bar</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">progress_bar_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress_bar</span>
+        <span class="k">return</span> <span class="n">progress_bar_func</span>
+
+    <span class="k">def</span> <span class="nf">_no_progress_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">array</span>
+
+    <span class="k">def</span> <span class="nf">_use_progress_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_AugmentedEnsemble</span><span class="p">(</span><span class="n">_BaseEnsemble</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to train an ensemble of models.</span>
+<span class="sd">    For each model, a random selection of input vectors</span>
+<span class="sd">    is aggregated as a linear combination to &quot;augment&quot; the data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        BaseEstimator: Sklearn base class for estimators.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">category</span><span class="p">,</span>
+        <span class="n">categories</span><span class="p">,</span>
+        <span class="n">outside_categories</span><span class="p">,</span>
+        <span class="n">n_models</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">n_samples_multiplier</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">n_samples_multiplier_outside</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">input_shape</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+        <span class="n">modeltype</span><span class="o">=</span><span class="s2">&quot;svm&quot;</span><span class="p">,</span>
+        <span class="n">pca</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">svc_c</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">svc_kernel</span><span class="o">=</span><span class="s2">&quot;rbf&quot;</span><span class="p">,</span>
+        <span class="c1"># mlp_layers=[30, 10],</span>
+        <span class="c1"># mlp_lr=0.01,</span>
+        <span class="c1"># mlp_regularization=False,</span>
+        <span class="n">progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">n_vectors_agg_training</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">run_fast</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">modelkwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization method</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            category (str): The category to be predicted vs. the rest</span>
+<span class="sd">            n_models (int, optional): Number of models to for each category.</span>
+<span class="sd">                Models differ only in the vectors that are randomly drawn for</span>
+<span class="sd">                the observations of class 0. Defaults to N_MODELS.</span>
+<span class="sd">            n_samples_multiplier (int, optional): Multiply with the number of</span>
+<span class="sd">                words of the respective category to get the number of &quot;inside&quot;</span>
+<span class="sd">                observations.</span>
+<span class="sd">                Defaults to N_SAMPLES_MULTIPLIER.</span>
+<span class="sd">            n_samples_multiplier_outside (int, optional): Multiplied with the</span>
+<span class="sd">                number of words of the respective category, multiplied with</span>
+<span class="sd">                n_samples_multiplier.</span>
+<span class="sd">                I.e. we want n-times as many outside vectors as inside vectors.</span>
+<span class="sd">                Defaults to N_SAMPLES_MULTIPLIER_OUTSIDE.</span>
+<span class="sd">            input_shape (int, optional): Dimensionality of embedding vectors.</span>
+<span class="sd">                Defaults to 300.</span>
+<span class="sd">            modeltype (str, optional): Type of ml model to use. {&#39;svm&#39;, &#39;mlp&#39;}.</span>
+<span class="sd">                Defaults to &#39;svm&#39;.</span>
+<span class="sd">            pca (bool, optional): whether or not to use Principal component</span>
+<span class="sd">                analysis.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            svc_c (float, optional): Hyperparameter C of SVC. Only used when</span>
+<span class="sd">                modeltype == &#39;svm&#39;.</span>
+<span class="sd">                Defaults to 1.0.</span>
+<span class="sd">            svc_kernel (str, optional): Hyperparameter kernel function of SVC.</span>
+<span class="sd">                Only used when modeltype == &#39;svm&#39;. Defaults to &#39;rbf&#39;.</span>
+<span class="sd">            mlp_layers (list, optional): Layers of MLPClassifier. Only use</span>
+<span class="sd">                when modeltype==&#39;mlp&#39;.</span>
+<span class="sd">                Defaults to [30,10].</span>
+<span class="sd">            mlp_lr (float, optional): Learning Rate of MLPClassifier. Only</span>
+<span class="sd">                used when modeltype==&#39;mlp&#39;.</span>
+<span class="sd">                Defaults to 0.01.</span>
+<span class="sd">            mlp_regularization (bool, optional): Regularization for</span>
+<span class="sd">                MLPClassifier. Only used when modeltype==&#39;mlp&#39;.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            progress_bar (bool, optional): whether or not to use a tqdm</span>
+<span class="sd">                progress bar.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            n_vectors_agg_training (int, optional): Number of vectors to</span>
+<span class="sd">                aggregate for training.</span>
+<span class="sd">                Defaults to N_VECTORS_AGG_TRAINING.</span>
+<span class="sd">            categories (list, optional): List of categories to train.</span>
+<span class="sd">                Defaults to LIWC_CATEGORIES_ALL.</span>
+<span class="sd">            outside_categories (list, optional): List of categories where no</span>
+<span class="sd">                model is fit</span>
+<span class="sd">                but whose words are still used as outside vectors for training.</span>
+<span class="sd">                Defaults to LIWC_CATEGORIES_OUTSIDE.</span>
+<span class="sd">            run_fast (bool, optional): If True, do not compute probabilities of</span>
+<span class="sd">                each SVM model.</span>
+<span class="sd">                If False, compute probability of each model via 5 fold CV.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">category</span> <span class="o">=</span> <span class="n">category</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_models</span> <span class="o">=</span> <span class="n">n_models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">=</span> <span class="n">modeltype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span> <span class="o">=</span> <span class="n">input_shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_multiplier</span> <span class="o">=</span> <span class="n">n_samples_multiplier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_multiplier_outside</span> <span class="o">=</span> <span class="n">n_samples_multiplier_outside</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pca</span> <span class="o">=</span> <span class="n">pca</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">svc_c</span> <span class="o">=</span> <span class="n">svc_c</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">svc_kernel</span> <span class="o">=</span> <span class="n">svc_kernel</span>
+        <span class="c1"># self.mlp_layers = mlp_layers</span>
+        <span class="c1"># self.mlp_lr = mlp_lr</span>
+        <span class="c1"># self.mlp_regularization = mlp_regularization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modelkwargs</span> <span class="o">=</span> <span class="n">modelkwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="n">progress_bar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_vectors_agg_training</span> <span class="o">=</span> <span class="n">n_vectors_agg_training</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">categories</span> <span class="o">=</span> <span class="n">categories</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outside_categories</span> <span class="o">=</span> <span class="n">outside_categories</span>
+
+        <span class="c1"># combine inside and outside categories:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outside_categories_all</span> <span class="o">=</span> <span class="n">categories</span> <span class="o">+</span> <span class="n">outside_categories</span>
+
+        <span class="k">if</span> <span class="n">progress_bar</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_progress_bar</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_no_progress_bar</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_fast</span> <span class="o">=</span> <span class="n">run_fast</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="k">if</span> <span class="n">random_state</span> <span class="ow">and</span> <span class="n">random_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_targets</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">targets</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">targets</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="k">return</span> <span class="n">targets</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_drawclass_data</span><span class="p">(</span>
+        <span class="n">array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">targets</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">classvalue</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">array_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">array_np</span> <span class="o">=</span> <span class="n">array</span>
+        <span class="k">return</span> <span class="n">array_np</span><span class="p">[</span><span class="n">targets</span> <span class="o">==</span> <span class="n">classvalue</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_random_category</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">cat</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Randomly selects a category from a list</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; oc = [&#39;Cars&#39;, &#39;Politics&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; ic = [&#39;Food&#39;, &#39;Space&#39;]</span>
+<span class="sd">            &gt;&gt;&gt; cc = &#39;Politics&#39;</span>
+<span class="sd">            &gt;&gt;&gt; x = _AugmentedEnsemble(category=cc, categories=ic, outside_categories=oc)</span>
+<span class="sd">            &gt;&gt;&gt; rc = x._random_category(oc, cc)</span>
+<span class="sd">            &gt;&gt;&gt; rc in [&#39;Food&#39;, &#39;Cars&#39;, &#39;Space&#39;]</span>
+<span class="sd">            True</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array (List[str]): Array to choose from.</span>
+<span class="sd">            cat (str): Category that shall not be picked</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: selected item</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">random_cat</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">array</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="n">cat</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">random_cat</span>
+
+    <span class="k">def</span> <span class="nf">_getkeeps</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">classvalue</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw a random category for the observation:</span>
+<span class="sd">           avoid drawing and combining words from different categories.</span>
+<span class="sd">           Their linear combination could be anywhere.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (Union[pd.DataFrame, np.ndarray]): _description_</span>
+<span class="sd">            y (Union[pd.DataFrame, np.ndarray]): _description_</span>
+<span class="sd">            classvalue (int): _description_</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of booleans</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">classvalue</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># the &quot;inside&quot; class is already coming from a single category</span>
+            <span class="c1"># just create an indicator that all vectors can be used</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>  <span class="c1"># keep all</span>
+            <span class="n">random_cat</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># The &quot;outside&quot; class is made up of multiple LIWC categories.</span>
+            <span class="c1"># randomly select a category and make an array that</span>
+            <span class="c1"># flags vectors that belong to said category:</span>
+            <span class="n">random_cat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_category</span><span class="p">(</span>
+                <span class="n">array</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">outside_categories_all</span><span class="p">,</span> <span class="n">cat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">category</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">y_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">y_np</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">y_np</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">random_cat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">keep</span>
+
+    <span class="k">def</span> <span class="nf">draw_random_samples_classwise</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">classvalue</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">n_samples_multiplier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">include_all_original</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Combine word vectors by randomly selecting terms</span>
+<span class="sd">        of a specific category and making a linear combination of these</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (pandas.DataFrame): The matrix of word vectors</span>
+<span class="sd">            y (pandas.DataFrame): Contains the classes of each term</span>
+<span class="sd">            classvalue (int): Value of current class to consider. 0 or 1</span>
+<span class="sd">            n_samples_multiplier (int): Value to multiply number of original</span>
+<span class="sd">                words of the category with to get the number of observations</span>
+<span class="sd">                that shall be drawn.</span>
+<span class="sd">            n_samples (int, optional): Number of samples. Defaults to None.</span>
+<span class="sd">            include_all_original (bool, optional): Whether the</span>
+<span class="sd">                original, i.e. non-aggregated, word vectors shall be</span>
+<span class="sd">                included in the sample. Defaults to True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray, numpy.ndarray: The X and y arrays that can be used</span>
+<span class="sd">                for input in Machine Learning models.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># y might be a matrix -&gt; reduce this to a vector containing the binary</span>
+        <span class="c1"># class value</span>
+        <span class="n">y_orig</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_targets</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># get arrays with the data of the class currently drawn</span>
+        <span class="n">n_original_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_drawclass_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">classvalue</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_drawclass_data</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">classvalue</span><span class="p">)</span>
+
+        <span class="c1"># get counts for the number of original terms and</span>
+        <span class="c1"># the number of observations that shall be drawn.</span>
+        <span class="k">if</span> <span class="n">n_samples_multiplier</span><span class="p">:</span>
+            <span class="n">n_samples</span> <span class="o">=</span> <span class="n">n_original_samples</span> <span class="o">*</span> <span class="n">n_samples_multiplier</span>
+
+        <span class="c1"># generate samples:</span>
+        <span class="n">new_X</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">append</span> <span class="o">=</span> <span class="n">new_X</span><span class="o">.</span><span class="n">append</span>
+
+        <span class="c1"># draw individual observations (word vectors)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+            <span class="c1"># Draw a random category for the observation:</span>
+            <span class="c1"># avoid drawing and combining words from different categories.</span>
+            <span class="c1"># Their linear combination could be anywhere.</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getkeeps</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classvalue</span><span class="p">)</span>
+
+            <span class="c1"># aggregate random vectors from the randomly drawn category:</span>
+            <span class="n">append</span><span class="p">(</span><span class="n">make_agg_sample</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_vectors_agg_training</span><span class="p">))</span>
+
+        <span class="c1"># the target vector (the value to predict)</span>
+        <span class="c1"># is just 1 or 0, depending on whether we draw outside</span>
+        <span class="c1"># or inside vectors, for all observations</span>
+        <span class="n">new_y</span> <span class="o">=</span> <span class="p">[</span><span class="n">classvalue</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">include_all_original</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">classvalue</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># for &quot;outside&quot; vectors, using *all* terms would be excessive</span>
+                <span class="c1"># hence, randomly draw as many terms as are included in the</span>
+                <span class="c1"># inside category</span>
+                <span class="n">random_ix</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_original_samples</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">new_X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_X</span><span class="p">),</span>  <span class="c1"># the aggregated vectors</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">X</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="n">random_ix</span><span class="p">]),</span>  <span class="c1"># non-agg vectors</span>
+                    <span class="p">],</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_X</span><span class="p">),</span>  <span class="c1"># the aggregated vectors</span>
+                        <span class="n">X</span><span class="p">,</span>  <span class="c1"># non-aggregated vectors</span>
+                    <span class="p">],</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">new_y</span> <span class="o">=</span> <span class="n">new_y</span> <span class="o">+</span> <span class="p">[</span><span class="n">classvalue</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_original_samples</span>
+
+        <span class="n">new_X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_X</span><span class="p">)</span>
+        <span class="n">new_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_y</span><span class="p">)</span>
+
+        <span class="c1"># just for random shuffling</span>
+        <span class="n">new_X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">new_y</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">new_X</span><span class="p">,</span> <span class="n">new_y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_X</span><span class="p">,</span> <span class="n">new_y</span>
+
+    <span class="k">def</span> <span class="nf">_setup_pca</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">n_components</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span>
+        <span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pca</span>
+
+    <span class="k">def</span> <span class="nf">_svm_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;scaler&quot;</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">()),</span>
+                <span class="p">(</span><span class="s2">&quot;pca&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_pca</span><span class="p">()),</span>
+                <span class="p">(</span><span class="s2">&quot;svm&quot;</span><span class="p">,</span> <span class="n">SVC</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">svc_c</span><span class="p">,</span> <span class="n">class_weight</span><span class="o">=</span><span class="s2">&quot;balanced&quot;</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s2">&quot;rbf&quot;</span><span class="p">)),</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">steps</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;scaler&quot;</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">()),</span>
+                <span class="p">(</span><span class="s2">&quot;svm&quot;</span><span class="p">,</span> <span class="n">SVC</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">svc_c</span><span class="p">,</span> <span class="n">class_weight</span><span class="o">=</span><span class="s2">&quot;balanced&quot;</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s2">&quot;rbf&quot;</span><span class="p">)),</span>
+            <span class="p">]</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span> <span class="nf">_build_models</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up a list of n_models untrained ml models</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of models</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">==</span> <span class="s2">&quot;mlp&quot;</span><span class="p">:</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mlp_model</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_models</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">==</span> <span class="s2">&quot;svm&quot;</span><span class="p">:</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_svm_model</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_models</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">models</span>
+
+    <span class="c1"># def _no_progress_bar(self, array):</span>
+    <span class="c1">#     &quot;&quot;&quot;Returns the array that is input.</span>
+    <span class="c1">#     I.e. this method does basically nothing and serves</span>
+    <span class="c1">#     just as a placeholder or replacement for the progress</span>
+    <span class="c1">#     bar method if no progress bar shall be shown.</span>
+
+    <span class="c1">#     Args:</span>
+    <span class="c1">#         array (numpy.array): Array to loop over</span>
+
+    <span class="c1">#     Returns:</span>
+    <span class="c1">#         numpy.array: The array that is passed with no change to it.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     return array</span>
+
+    <span class="c1"># def _use_progress_bar(self, array):</span>
+    <span class="c1">#     return tqdm(array)</span>
+
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to train the ml models via passed X and y arrays.</span>
+<span class="sd">        X is a matrix with the embedding vectors for each term, y is</span>
+<span class="sd">        a binary that tells whether the term belongs to the &quot;inside&quot; (i.e.</span>
+<span class="sd">        is part of the category that shall be predicted) or the &quot;outside&quot;</span>
+<span class="sd">        (i.e. is from a category different from the one to be predicted).</span>
+
+<span class="sd">        A sample of observations, in the form of linear combinations from</span>
+<span class="sd">        random word embeddings of a category, is drawn and used for training.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (numpy.array or pandas.DataFrame): Matrix of word embeddings</span>
+<span class="sd">            y (numpy.array or pandas.DataFrame): target values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># reinstantiate models to reset weights...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_models</span><span class="p">()</span>
+
+        <span class="n">modelkwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelkwargs</span>
+        <span class="n">ns_m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_multiplier</span>
+        <span class="n">ns_m_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_multiplier_outside</span>
+
+        <span class="c1"># &quot;inside&quot; data, i.e. the vectors that belong to the data to predict</span>
+        <span class="n">X1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">draw_random_samples_classwise</span><span class="p">(</span>
+            <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classvalue</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_samples_multiplier</span><span class="o">=</span><span class="n">ns_m</span><span class="p">,</span> <span class="n">include_all_original</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="n">trained_models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">append</span> <span class="o">=</span> <span class="n">trained_models</span><span class="o">.</span><span class="n">append</span>
+
+        <span class="c1"># multiple models are combined in an ensemble.</span>
+        <span class="c1"># The outside vectors are drawn separately for each model</span>
+        <span class="c1"># This is supposed to allow for model different cases</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">):</span>
+            <span class="n">X0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">draw_random_samples_classwise</span><span class="p">(</span>
+                <span class="n">X</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">,</span>
+                <span class="n">classvalue</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># i.e. the categories that are not to predict</span>
+                <span class="n">n_samples_multiplier</span><span class="o">=</span><span class="n">ns_m</span> <span class="o">*</span> <span class="n">ns_m_out</span><span class="p">,</span>
+                <span class="n">include_all_original</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># combine inside and outside vectors:</span>
+            <span class="n">X_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X0</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">y_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y0</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="c1"># random shuffling:</span>
+            <span class="n">X_train</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">n_components</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="c1"># modelkwargs.update({&#39;pca__n_components&#39;: n_components})</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">pca__n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_fast</span><span class="p">:</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">svm__probability</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">svm__probability</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="o">**</span><span class="n">modelkwargs</span><span class="p">)</span>
+            <span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">trained_models</span>
+
+    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to predict &quot;probabilities&quot; for each observation.</span>
+<span class="sd">        Mean of probabilites for individual models.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (numpy.array or pandas.DataFrame): Matrix to predict</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.array: Prediction vector containing the probabilities</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">allpreds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)))</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">==</span> <span class="s2">&quot;mlp&quot;</span><span class="p">:</span>
+                <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_fast</span><span class="p">:</span>
+                    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+                    <span class="n">preds</span> <span class="o">=</span> <span class="n">preds</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># only proba for class 1</span>
+            <span class="n">allpreds</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">final_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">allpreds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">final_pred</span>
+
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Predict binary class of input matrix.</span>
+<span class="sd">        Uses .predict_proba method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (array-like): Input matrix</span>
+<span class="sd">            cutoff (float, optional): Cutoff value for binary prediction.</span>
+<span class="sd">                Defaults to 0.5.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.array: Binary prediction</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">preds</span> <span class="o">&gt;</span> <span class="n">cutoff</span>
+
+    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">score_func</span><span class="o">=</span><span class="n">f1_score</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Scoring function. Used for Parameter tuning</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (array-like): Input matrix</span>
+<span class="sd">            y (array-like): target vector</span>
+<span class="sd">            score_func (callable, optional): Function for scoring.</span>
+<span class="sd">                Defaults to sklearn.metrics.f1_score.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: Score</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">score_func</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load (hyper-)parameters and models that were saved using</span>
+<span class="sd">        the .save method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename (str): Name of saved file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: change to loading json</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">category</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;modeltype&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_models</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;n_models&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_multiplier</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;n_samples_multiplier&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;input_shape&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">svc_c</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;svc_c&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">svc_kernel</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;svc_kernel&quot;</span><span class="p">]</span>
+        <span class="c1"># self.mlp_layers = parameters[&#39;mlp_layers&#39;]</span>
+        <span class="c1"># self.mlp_lr = parameters[&#39;mlp_lr&#39;]</span>
+        <span class="c1"># self.mlp_regularization = parameters[&#39;mlp_regularization&#39;]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pca</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;pca&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modelkwargs</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;modelkwargs&quot;</span><span class="p">]</span>
+
+        <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">append</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">append</span>
+        <span class="k">if</span> <span class="s2">&quot;.p&quot;</span> <span class="ow">in</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">==</span> <span class="s2">&quot;mlp&quot;</span><span class="p">:</span>
+                <span class="c1"># append(keras_load(filename+&#39;_model{}.h5&#39;.format(i)))</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># TODO: use builtin .save method</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;_model</span><span class="si">{}</span><span class="s2">.p&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">append</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save (hyper-)parameters and models to disk.</span>
+<span class="sd">        Use this to use a fitted model later on for prediction.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename (str): Path and name of save file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Change to saving json</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+            <span class="s2">&quot;modeltype&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span><span class="p">,</span>
+            <span class="s2">&quot;n_models&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_models</span><span class="p">,</span>
+            <span class="s2">&quot;n_samples_multiplier&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_multiplier</span><span class="p">,</span>
+            <span class="s2">&quot;input_shape&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">,</span>
+            <span class="s2">&quot;svc_c&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">svc_c</span><span class="p">,</span>
+            <span class="s2">&quot;svc_kernel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">svc_kernel</span><span class="p">,</span>
+            <span class="c1"># &#39;mlp_layers&#39;: self.mlp_layers,</span>
+            <span class="c1"># &#39;mlp_lr&#39;: self.mlp_lr,</span>
+            <span class="c1"># &#39;mlp_regularization&#39;: self.mlp_regularization,</span>
+            <span class="s2">&quot;pca&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">,</span>
+            <span class="s2">&quot;modelkwargs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">modelkwargs</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;.p&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeltype</span> <span class="o">==</span> <span class="s2">&quot;mlp&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;_model</span><span class="si">{}</span><span class="s2">.h5&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># use builtin .save method</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;_model</span><span class="si">{}</span><span class="s2">.p&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_FullEnsemble</span><span class="p">(</span><span class="n">_BaseEnsemble</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">category</span><span class="p">,</span>
+        <span class="n">categories</span><span class="p">,</span>
+        <span class="n">outside_categories</span><span class="p">,</span>
+        <span class="n">param_set</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">_AugmentedEnsemble</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">modelparams</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">progress_bar</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">category</span> <span class="o">=</span> <span class="n">category</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_categories</span> <span class="o">=</span> <span class="n">categories</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outside_categories</span> <span class="o">=</span> <span class="n">outside_categories</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_set</span> <span class="o">=</span> <span class="n">param_set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixedparams</span> <span class="o">=</span> <span class="n">modelparams</span>
+
+    <span class="k">def</span> <span class="nf">_build_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_set</span><span class="p">):</span>
+        <span class="n">full_param_set</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">param_set</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">param_set</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_set</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">params</span> <span class="ow">in</span> <span class="n">param_set</span><span class="p">:</span>
+                <span class="n">full_param_set</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fixedparams</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">})</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    Sets of parameters:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">full_param_set</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_categories</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_outside_categories</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">full_param_set</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">param_set</span><span class="p">))</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_categories</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_outside_categories</span><span class="p">,</span>
+                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fixedparams</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">models</span>
+
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_models</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_set</span><span class="p">)</span>
+        <span class="n">trained_models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar_func</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="n">trained_models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_models</span> <span class="o">=</span> <span class="n">trained_models</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trained_models</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trained_models</span><span class="p">):</span>
+            <span class="n">predictions</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trained_models</span><span class="p">):</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;liwc_ensemble_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">category</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="c1"># search for all model files in the path-folder</span>
+        <span class="n">mnames</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;liwc_ensemble_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">category</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">))</span>
+        <span class="n">mnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mnames</span> <span class="k">if</span> <span class="s2">&quot;model&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;liwc_models&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)]</span>
+        <span class="n">trained_models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">mnames</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fixedparams</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">trained_models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_models</span> <span class="o">=</span> <span class="n">trained_models</span>
+
+
+<div class="viewcode-block" id="ensemble_cross_val_score"><a class="viewcode-back" href="../../weelex.html#weelex._ensemble.ensemble_cross_val_score">[docs]</a><span class="k">def</span> <span class="nf">ensemble_cross_val_score</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">X_splits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">cv</span><span class="p">)</span>
+    <span class="n">y_splits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="p">)</span>
+
+    <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_splits</span><span class="p">)):</span>
+        <span class="n">X_train</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">X_splits</span><span class="p">)</span> <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="n">y_train</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">y_splits</span><span class="p">)</span> <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="n">X_test</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">X_splits</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">y_test</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">y_splits</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">y_test</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">scores</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, VFMR.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
