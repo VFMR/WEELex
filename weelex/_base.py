@@ -127,7 +127,7 @@ class _BasePredictor(BaseEstimator, TransformerMixin):
         Raises:
             ValueError: If both use_tfidf and use_ctfidf are set to False
         """
-        self._embeddings = self._make_embeddings(embeds)
+        self._embeddings = self._make_embeddings(embeds, checkterm=checkterm)
         # self._model = ensemble.FullEnsemble
         self._random_state = random_state
         self._n_jobs = n_jobs
@@ -170,7 +170,7 @@ class _BasePredictor(BaseEstimator, TransformerMixin):
             spacy.cli.download(self._spacy_model)
             spacy.load(self._spacy_model)
 
-    def get_params(self) -> dict:
+    def get_params(self, deep: bool = False) -> dict:
         """Retrieve the parameters for the instance.
 
         Returns:
@@ -335,10 +335,12 @@ class _BasePredictor(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _make_embeddings(
-        embeds: Union[embeddings.Embeddings, dict]
+        embeds: Union[embeddings.Embeddings, dict], checkterm: str
     ) -> embeddings.Embeddings:
         if not isinstance(embeds, embeddings.Embeddings):
-            my_embeds = embeddings.Embeddings(embedding_dict=embeds)
+            my_embeds = embeddings.Embeddings(
+                embedding_dict=embeds, testvalue=checkterm
+            )
         else:
             my_embeds = embeds
         return my_embeds

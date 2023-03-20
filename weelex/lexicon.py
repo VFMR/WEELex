@@ -609,7 +609,9 @@ class Lexicon(_BaseLexicon):
             >>> my_lex1 = Lexicon({'animals': ['cat', 'dog']})
             >>> my_lex2 = Lexicon({'food': ['bread', 'cake']})
             >>> my_lex1.merge(my_lex2, inplace=False)
-            ['animals', 'food']
+              animals   food
+            0     cat  bread
+            1     dog   cake
             >>> my_lex1.keys
             ['animals']
         """

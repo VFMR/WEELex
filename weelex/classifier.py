@@ -161,23 +161,23 @@ class WEELexClassifier(_base._BasePredictor):
 
         Example:
             >>> embeds = {'dog': [0,0,0], 'cat': [0,0,0]}
-            >>> model = WEELexClassifier(embeds=embeds)
-            >>> model.get_params()['n_jobs']
+            >>> model = WEELexClassifier(embeds=embeds, checkterm='dog')
+            >>> model.get_params()['_n_jobs']
             1
             >>> model.set_params(n_jobs=2, min_df=1, n_words=1000)
-            >>> model.get_params()['n_jobs']
+            >>> model.get_params()['_n_jobs']
             2
 
         """
         trainparams = {}
         for key, value in params.items():
-            # CHECKME: check if this is a valid approach
             if key in self.__dict__:
-                self.__dict__[key] == value
+                self.__dict__[key] = value
+            elif "_" + key in self.__dict__:
+                self.__dict__["_" + key] = value
             else:
                 trainparams.update({key: value})
         self._train_params = trainparams
-        return self
 
     def fit(
         self,
