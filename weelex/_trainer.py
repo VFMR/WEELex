@@ -8,7 +8,7 @@ from weelex import lexicon
 from weelex import embeddings
 
 
-class TrainProcessor:
+class _TrainProcessor:
     def __init__(
         self,
         lex: lexicon.Lexicon,
@@ -137,7 +137,7 @@ class TrainProcessor:
         Example:
             >>> A = pd.DataFrame(np.zeros((4,10)))
             >>> A.index = ['Cars:Vehicle', 'Politics:Politician', 'Food:Bread', 'Food:a:b']
-            >>> TrainProcessor._make_id_term_mapping(A)
+            >>> _TrainProcessor._make_id_term_mapping(A)
               categories       terms
             0       Cars     Vehicle
             1   Politics  Politician

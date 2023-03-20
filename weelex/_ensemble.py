@@ -60,7 +60,7 @@ def make_agg_sample(X: np.ndarray, n: int = 3) -> np.ndarray:
     return new_vector
 
 
-class BaseEnsemble:
+class _BaseEnsemble:
     def __init__(self, progress_bar=False):
         self.progress_bar_func = self._get_progress_bar_func(progress_bar)
 
@@ -78,7 +78,7 @@ class BaseEnsemble:
         return tqdm(array)
 
 
-class AugmentedEnsemble(BaseEnsemble, BaseEstimator):
+class _AugmentedEnsemble(_BaseEnsemble, BaseEstimator):
     """Class to train an ensemble of models.
     For each model, a random selection of input vectors
     is aggregated as a linear combination to "augment" the data.
@@ -222,7 +222,7 @@ class AugmentedEnsemble(BaseEnsemble, BaseEstimator):
             >>> oc = ['Cars', 'Politics']
             >>> ic = ['Food', 'Space']
             >>> cc = 'Politics'
-            >>> x = AugmentedEnsemble(category=cc, categories=ic, outside_categories=oc)
+            >>> x = _AugmentedEnsemble(category=cc, categories=ic, outside_categories=oc)
             >>> rc = x._random_category(oc, cc)
             >>> rc in ['Food', 'Cars', 'Space']
             True
@@ -620,7 +620,7 @@ class AugmentedEnsemble(BaseEnsemble, BaseEstimator):
                     pickle.dump(self.models[i], f)
 
 
-class FullEnsemble(BaseEnsemble):
+class _FullEnsemble(_BaseEnsemble):
     def __init__(
         self,
         category,
@@ -628,7 +628,7 @@ class FullEnsemble(BaseEnsemble):
         outside_categories,
         param_set=None,
         progress_bar=False,
-        model=AugmentedEnsemble,
+        model=_AugmentedEnsemble,
         **modelparams,
     ):
         super().__init__(progress_bar)

@@ -14,7 +14,7 @@ from nltk.corpus import stopwords
 SPACY_MODEL = "de_core_news_lg"
 
 
-def remove_urls(texts):
+def _remove_urls(texts):
     """
     Function to remove URLs found in strings via regular expressions
 
@@ -41,7 +41,7 @@ def remove_urls(texts):
     return texts_clean
 
 
-class TfidfCleaner(BaseEstimator, TransformerMixin):
+class _TfidfCleaner(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
 
@@ -50,10 +50,10 @@ class TfidfCleaner(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def transform(X, y=None):
-        return tfidf_cleanup(X)
+        return _tfidf_cleanup(X)
 
 
-def tfidf_cleanup(texts):
+def _tfidf_cleanup(texts):
     parties = [
         "CDU",
         "Cdu",
@@ -252,7 +252,7 @@ def tfidf_cleanup(texts):
     texts = texts.str.replace("Groko", "Koalition", regex=False)
 
     # capture remaining URLs
-    texts = remove_urls(texts)
+    texts = _remove_urls(texts)
 
     # split words on hyphens
     texts = texts.str.replace("-", " ", regex=False)
@@ -362,7 +362,7 @@ class BasicTfidf:
         )
 
         self.vectorizer = Pipeline(
-            steps=[("cleaner", TfidfCleaner()), ("vectorizer", vectorizer_only)]
+            steps=[("cleaner", _TfidfCleaner()), ("vectorizer", vectorizer_only)]
         )
 
         self.vectorizer.fit(X)

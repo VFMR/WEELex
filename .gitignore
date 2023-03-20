@@ -7,3 +7,5 @@ weelex.egg-info/*
 spon_main.yml
 .pytest_cache/*
 *.npz
+*.pickle
+*.ttf

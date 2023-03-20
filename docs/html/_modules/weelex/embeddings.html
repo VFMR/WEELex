@@ -64,9 +64,9 @@
            <div itemprop="articleBody">
              
   <h1>Source code for weelex.embeddings</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span>
-
-<span class="c1"># from functools import singledispatch, singledispathmethod</span>
+<span></span><span class="sd">&quot;&quot;&quot;Contains the class for embedding vectors.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span>
 <span class="kn">from</span> <span class="nn">zipfile</span> <span class="kn">import</span> <span class="n">ZipFile</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -79,9 +79,20 @@
 
 
 <div class="viewcode-block" id="Embeddings"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings">[docs]</a><span class="k">class</span> <span class="nc">Embeddings</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for embedding vector lookup.&quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">embedding_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">testvalue</span><span class="o">=</span><span class="s2">&quot;test&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            embedding_dict (Dict[str, float], optional): Embedding vector</span>
+<span class="sd">                lookup object. Defaults to None.</span>
+<span class="sd">            testvalue (str, optional): Word that is tested against the</span>
+<span class="sd">                embedding vectors. Required for example to infer the</span>
+<span class="sd">                dimensionality. Make sure it is included among the provided</span>
+<span class="sd">                embedding vectors. Defaults to &quot;test&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">isfiltered</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_testvalue</span> <span class="o">=</span> <span class="n">testvalue</span>
         <span class="k">if</span> <span class="n">embedding_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -96,6 +107,15 @@
 <div class="viewcode-block" id="Embeddings.filter_terms"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.filter_terms">[docs]</a>    <span class="k">def</span> <span class="nf">filter_terms</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">terms</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filter the embeddings down to a word-vector collection that is</span>
+<span class="sd">        required, i.e., is included in the vocabulary. Since WEELex utilizes</span>
+<span class="sd">        only a fixed number of terms, removing unnecessary ones preserves disk</span>
+<span class="sd">        memory when saving the model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            terms (Union[list, lexicon.Lexicon, np.ndarray, pd.DataFrame, tuple]):</span>
+<span class="sd">                Reduce the embedding lookup to these terms</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
             <span class="n">terms_lst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flatten_matrix</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">Lexicon</span><span class="p">):</span>
@@ -112,6 +132,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_wv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_wv_from_keys_vectors</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Embeddings.make_wv_from_keys_vectors"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.make_wv_from_keys_vectors">[docs]</a>    <span class="k">def</span> <span class="nf">make_wv_from_keys_vectors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create word-vector lookup.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, np.ndarray]: Word - embedding vector mapping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vectors</span><span class="p">)}</span></div>
 
     <span class="nd">@staticmethod</span>
@@ -158,6 +183,15 @@
         <span class="k">return</span> <span class="n">vector</span>
 
 <div class="viewcode-block" id="Embeddings.save_filtered"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.save_filtered">[docs]</a>    <span class="k">def</span> <span class="nf">save_filtered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the filtered embeddings to disk.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Where the vectors are saved.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: if the embedding vectors have not been filtered with</span>
+<span class="sd">                the `filter_terms` method before.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">,</span> <span class="n">vectors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_vectors</span><span class="p">)</span>
@@ -166,15 +200,25 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
 <span class="w">                </span><span class="sd">&quot;&quot;&quot;There are no key-vector pairs to be saved yet.</span>
-<span class="sd">                    Please apply the filter() method before.&quot;&quot;&quot;</span>
+<span class="sd">                    Please apply the filter_terms method before.&quot;&quot;&quot;</span>
             <span class="p">)</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Words with available embedding vectors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: Words</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">dim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dimensionality of the embedding vectors</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Dimensionality</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wv</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_testvalue</span><span class="p">])</span>
         <span class="k">except</span><span class="p">:</span>
@@ -190,6 +234,16 @@
         <span class="o">...</span>
 
 <div class="viewcode-block" id="Embeddings.lookup"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.lookup">[docs]</a>    <span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">terms</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the embedding vectors for a single word or multiple terms.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            terms (Union[str, list, np.ndarray, pd.Series]): Single word or</span>
+<span class="sd">                iterable of words.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Array with the embedding vectors. Has size `dim` for a</span>
+<span class="sd">                single term and `(number words, dim)` for an interable of words.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_val_from_key</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -204,7 +258,20 @@
     <span class="c1"># --------------------------------------------------------------------------</span>
     <span class="c1"># classmethods</span>
 <div class="viewcode-block" id="Embeddings.load_filtered"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.load_filtered">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">load_filtered</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">archive</span><span class="p">:</span> <span class="n">ZipFile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">load_filtered</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">archive</span><span class="p">:</span> <span class="n">ZipFile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Embeddings&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load previously filtered and saved Embeddings object from disk.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Location of saved object.</span>
+<span class="sd">            archive (ZipFile, optional): Name of zip archive the object is in.</span>
+<span class="sd">                Defaults to None.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided object is not supported.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Embeddings: Loaded instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">archive</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -248,14 +315,35 @@
 <div class="viewcode-block" id="Embeddings.load_vectors"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.load_vectors">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">load_vectors</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">embedding_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fine_tuned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Embeddings&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate Embeddings with pre-trained FastText or Word2Vec models.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Location of the embeddings to load.</span>
+<span class="sd">            embedding_type (str): The type of embedding vectors. One of</span>
+<span class="sd">                {fasttext, word2vec}.</span>
+<span class="sd">            fine_tuned (bool, optional): Whether the embedding vectors have</span>
+<span class="sd">                been fine tuned. Matters if `embedding_type=&#39;fasttext&#39;` since</span>
+<span class="sd">                self-trained or fine tuned FastText models need to be read</span>
+<span class="sd">                differently than the official ones from [https://fasttext.cc/].</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; embeds = Embeddings.load_vectors(&#39;path/to/embeddings&#39;)  # doctest: +SKIP</span>
+<span class="sd">            ...</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If an invalid `embedding_type` is entered.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Embeddings: Embeddings object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">embedding_type</span> <span class="o">==</span> <span class="s2">&quot;fasttext&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">fine_tuned</span><span class="p">:</span>
-                <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">load_facebook_vectors</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_facebook_vectors</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">load_finetuned_fasttext</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_finetuned_fasttext</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">embedding_type</span> <span class="o">==</span> <span class="s2">&quot;word2vec&quot;</span><span class="p">:</span>
-            <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">load_finetuned_word2vec</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_load_finetuned_word2vec</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
@@ -265,26 +353,26 @@
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">inst</span></div>
 
-<div class="viewcode-block" id="Embeddings.load_facebook_vectors"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.load_facebook_vectors">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">load_facebook_vectors</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_load_facebook_vectors</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
         <span class="n">wv</span> <span class="o">=</span> <span class="n">load_facebook_vectors</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="n">inst</span><span class="o">.</span><span class="n">_wv</span> <span class="o">=</span> <span class="n">wv</span>
-        <span class="k">return</span> <span class="n">inst</span></div>
+        <span class="k">return</span> <span class="n">inst</span>
 
-<div class="viewcode-block" id="Embeddings.load_finetuned_fasttext"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.load_finetuned_fasttext">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">load_finetuned_fasttext</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_load_finetuned_fasttext</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
         <span class="n">wv</span> <span class="o">=</span> <span class="n">FastText</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">wv</span>
         <span class="n">inst</span><span class="o">.</span><span class="n">_wv</span> <span class="o">=</span> <span class="n">wv</span>
-        <span class="k">return</span> <span class="n">inst</span></div>
+        <span class="k">return</span> <span class="n">inst</span>
 
-<div class="viewcode-block" id="Embeddings.load_finetuned_word2vec"><a class="viewcode-back" href="../../weelex.html#weelex.embeddings.Embeddings.load_finetuned_word2vec">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">load_finetuned_word2vec</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_load_finetuned_word2vec</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">inst</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
         <span class="n">wv</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">wv</span>
         <span class="n">inst</span><span class="o">.</span><span class="n">_wv</span> <span class="o">=</span> <span class="n">wv</span>
-        <span class="k">return</span> <span class="n">inst</span></div></div>
+        <span class="k">return</span> <span class="n">inst</span></div>
 </pre></div>
 
            </div>

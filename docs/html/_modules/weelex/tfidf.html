@@ -80,7 +80,7 @@
 <span class="n">SPACY_MODEL</span> <span class="o">=</span> <span class="s2">&quot;de_core_news_lg&quot;</span>
 
 
-<div class="viewcode-block" id="remove_urls"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.remove_urls">[docs]</a><span class="k">def</span> <span class="nf">remove_urls</span><span class="p">(</span><span class="n">texts</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_remove_urls</span><span class="p">(</span><span class="n">texts</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to remove URLs found in strings via regular expressions</span>
 
@@ -104,22 +104,22 @@
     <span class="c1"># hence, a less robust url search is implemented</span>
     <span class="n">texts_clean</span> <span class="o">=</span> <span class="n">texts_clean</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">url_regex</span><span class="p">,</span> <span class="s2">&quot;&lt;URL&gt;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">texts_clean</span> <span class="o">=</span> <span class="n">texts_clean</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;/a&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">texts_clean</span></div>
+    <span class="k">return</span> <span class="n">texts_clean</span>
 
 
-<div class="viewcode-block" id="TfidfCleaner"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.TfidfCleaner">[docs]</a><span class="k">class</span> <span class="nc">TfidfCleaner</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">_TfidfCleaner</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
-<div class="viewcode-block" id="TfidfCleaner.fit"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.TfidfCleaner.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
 
-<div class="viewcode-block" id="TfidfCleaner.transform"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.TfidfCleaner.transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">tfidf_cleanup</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">_tfidf_cleanup</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="tfidf_cleanup"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.tfidf_cleanup">[docs]</a><span class="k">def</span> <span class="nf">tfidf_cleanup</span><span class="p">(</span><span class="n">texts</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_tfidf_cleanup</span><span class="p">(</span><span class="n">texts</span><span class="p">):</span>
     <span class="n">parties</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">&quot;CDU&quot;</span><span class="p">,</span>
         <span class="s2">&quot;Cdu&quot;</span><span class="p">,</span>
@@ -318,7 +318,7 @@
     <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Groko&quot;</span><span class="p">,</span> <span class="s2">&quot;Koalition&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="c1"># capture remaining URLs</span>
-    <span class="n">texts</span> <span class="o">=</span> <span class="n">remove_urls</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">_remove_urls</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
 
     <span class="c1"># split words on hyphens</span>
     <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -335,7 +335,7 @@
     <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">removes</span><span class="p">:</span>
         <span class="n">texts</span> <span class="o">=</span> <span class="n">texts</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">texts</span></div>
+    <span class="k">return</span> <span class="n">texts</span>
 
 
 <div class="viewcode-block" id="BasicTfidf"><a class="viewcode-back" href="../../weelex.html#weelex.tfidf.BasicTfidf">[docs]</a><span class="k">class</span> <span class="nc">BasicTfidf</span><span class="p">:</span>
@@ -428,7 +428,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
-            <span class="n">steps</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;cleaner&quot;</span><span class="p">,</span> <span class="n">TfidfCleaner</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;vectorizer&quot;</span><span class="p">,</span> <span class="n">vectorizer_only</span><span class="p">)]</span>
+            <span class="n">steps</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;cleaner&quot;</span><span class="p">,</span> <span class="n">_TfidfCleaner</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;vectorizer&quot;</span><span class="p">,</span> <span class="n">vectorizer_only</span><span class="p">)]</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">vectorizer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>

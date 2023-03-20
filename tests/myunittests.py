@@ -9,9 +9,9 @@ import pandas as pd
 from weelex import classifier
 from weelex import lexicon
 from weelex import embeddings
-from weelex import trainer
-from weelex import ensemble
-from weelex import predictor
+from weelex import _trainer
+from weelex import _ensemble
+from weelex import _predictor
 from weelex import lsx
 import batchprocessing
 import cluster_tfidf
@@ -79,7 +79,7 @@ class GenericTest(unittest.TestCase):
                 "Wie ist das Wetter heute?",
             ]
         )
-        self.processor = predictor.PredictionProcessor(
+        self.processor = _predictor._PredictionProcessor(
             data=data,
             embeddings=self.embeds,
             tfidf=None,
@@ -147,7 +147,7 @@ class TestBatchProc(unittest.TestCase):
 class TestPredictor(GenericTest):
     def test1(self):
         self._setup_predictor()
-        assert isinstance(self.processor, predictor.PredictionProcessor)
+        assert isinstance(self.processor, _predictor._PredictionProcessor)
 
         # Test tfidf-fitting
         self.processor.fit_tfidf()
@@ -358,7 +358,7 @@ class TestModels(GenericTest):
 
     def _setup_augmented2(self):
         self._setup_augmented()
-        model = ensemble.AugmentedEnsemble(
+        model = _ensemble._AugmentedEnsemble(
             category=self.cat,
             categories=self.categories,
             outside_categories=self.support_categories,
@@ -454,7 +454,7 @@ class TestModels(GenericTest):
         shape = (100, 10)
         array = np.random.randn(*shape)
         n = 3
-        new_array = ensemble.make_agg_sample(X=array, n=n)
+        new_array = _ensemble.make_agg_sample(X=array, n=n)
         assert new_array.shape == (shape[1],)
 
     def test(self):
@@ -735,7 +735,7 @@ class TestLSX(GenericTest):
                 "Wie ist das Wetter heute? Es ist mies!",
             ]
         )
-        self.processor = predictor.PredictionProcessor(
+        self.processor = _predictor._PredictionProcessor(
             data=data,
             embeddings=self.embeds,
             tfidf=None,
@@ -791,7 +791,7 @@ class TestLSX(GenericTest):
 class TestTrainer(GenericTest):
     def _setup4(self):
         self._setup3()
-        self.tr = trainer.TrainProcessor(
+        self.tr = _trainer._TrainProcessor(
             lex=self.lex1, support_lex=self.lex2, embeddings=self.embeds
         )
 
@@ -807,7 +807,7 @@ class TestTrainer(GenericTest):
         lex2 = lexicon.Lexicon(
             {"B1": ["Lenkrad", "tanken", "Garage"], "B2": ["ab", "an"]}
         )
-        cl = trainer.TrainProcessor(lex=lex1, embeddings=self.embeds)
+        cl = _trainer._TrainProcessor(lex=lex1, embeddings=self.embeds)
         cl._handle_lexica(main_lex=lex1)
         assert isinstance(cl._main_lex, lexicon.Lexicon)
         assert cl._support_lex is None
@@ -941,17 +941,17 @@ class TestTrainer(GenericTest):
     def test_make_lexicon(self):
         dct1 = {"A": ["a", "b"], "B": ["c", "d", "e"]}
         dct2 = pd.DataFrame({"C": ["f", "g"], "D": ["h", "i"]})
-        tr = trainer.TrainProcessor(lex=dct1)
+        tr = _trainer._TrainProcessor(lex=dct1)
         assert tr._main_keys == ["A", "B"]
         assert isinstance(tr._main_lex, lexicon.Lexicon)
 
-        tr2 = trainer.TrainProcessor(lex=dct1, support_lex=dct2)
+        tr2 = _trainer._TrainProcessor(lex=dct1, support_lex=dct2)
         assert tr2._main_keys == ["A", "B"]
         assert tr2._support_keys == ["C", "D"]
         assert isinstance(tr2._main_lex, lexicon.Lexicon)
         assert isinstance(tr2._support_lex, lexicon.Lexicon)
 
-        tr3 = trainer.TrainProcessor(lex=dct1, main_keys=["A"], support_keys=["B"])
+        tr3 = _trainer._TrainProcessor(lex=dct1, main_keys=["A"], support_keys=["B"])
         assert tr3._main_keys == ["A"]
         assert tr3._support_keys == ["B"]
 

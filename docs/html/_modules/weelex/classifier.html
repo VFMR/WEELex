@@ -64,8 +64,12 @@
            <div itemprop="articleBody">
              
   <h1>Source code for weelex.classifier</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Contains the main Weelex classifier class.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">zipfile</span> <span class="kn">import</span> <span class="n">ZipFile</span>
 
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">RandomizedSearchCV</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -76,13 +80,15 @@
 
 <span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">lexicon</span>
 <span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">embeddings</span>
-<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">ensemble</span>
-<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">base</span>
-<span class="kn">from</span> <span class="nn">weelex.trainer</span> <span class="kn">import</span> <span class="n">TrainProcessor</span>
+<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">_ensemble</span>
+<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">_base</span>
+<span class="kn">from</span> <span class="nn">weelex._trainer</span> <span class="kn">import</span> <span class="n">_TrainProcessor</span>
 <span class="kn">from</span> <span class="nn">weelex.tfidf</span> <span class="kn">import</span> <span class="n">BasicTfidf</span>
 
 
-<div class="viewcode-block" id="WEELexClassifier"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier">[docs]</a><span class="k">class</span> <span class="nc">WEELexClassifier</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">BasePredictor</span><span class="p">):</span>
+<div class="viewcode-block" id="WEELexClassifier"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier">[docs]</a><span class="k">class</span> <span class="nc">WEELexClassifier</span><span class="p">(</span><span class="n">_base</span><span class="o">.</span><span class="n">_BasePredictor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main Weelex classifier class&quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">embeds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">],</span>
@@ -110,6 +116,73 @@
         <span class="n">n_words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40000</span><span class="p">,</span>
         <span class="o">**</span><span class="n">train_params</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class initialization</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            embeds (Union[dict, embeddings.Embeddings]): Word to embedding</span>
+<span class="sd">                vectors lookup.</span>
+<span class="sd">            tfidf (Union[str, BasicTfidf], optional): Tfidf implementation.</span>
+<span class="sd">                Can either be a fitted weelex.tfidf.BasicTfidf instance</span>
+<span class="sd">                or the path to a saved instance.</span>
+<span class="sd">                If None, a new weelex.tfidf.BasicTfidf instance is instantiated</span>
+<span class="sd">                and fitted.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            ctfidf (Union[str, ClusterTfidfVectorizer], optional): Cluster Tfidf</span>
+<span class="sd">                implementation. Can either be a fitted</span>
+<span class="sd">                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance or a path</span>
+<span class="sd">                to a saved instance. If None, a new</span>
+<span class="sd">                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance is</span>
+<span class="sd">                instantiated and fitted. Defaults to None.</span>
+<span class="sd">            use_ctfidf (bool, optional): Whether to use Cluster Tfidf or not.</span>
+<span class="sd">                Defaults to True.</span>
+<span class="sd">            word_level_aggregation (bool, optional): Whether the output</span>
+<span class="sd">                of document level inputs shall be aggregated on a word level.</span>
+<span class="sd">                Defaults to True.</span>
+<span class="sd">            test_size (float, optional): Process only random share of data for</span>
+<span class="sd">                testing purposes. Defaults to None.</span>
+<span class="sd">            random_state (int, optional): Random seed for replicability.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            n_jobs (int, optional): Number of parallel processes to use.</span>
+<span class="sd">                insert -1 to use all available cores.</span>
+<span class="sd">                Defaults to 1.</span>
+<span class="sd">            progress_bar (bool, optional): Whether to show a progress bar.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            relevant_pos (List[str], optional): Only words with these Part of</span>
+<span class="sd">                Speech (PoS) tags will be utilized. Possible values are</span>
+<span class="sd">                &quot;ADJ&quot; for adjectives, &quot;ADV&quot; for adverbs, &quot;NOUN&quot; for nouns, and</span>
+<span class="sd">                &quot;VERB&quot; for verbs. Defaults to [&quot;ADJ&quot;, &quot;ADV&quot;, &quot;NOUN&quot;, &quot;VERB&quot;].</span>
+<span class="sd">            min_df (Union[int, float], optional): Words need to be in at least</span>
+<span class="sd">                this many documents to be considered. Defaults to 5.</span>
+<span class="sd">            max_df (Union[int, float], optional): Words must be in fewer than</span>
+<span class="sd">                these documents to be considered. `int` for the number of</span>
+<span class="sd">                documents and `float` for the share of documents.</span>
+<span class="sd">                Defaults to 0.95.</span>
+<span class="sd">            spacy_model (str, optional): Name of the spacy model used for</span>
+<span class="sd">                POS-tagging.</span>
+<span class="sd">                See the (spaCy documentation)[https://spacy.io/usage/models] for</span>
+<span class="sd">                info on available models. Defaults to &quot;de_core_news_lg&quot;.</span>
+<span class="sd">            n_docs (int, optional): Number of documents to use for fitting</span>
+<span class="sd">                the tfidf and cluster-tfidf instances. Defaults to 2000000.</span>
+<span class="sd">            corpus_path (str, optional): Path to the training corpus.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            corpus_path_encoding (str, optional): Encoding of training corpus.</span>
+<span class="sd">                Defaults to &quot;latin1&quot;.</span>
+<span class="sd">            load_clustering (bool, optional): Whether or not the clusters</span>
+<span class="sd">                shall be loaded. Defaults to False.</span>
+<span class="sd">            checkterm (str, optional): Word to validate the embeddings against.</span>
+<span class="sd">                Needs to be included among the embedding vectors.</span>
+<span class="sd">                Defaults to &quot;Politik&quot;.</span>
+<span class="sd">            n_top_clusters (int, optional): Number of top clusters or words to</span>
+<span class="sd">                be aggregated. Defaults to 3.</span>
+<span class="sd">            cluster_share (float, optional): Defaults to 0.2.</span>
+<span class="sd">            clustermethod (str, optional): Method for cluster tfidf word</span>
+<span class="sd">                clustering. Currently, only {&quot;agglomerative&quot;} are supported.</span>
+<span class="sd">                Defaults to &quot;agglomerative&quot;.</span>
+<span class="sd">            distance_threshold (float, optional): Distance threshold parameter</span>
+<span class="sd">                for cluster-tfidf clustering. Defaults to 0.5.</span>
+<span class="sd">            n_words (int, optional): Number of words to cluster. More words</span>
+<span class="sd">                come with larger memory requirements. Defaults to 40000.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">embeds</span><span class="o">=</span><span class="n">embeds</span><span class="p">,</span>
             <span class="n">tfidf</span><span class="o">=</span><span class="n">tfidf</span><span class="p">,</span>
@@ -135,7 +208,7 @@
             <span class="n">distance_threshold</span><span class="o">=</span><span class="n">distance_threshold</span><span class="p">,</span>
             <span class="n">n_words</span><span class="o">=</span><span class="n">n_words</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">FullEnsemble</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">_ensemble</span><span class="o">.</span><span class="n">_FullEnsemble</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_test_size</span> <span class="o">=</span> <span class="n">test_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="n">train_params</span>
 
@@ -149,21 +222,28 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_cv_scores</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_tfidf</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s1">&#39;Both &quot;use_tfidf&quot; and &quot;use_tfidf&quot; are set to False. This is currently not implemented.&#39;</span>
-            <span class="p">)</span>
+<div class="viewcode-block" id="WEELexClassifier.set_params"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.set_params">[docs]</a>    <span class="k">def</span> <span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set parameters for the model by passing keywords and their values.</span>
 
-<div class="viewcode-block" id="WEELexClassifier.set_params"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.set_params">[docs]</a>    <span class="k">def</span> <span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; embeds = {&#39;dog&#39;: [0,0,0], &#39;cat&#39;: [0,0,0]}</span>
+<span class="sd">            &gt;&gt;&gt; model = WEELexClassifier(embeds=embeds, checkterm=&#39;dog&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; model.get_params()[&#39;_n_jobs&#39;]</span>
+<span class="sd">            1</span>
+<span class="sd">            &gt;&gt;&gt; model.set_params(n_jobs=2, min_df=1, n_words=1000)</span>
+<span class="sd">            &gt;&gt;&gt; model.get_params()[&#39;_n_jobs&#39;]</span>
+<span class="sd">            2</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">trainparams</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># CHECKME: check if this is a valid approach</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">trainparams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="n">trainparams</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="n">trainparams</span></div>
 
 <div class="viewcode-block" id="WEELexClassifier.fit"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -180,6 +260,40 @@
         <span class="n">n_best_params</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
         <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model instance by both fitting the tfidf and cluster-tfidf</span>
+<span class="sd">        instances as well as by training the supervised model for word level</span>
+<span class="sd">        embedding classification.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (Union[pd.Series, np.ndarray]): Corpus of training data documents.</span>
+<span class="sd">            lex (Union[lexicon.Lexicon, dict, str]): The dictionary or lexicon</span>
+<span class="sd">                that is used for the main classes of the model.</span>
+<span class="sd">            support_lex (Union[lexicon.Lexicon, dict, str], optional):</span>
+<span class="sd">                Additional lexicon categories and their words. These will not be</span>
+<span class="sd">                among the predicted classes but can improve performance.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            main_keys (Iterable[str], optional): Names of main categories to</span>
+<span class="sd">                predict. Can be used if `lex` contains both main categories and</span>
+<span class="sd">                support categories while `support_lex` is None. Select these</span>
+<span class="sd">                categories as main categories. Defaults to None.</span>
+<span class="sd">            support_keys (Iterable[str], optional): Names of support categories.</span>
+<span class="sd">                 Can be used if `lex` contains both main categories and</span>
+<span class="sd">                support categories while `support_lex` is None. Select these</span>
+<span class="sd">                categories as support categories. Defaults to None.</span>
+<span class="sd">            hp_tuning (bool, optional): Whether hyperparameters shall be tuned.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            n_iter (int, optional): Number of iterations for RandomizedSearchCV</span>
+<span class="sd">                hyperparameter tuning. Defaults to 150.</span>
+<span class="sd">            cv (int, optional): Number of folds for cross validation.</span>
+<span class="sd">                Defaults to 5.</span>
+<span class="sd">            param_grid (dict, optional): Hyperparameter grid for hyperparameter</span>
+<span class="sd">                tuning. Defaults to None.</span>
+<span class="sd">            fixed_params (dict, optional): Hyperparameters required in all</span>
+<span class="sd">                instances. Defaults to None.</span>
+<span class="sd">            n_best_params (int, optional): Number of best performing models to</span>
+<span class="sd">                aggregate. Defaults to 3.</span>
+<span class="sd">            progress_bar (bool, optional): Show progress bar. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span> <span class="o">=</span> <span class="n">lex</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="o">=</span> <span class="n">support_lex</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_predictprocessor</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
@@ -225,14 +339,16 @@
         <span class="n">all_terms</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="o">.</span><span class="n">vocabulary</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_terms</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<div class="viewcode-block" id="WEELexClassifier.save"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the trained model to disk into a compressed archive.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): path to write the model to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_objects_to_dir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;support_lex&quot;</span><span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="c1"># TODO: load support lex</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clean_save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_setup_trainprocessor</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -241,7 +357,7 @@
         <span class="n">main_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">support_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span> <span class="o">=</span> <span class="n">TrainProcessor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trainprocessor</span> <span class="o">=</span> <span class="n">_TrainProcessor</span><span class="p">(</span>
             <span class="n">lex</span><span class="o">=</span><span class="n">lex</span><span class="p">,</span>
             <span class="n">support_lex</span><span class="o">=</span><span class="n">support_lex</span><span class="p">,</span>
             <span class="n">main_keys</span><span class="o">=</span><span class="n">main_keys</span><span class="p">,</span>
@@ -265,7 +381,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">fixed_params_dct</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span>
-            <span class="n">estimator</span><span class="o">=</span><span class="n">ensemble</span><span class="o">.</span><span class="n">AugmentedEnsemble</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">_ensemble</span><span class="o">.</span><span class="n">_AugmentedEnsemble</span><span class="p">(</span>
                 <span class="n">cat</span><span class="p">,</span>
                 <span class="n">categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">,</span>
                 <span class="n">outside_categories</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span><span class="p">,</span>
@@ -373,10 +489,32 @@
         <span class="n">n_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method for binary word level prediction of a set of words.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (pd.DataFrame): Array of input words to predict.</span>
+<span class="sd">            cutoff (float, optional): Predict class 1 if probability &gt; cutoff.</span>
+<span class="sd">                Defaults to 0.5.</span>
+<span class="sd">            n_batches (int, optional): If int is set, the prediction is run</span>
+<span class="sd">                in batches with checkpoints. Defaults to None.</span>
+<span class="sd">            checkpoint_path (str, optional): For checkpointed batch processing,</span>
+<span class="sd">                specify a path for the checkpoints. Defaults to None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: Array with predictions. One column for each category.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">catpreds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba_words</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probas_to_binary</span><span class="p">(</span><span class="n">catpreds</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WEELexClassifier.predict_proba_words"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.predict_proba_words">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba_words</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method for word level prediction of a set of words.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (pd.DataFrame): Array of input words</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, pd.DataFrame]: Array with predicted probabilities.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">catpreds</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span><span class="p">:</span>
             <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span>
@@ -392,10 +530,39 @@
         <span class="n">n_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method for binary document level prediction of a set of documents.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (pd.DataFrame): Array of input documents.</span>
+<span class="sd">            cutoff (float, optional): Predict class if probability &gt; cutoff.</span>
+<span class="sd">                Defaults to 0.5.</span>
+<span class="sd">            n_batches (int, optional): If int is set, the prediction is run</span>
+<span class="sd">                in batches with checkpoints. Defaults to None.</span>
+<span class="sd">            checkpoint_path (str, optional): For checkpointed batch processing,</span>
+<span class="sd">                specify a path for the checkpoints. Defaults to None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: Array with predicted class probabilities. One column</span>
+<span class="sd">                for each category.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba_docs</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probas_to_binary</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WEELexClassifier.predict_proba_docs"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.predict_proba_docs">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method for document level prediction of a set of documents.</span>
+<span class="sd">        Returns predicted probabilities.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (pd.DataFrame): Array of input documents</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotFittedError: When attempting to predict with a model instance</span>
+<span class="sd">                that has not previously been fitted with the .fit() method.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: Array with predicted class probabilities.</span>
+<span class="sd">                One column for each category.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s1">&#39;This </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> instance is not fitted yet. Call &quot;fit&quot; with appropriate arguments before using this estimator.&#39;</span>
@@ -403,22 +570,33 @@
         <span class="n">vects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba_words</span><span class="p">(</span><span class="n">vects</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WEELexClassifier.save"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
-        <span class="c1"># TODO: Expand save() method beyond base class</span>
-
     <span class="c1"># ---------------------------------------------------------------------------</span>
     <span class="c1"># properties</span>
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">main_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">main_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main categories to predict.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: Main categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_keys</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">support_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">support_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provided support categories that are not being predicted.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: Support categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_keys</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List of words that are considered by the model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: Words in the vocabulary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">vocab</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">vocabulary</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">vocab</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_lex</span><span class="o">.</span><span class="n">vocabulary</span>
@@ -427,8 +605,20 @@
     <span class="c1"># ---------------------------------------------------------------------------</span>
     <span class="c1"># classmethods:</span>
 <div class="viewcode-block" id="WEELexClassifier.load"><a class="viewcode-back" href="../../weelex.html#weelex.classifier.WEELexClassifier.load">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div></div>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;WEELexClassifier&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to load a previously saved instance from disk.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Location of saved model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            WEELexClassifier: Previously saved instance of the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">usepath</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_check_zippath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">ZipFile</span><span class="p">(</span><span class="n">usepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">myzip</span><span class="p">:</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">_support_lex</span> <span class="o">=</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;support_lex/&quot;</span><span class="p">,</span> <span class="n">archive</span><span class="o">=</span><span class="n">myzip</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">instance</span></div></div>
 </pre></div>
 
            </div>

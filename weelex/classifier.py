@@ -1,5 +1,9 @@
+"""
+Contains the main Weelex classifier class.
+"""
 from typing import Union, Iterable, Dict, List
 import os
+from zipfile import ZipFile
 
 from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
@@ -10,13 +14,15 @@ from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex import lexicon
 from weelex import embeddings
-from weelex import ensemble
-from weelex import base
-from weelex.trainer import TrainProcessor
+from weelex import _ensemble
+from weelex import _base
+from weelex._trainer import _TrainProcessor
 from weelex.tfidf import BasicTfidf
 
 
-class WEELexClassifier(base.BasePredictor):
+class WEELexClassifier(_base._BasePredictor):
+    """Main Weelex classifier class"""
+
     def __init__(
         self,
         embeds: Union[dict, embeddings.Embeddings],
@@ -44,6 +50,73 @@ class WEELexClassifier(base.BasePredictor):
         n_words: int = 40000,
         **train_params,
     ) -> None:
+        """Class initialization
+
+        Args:
+            embeds (Union[dict, embeddings.Embeddings]): Word to embedding
+                vectors lookup.
+            tfidf (Union[str, BasicTfidf], optional): Tfidf implementation.
+                Can either be a fitted weelex.tfidf.BasicTfidf instance
+                or the path to a saved instance.
+                If None, a new weelex.tfidf.BasicTfidf instance is instantiated
+                and fitted.
+                Defaults to None.
+            ctfidf (Union[str, ClusterTfidfVectorizer], optional): Cluster Tfidf
+                implementation. Can either be a fitted
+                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance or a path
+                to a saved instance. If None, a new
+                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance is
+                instantiated and fitted. Defaults to None.
+            use_ctfidf (bool, optional): Whether to use Cluster Tfidf or not.
+                Defaults to True.
+            word_level_aggregation (bool, optional): Whether the output
+                of document level inputs shall be aggregated on a word level.
+                Defaults to True.
+            test_size (float, optional): Process only random share of data for
+                testing purposes. Defaults to None.
+            random_state (int, optional): Random seed for replicability.
+                Defaults to None.
+            n_jobs (int, optional): Number of parallel processes to use.
+                insert -1 to use all available cores.
+                Defaults to 1.
+            progress_bar (bool, optional): Whether to show a progress bar.
+                Defaults to False.
+            relevant_pos (List[str], optional): Only words with these Part of
+                Speech (PoS) tags will be utilized. Possible values are
+                "ADJ" for adjectives, "ADV" for adverbs, "NOUN" for nouns, and
+                "VERB" for verbs. Defaults to ["ADJ", "ADV", "NOUN", "VERB"].
+            min_df (Union[int, float], optional): Words need to be in at least
+                this many documents to be considered. Defaults to 5.
+            max_df (Union[int, float], optional): Words must be in fewer than
+                these documents to be considered. `int` for the number of
+                documents and `float` for the share of documents.
+                Defaults to 0.95.
+            spacy_model (str, optional): Name of the spacy model used for
+                POS-tagging.
+                See the (spaCy documentation)[https://spacy.io/usage/models] for
+                info on available models. Defaults to "de_core_news_lg".
+            n_docs (int, optional): Number of documents to use for fitting
+                the tfidf and cluster-tfidf instances. Defaults to 2000000.
+            corpus_path (str, optional): Path to the training corpus.
+                Defaults to None.
+            corpus_path_encoding (str, optional): Encoding of training corpus.
+                Defaults to "latin1".
+            load_clustering (bool, optional): Whether or not the clusters
+                shall be loaded. Defaults to False.
+            checkterm (str, optional): Word to validate the embeddings against.
+                Needs to be included among the embedding vectors.
+                Defaults to "Politik".
+            n_top_clusters (int, optional): Number of top clusters or words to
+                be aggregated. Defaults to 3.
+            cluster_share (float, optional): Defaults to 0.2.
+            clustermethod (str, optional): Method for cluster tfidf word
+                clustering. Currently, only {"agglomerative"} are supported.
+                Defaults to "agglomerative".
+            distance_threshold (float, optional): Distance threshold parameter
+                for cluster-tfidf clustering. Defaults to 0.5.
+            n_words (int, optional): Number of words to cluster. More words
+                come with larger memory requirements. Defaults to 40000.
+        """
         super().__init__(
             embeds=embeds,
             tfidf=tfidf,
@@ -69,7 +142,7 @@ class WEELexClassifier(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words,
         )
-        self._model = ensemble.FullEnsemble
+        self._model = _ensemble._FullEnsemble
         self._test_size = test_size
         self._train_params = train_params
 
@@ -83,21 +156,28 @@ class WEELexClassifier(base.BasePredictor):
         self._cv_scores = {}
         self._results = {}
 
-        if self._use_tfidf is False and self._use_ctfidf is False:
-            raise ValueError(
-                'Both "use_tfidf" and "use_tfidf" are set to False. This is currently not implemented.'
-            )
+    def set_params(self, **params) -> None:
+        """Set parameters for the model by passing keywords and their values.
 
-    def set_params(self, **params):
+        Example:
+            >>> embeds = {'dog': [0,0,0], 'cat': [0,0,0]}
+            >>> model = WEELexClassifier(embeds=embeds, checkterm='dog')
+            >>> model.get_params()['_n_jobs']
+            1
+            >>> model.set_params(n_jobs=2, min_df=1, n_words=1000)
+            >>> model.get_params()['_n_jobs']
+            2
+
+        """
         trainparams = {}
         for key, value in params.items():
-            # CHECKME: check if this is a valid approach
             if key in self.__dict__:
-                self.__dict__[key] == value
+                self.__dict__[key] = value
+            elif "_" + key in self.__dict__:
+                self.__dict__["_" + key] = value
             else:
                 trainparams.update({key: value})
         self._train_params = trainparams
-        return self
 
     def fit(
         self,
@@ -114,6 +194,40 @@ class WEELexClassifier(base.BasePredictor):
         n_best_params: int = 3,
         progress_bar: bool = False,
     ) -> None:
+        """Fit the model instance by both fitting the tfidf and cluster-tfidf
+        instances as well as by training the supervised model for word level
+        embedding classification.
+
+        Args:
+            X (Union[pd.Series, np.ndarray]): Corpus of training data documents.
+            lex (Union[lexicon.Lexicon, dict, str]): The dictionary or lexicon
+                that is used for the main classes of the model.
+            support_lex (Union[lexicon.Lexicon, dict, str], optional):
+                Additional lexicon categories and their words. These will not be
+                among the predicted classes but can improve performance.
+                Defaults to None.
+            main_keys (Iterable[str], optional): Names of main categories to
+                predict. Can be used if `lex` contains both main categories and
+                support categories while `support_lex` is None. Select these
+                categories as main categories. Defaults to None.
+            support_keys (Iterable[str], optional): Names of support categories.
+                 Can be used if `lex` contains both main categories and
+                support categories while `support_lex` is None. Select these
+                categories as support categories. Defaults to None.
+            hp_tuning (bool, optional): Whether hyperparameters shall be tuned.
+                Defaults to False.
+            n_iter (int, optional): Number of iterations for RandomizedSearchCV
+                hyperparameter tuning. Defaults to 150.
+            cv (int, optional): Number of folds for cross validation.
+                Defaults to 5.
+            param_grid (dict, optional): Hyperparameter grid for hyperparameter
+                tuning. Defaults to None.
+            fixed_params (dict, optional): Hyperparameters required in all
+                instances. Defaults to None.
+            n_best_params (int, optional): Number of best performing models to
+                aggregate. Defaults to 3.
+            progress_bar (bool, optional): Show progress bar. Defaults to False.
+        """
         self._lex = lex
         self._support_lex = support_lex
         self._fit_predictprocessor(X=X)
@@ -160,13 +274,15 @@ class WEELexClassifier(base.BasePredictor):
         return list(set(all_terms))
 
     def save(self, path) -> None:
-        super().save(path)
+        """Save the trained model to disk into a compressed archive.
+
+        Args:
+            path (str): path to write the model to.
+        """
+        self._save_objects_to_dir(path)
         if self._support_lex is not None:
             self._support_lex.save(os.path.join(path, "support_lex"))
-
-    def load(self, path) -> None:
-        super().load(path)
-        # TODO: load support lex
+        self._clean_save(path)
 
     def _setup_trainprocessor(
         self,
@@ -175,7 +291,7 @@ class WEELexClassifier(base.BasePredictor):
         main_keys: Iterable[str] = None,
         support_keys: Iterable[str] = None,
     ) -> None:
-        self._trainprocessor = TrainProcessor(
+        self._trainprocessor = _TrainProcessor(
             lex=lex,
             support_lex=support_lex,
             main_keys=main_keys,
@@ -199,7 +315,7 @@ class WEELexClassifier(base.BasePredictor):
         else:
             fixed_params_dct = {}
         search = RandomizedSearchCV(
-            estimator=ensemble.AugmentedEnsemble(
+            estimator=_ensemble._AugmentedEnsemble(
                 cat,
                 categories=self._main_keys,
                 outside_categories=self._support_keys,
@@ -307,10 +423,32 @@ class WEELexClassifier(base.BasePredictor):
         n_batches: int = None,
         checkpoint_path: str = None,
     ) -> pd.DataFrame:
+        """Method for binary word level prediction of a set of words.
+
+        Args:
+            X (pd.DataFrame): Array of input words to predict.
+            cutoff (float, optional): Predict class 1 if probability > cutoff.
+                Defaults to 0.5.
+            n_batches (int, optional): If int is set, the prediction is run
+                in batches with checkpoints. Defaults to None.
+            checkpoint_path (str, optional): For checkpointed batch processing,
+                specify a path for the checkpoints. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Array with predictions. One column for each category.
+        """
         catpreds = self.predict_proba_words(X=X)
         return self._probas_to_binary(catpreds, cutoff=cutoff)
 
     def predict_proba_words(self, X: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+        """Method for word level prediction of a set of words.
+
+        Args:
+            X (pd.DataFrame): Array of input words
+
+        Returns:
+            Dict[str, pd.DataFrame]: Array with predicted probabilities.
+        """
         catpreds = {}
         for cat in self._main_keys:
             model = self._models[cat]
@@ -326,10 +464,39 @@ class WEELexClassifier(base.BasePredictor):
         n_batches: int = None,
         checkpoint_path: str = None,
     ) -> pd.DataFrame:
+        """Method for binary document level prediction of a set of documents.
+
+        Args:
+            X (pd.DataFrame): Array of input documents.
+            cutoff (float, optional): Predict class if probability > cutoff.
+                Defaults to 0.5.
+            n_batches (int, optional): If int is set, the prediction is run
+                in batches with checkpoints. Defaults to None.
+            checkpoint_path (str, optional): For checkpointed batch processing,
+                specify a path for the checkpoints. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Array with predicted class probabilities. One column
+                for each category.
+        """
         preds = self.predict_proba_docs(X=X)
         return self._probas_to_binary(preds, cutoff=cutoff)
 
     def predict_proba_docs(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Method for document level prediction of a set of documents.
+        Returns predicted probabilities.
+
+        Args:
+            X (pd.DataFrame): Array of input documents
+
+        Raises:
+            NotFittedError: When attempting to predict with a model instance
+                that has not previously been fitted with the .fit() method.
+
+        Returns:
+            pd.DataFrame: Array with predicted class probabilities.
+                One column for each category.
+        """
         if self._is_fit is False:
             raise NotFittedError(
                 f'This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
@@ -337,22 +504,33 @@ class WEELexClassifier(base.BasePredictor):
         vects = self._predictprocessor.transform(X)
         return self.predict_proba_words(vects)
 
-    def save(self, path):
-        super().save(path)
-        # TODO: Expand save() method beyond base class
-
     # ---------------------------------------------------------------------------
     # properties
     @property
-    def main_keys(self) -> list:
+    def main_keys(self) -> List[str]:
+        """Main categories to predict.
+
+        Returns:
+            List[str]: Main categories
+        """
         return self._main_keys
 
     @property
-    def support_keys(self) -> list:
+    def support_keys(self) -> List[str]:
+        """Provided support categories that are not being predicted.
+
+        Returns:
+            List[str]: Support categories
+        """
         return self._support_keys
 
     @property
-    def vocabulary(self):
+    def vocabulary(self) -> List[str]:
+        """List of words that are considered by the model.
+
+        Returns:
+            List[str]: Words in the vocabulary.
+        """
         vocab = super().vocabulary
         if self._support_lex is not None:
             vocab += self._support_lex.vocabulary
@@ -361,5 +539,17 @@ class WEELexClassifier(base.BasePredictor):
     # ---------------------------------------------------------------------------
     # classmethods:
     @classmethod
-    def load(cls, path):
-        return super().load(path)
+    def load(cls, path: str) -> "WEELexClassifier":
+        """Method to load a previously saved instance from disk.
+
+        Args:
+            path (str): Location of saved model.
+
+        Returns:
+            WEELexClassifier: Previously saved instance of the model.
+        """
+        instance = super().load(path)
+        usepath = cls._check_zippath(path)
+        with ZipFile(usepath) as myzip:
+            instance._support_lex = lexicon.load(path="support_lex/", archive=myzip)
+        return instance

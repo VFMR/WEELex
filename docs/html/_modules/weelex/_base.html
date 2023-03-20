@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weelex._base &mdash; Weelex 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Weelex
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Weelex</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">weelex._base</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for weelex._base</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Contains the base prediction class which is inherited by</span>
+<span class="sd">the both the weelex and lsx classifiers.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">zipfile</span> <span class="kn">import</span> <span class="n">ZipFile</span>
+<span class="kn">import</span> <span class="nn">joblib</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.exceptions</span> <span class="kn">import</span> <span class="n">NotFittedError</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">import</span> <span class="nn">spacy</span>
+<span class="kn">import</span> <span class="nn">batchprocessing</span>
+<span class="kn">from</span> <span class="nn">cluster_tfidf.ctfidf</span> <span class="kn">import</span> <span class="n">ClusterTfidfVectorizer</span>
+
+<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">lexicon</span>
+<span class="kn">from</span> <span class="nn">weelex</span> <span class="kn">import</span> <span class="n">embeddings</span>
+<span class="kn">from</span> <span class="nn">weelex.tfidf</span> <span class="kn">import</span> <span class="n">BasicTfidf</span>
+<span class="kn">from</span> <span class="nn">weelex._predictor</span> <span class="kn">import</span> <span class="n">_PredictionProcessor</span>
+
+
+<span class="k">class</span> <span class="nc">_BasePredictor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base prediction class with methods for both the weelex and lsx</span>
+<span class="sd">    classifiers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">embeds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">],</span>
+        <span class="n">tfidf</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BasicTfidf</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ctfidf</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ClusterTfidfVectorizer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_tfidf</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_ctfidf</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">word_level_aggregation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">relevant_pos</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ADJ&quot;</span><span class="p">,</span> <span class="s2">&quot;ADV&quot;</span><span class="p">,</span> <span class="s2">&quot;NOUN&quot;</span><span class="p">,</span> <span class="s2">&quot;VERB&quot;</span><span class="p">],</span>
+        <span class="n">min_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">max_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">spacy_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;de_core_news_lg&quot;</span><span class="p">,</span>
+        <span class="n">n_docs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000000</span><span class="p">,</span>
+        <span class="n">corpus_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># TODO: Check if really needed in ctfidf</span>
+        <span class="n">corpus_path_encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;latin1&quot;</span><span class="p">,</span>  <span class="c1"># TODO: Check if needed in ctfidf</span>
+        <span class="n">load_clustering</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># CHECKME: Check what this is doing</span>
+        <span class="n">checkterm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Politik&quot;</span><span class="p">,</span>
+        <span class="n">n_top_clusters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">cluster_share</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">clustermethod</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;agglomerative&quot;</span><span class="p">,</span>
+        <span class="n">distance_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">n_words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40000</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization for the class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            embeds (Union[dict, embeddings.Embeddings]): Word to embedding</span>
+<span class="sd">                vectors lookup.</span>
+<span class="sd">            tfidf (Union[str, BasicTfidf], optional): Tfidf implementation.</span>
+<span class="sd">                Can either be a fitted weelex.tfidf.BasicTfidf instance</span>
+<span class="sd">                or the path to a saved instance.</span>
+<span class="sd">                If None, a new weelex.tfidf.BasicTfidf instance is instantiated</span>
+<span class="sd">                and fitted.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            ctfidf (Union[str, ClusterTfidfVectorizer], optional): Cluster Tfidf</span>
+<span class="sd">                implementation. Can either be a fitted</span>
+<span class="sd">                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance or a path</span>
+<span class="sd">                to a saved instance. If None, a new</span>
+<span class="sd">                cluster_tfidf.ctfidf.ClusterTfidfVectorizer instance is</span>
+<span class="sd">                instantiated and fitted. Defaults to None.</span>
+<span class="sd">            use_tfidf (bool, optional): Whehter to use tfidf or not.</span>
+<span class="sd">                Defaults to True.</span>
+<span class="sd">            use_ctfidf (bool, optional): Whether to use Cluster Tfidf or not.</span>
+<span class="sd">                Defaults to True.</span>
+<span class="sd">            word_level_aggregation (bool, optional): Whether the output</span>
+<span class="sd">                of document level inputs shall be aggregated on a word level.</span>
+<span class="sd">                Defaults to True.</span>
+<span class="sd">            random_state (int, optional): Random seed for replicability.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            n_jobs (int, optional): Number of parallel processes to use.</span>
+<span class="sd">                insert -1 to use all available cores.</span>
+<span class="sd">                Defaults to 1.</span>
+<span class="sd">            progress_bar (bool, optional): Whether to show a progress bar.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            relevant_pos (List[str], optional): Only words with these Part of</span>
+<span class="sd">                Speech (PoS) tags will be utilized. Possible values are</span>
+<span class="sd">                &quot;ADJ&quot; for adjectives, &quot;ADV&quot; for adverbs, &quot;NOUN&quot; for nouns, and</span>
+<span class="sd">                &quot;VERB&quot; for verbs. Defaults to [&quot;ADJ&quot;, &quot;ADV&quot;, &quot;NOUN&quot;, &quot;VERB&quot;].</span>
+<span class="sd">            min_df (Union[int, float], optional): Words need to be in at least</span>
+<span class="sd">                this many documents to be considered. Defaults to 5.</span>
+<span class="sd">            max_df (Union[int, float], optional): Words must be in fewer than</span>
+<span class="sd">                these documents to be considered. `int` for the number of</span>
+<span class="sd">                documents and `float` for the share of documents.</span>
+<span class="sd">                Defaults to 0.95.</span>
+<span class="sd">            spacy_model (str, optional): Name of the spacy model used for</span>
+<span class="sd">                POS-tagging.</span>
+<span class="sd">                See the (spaCy documentation)[https://spacy.io/usage/models] for</span>
+<span class="sd">                info on available models. Defaults to &quot;de_core_news_lg&quot;.</span>
+<span class="sd">            n_docs (int, optional): Number of documents to use for fitting</span>
+<span class="sd">                the tfidf and cluster-tfidf instances. Defaults to 2000000.</span>
+<span class="sd">            corpus_path (str, optional): Path to the training corpus.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            corpus_path_encoding (str, optional): Encoding of training corpus.</span>
+<span class="sd">                Defaults to &quot;latin1&quot;.</span>
+<span class="sd">            load_clustering (bool, optional): Whether or not the clusters</span>
+<span class="sd">                shall be loaded. Defaults to False.</span>
+<span class="sd">            checkterm (str, optional): Word to validate the embeddings against.</span>
+<span class="sd">                Needs to be included among the embedding vectors.</span>
+<span class="sd">                Defaults to &quot;Politik&quot;.</span>
+<span class="sd">            n_top_clusters (int, optional): Number of top clusters or words to</span>
+<span class="sd">                be aggregated. Defaults to 3.</span>
+<span class="sd">            cluster_share (float, optional): Defaults to 0.2.</span>
+<span class="sd">            clustermethod (str, optional): Method for cluster tfidf word</span>
+<span class="sd">                clustering. Currently, only {&quot;agglomerative&quot;} are supported.</span>
+<span class="sd">                Defaults to &quot;agglomerative&quot;.</span>
+<span class="sd">            distance_threshold (float, optional): Distance threshold parameter</span>
+<span class="sd">                for cluster-tfidf clustering. Defaults to 0.5.</span>
+<span class="sd">            n_words (int, optional): Number of words to cluster. More words</span>
+<span class="sd">                come with larger memory requirements. Defaults to 40000.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If both use_tfidf and use_ctfidf are set to False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_embeddings</span><span class="p">(</span><span class="n">embeds</span><span class="p">,</span> <span class="n">checkterm</span><span class="o">=</span><span class="n">checkterm</span><span class="p">)</span>
+        <span class="c1"># self._model = ensemble.FullEnsemble</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_progress_bar</span> <span class="o">=</span> <span class="n">progress_bar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tfidf</span> <span class="o">=</span> <span class="n">tfidf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ctfidf</span> <span class="o">=</span> <span class="n">ctfidf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_tfidf</span> <span class="o">=</span> <span class="n">use_tfidf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span> <span class="o">=</span> <span class="n">use_ctfidf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_word_level_aggregation</span> <span class="o">=</span> <span class="n">word_level_aggregation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_relevant_pos</span> <span class="o">=</span> <span class="n">relevant_pos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_df</span> <span class="o">=</span> <span class="n">min_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_df</span> <span class="o">=</span> <span class="n">max_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span> <span class="o">=</span> <span class="n">spacy_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_docs</span> <span class="o">=</span> <span class="n">n_docs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path</span> <span class="o">=</span> <span class="n">corpus_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path_encoding</span> <span class="o">=</span> <span class="n">corpus_path_encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_clustering</span> <span class="o">=</span> <span class="n">load_clustering</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkterm</span> <span class="o">=</span> <span class="n">checkterm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_top_clusters</span> <span class="o">=</span> <span class="n">n_top_clusters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cluster_share</span> <span class="o">=</span> <span class="n">cluster_share</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clustermethod</span> <span class="o">=</span> <span class="n">clustermethod</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_distance_threshold</span> <span class="o">=</span> <span class="n">distance_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_words</span> <span class="o">=</span> <span class="n">n_words</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_tfidf</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Both &quot;use_tfidf&quot; and &quot;use_ctfidf&quot; are set to False.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># initialize properties:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scaler</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># load spacy or download alternatively:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloading spacy model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">spacy</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span><span class="p">)</span>
+            <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the parameters for the instance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: Set of parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span>
+
+    <span class="k">def</span> <span class="nf">_setup_predictprocessor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span> <span class="o">=</span> <span class="n">_PredictionProcessor</span><span class="p">(</span>
+            <span class="n">embeddings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="p">,</span>
+            <span class="n">tfidf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tfidf</span><span class="p">,</span>
+            <span class="n">ctfidf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ctfidf</span><span class="p">,</span>
+            <span class="n">use_tfidf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_use_tfidf</span><span class="p">,</span>
+            <span class="n">use_ctfidf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span><span class="p">,</span>
+            <span class="n">aggregate_word_level</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_word_level_aggregation</span><span class="p">,</span>
+            <span class="n">relevant_pos</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_relevant_pos</span><span class="p">,</span>
+            <span class="n">min_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_df</span><span class="p">,</span>
+            <span class="n">max_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_df</span><span class="p">,</span>
+            <span class="n">spacy_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span><span class="p">,</span>
+            <span class="n">n_docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_docs</span><span class="p">,</span>
+            <span class="n">corpus_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path</span><span class="p">,</span>
+            <span class="n">corpus_path_encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path_encoding</span><span class="p">,</span>
+            <span class="n">load_clustering</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_load_clustering</span><span class="p">,</span>
+            <span class="n">checkterm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_checkterm</span><span class="p">,</span>
+            <span class="n">n_top_clusters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_top_clusters</span><span class="p">,</span>
+            <span class="n">cluster_share</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cluster_share</span><span class="p">,</span>
+            <span class="n">clustermethod</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_clustermethod</span><span class="p">,</span>
+            <span class="n">distance_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_distance_threshold</span><span class="p">,</span>
+            <span class="n">n_words</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_words</span><span class="p">,</span>
+            <span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_predictprocessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zip_archive</span><span class="p">):</span>
+        <span class="c1"># self._predictprocessor = _PredictionProcessor(</span>
+        <span class="c1">#     embeddings=self._embeddings</span>
+        <span class="c1"># )</span>
+        <span class="c1"># self._predictprocessor.load(os.path.join(path, &#39;predictprocessor&#39;))</span>
+        <span class="c1"># # HACK: setting the private _embeddings property is not optimal</span>
+        <span class="c1"># self._predictprocessor._embeddings = self._embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span> <span class="o">=</span> <span class="n">_PredictionProcessor</span><span class="o">.</span><span class="n">load_from_weelexarchive</span><span class="p">(</span>
+            <span class="n">zip_archive</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">fit_tfidf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to fit the tfidf instance given a training corpus.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (Union[np.ndarray, pd.Series]): Corpus with training documents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span><span class="o">.</span><span class="n">fit_tfidf</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">fit_ctfidf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to fit the cluster-tfidf instance given a training corpus.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (Union[np.ndarray, pd.Series]): Corpus with training documents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span><span class="o">.</span><span class="n">fit_ctfidf</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_fit_predictprocessor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup_predictprocessor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">keepwords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_lex</span><span class="o">.</span><span class="n">vocabulary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the trained model to disk into a compressed archive.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): path to write the model to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_objects_to_dir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clean_save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_save_objects_to_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="c1"># TODO: directly write into zip archive instead of rmtree()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&quot;&quot;This </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> instance is not fitted yet.</span>
+<span class="s2">                Call &quot;fit&quot; with appropriate arguments before using_</span>
+<span class="s2">                this estimator.&quot;&quot;&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictprocessor</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;predictprocessor&quot;</span><span class="p">))</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_properties</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;properties.json&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">properties</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="c1"># filter embeddings if not done already and save the relevant vectors</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="o">.</span><span class="n">isfiltered</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="o">.</span><span class="n">filter_terms</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_full_vocab</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="o">.</span><span class="n">save_filtered</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;embeddings&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;lex&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">joblib</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scaler</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;scaler.joblib&quot;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_clean_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="c1"># archiving the created folder</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">make_archive</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;.weelex&quot;</span><span class="p">,</span> <span class="s2">&quot;zip&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_full_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">all_words</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">all_words</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lex</span><span class="o">.</span><span class="n">vocabulary</span>
+        <span class="n">all_words</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tfidf</span><span class="o">.</span><span class="n">vocabulary_</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_words</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_get_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">&quot;use_ctfidf&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span><span class="p">,</span>
+            <span class="s2">&quot;random_state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">,</span>
+            <span class="s2">&quot;progress_bar&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_progress_bar</span><span class="p">,</span>
+            <span class="s2">&quot;relevant_pos&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_relevant_pos</span><span class="p">,</span>
+            <span class="s2">&quot;min_df&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_df</span><span class="p">,</span>
+            <span class="s2">&quot;max_df&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_df</span><span class="p">,</span>
+            <span class="s2">&quot;spacy_model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span><span class="p">,</span>
+            <span class="s2">&quot;n_docs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_docs</span><span class="p">,</span>
+            <span class="s2">&quot;corpus_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path</span><span class="p">,</span>
+            <span class="s2">&quot;corpus_path_encoding&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path_encoding</span><span class="p">,</span>
+            <span class="s2">&quot;load_clustering&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_clustering</span><span class="p">,</span>
+            <span class="s2">&quot;checkterm&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkterm</span><span class="p">,</span>
+            <span class="s2">&quot;n_top_clusters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_top_clusters</span><span class="p">,</span>
+            <span class="s2">&quot;cluster_share&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cluster_share</span><span class="p">,</span>
+            <span class="s2">&quot;clustermethod&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clustermethod</span><span class="p">,</span>
+            <span class="s2">&quot;distance_threshold&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance_threshold</span><span class="p">,</span>
+            <span class="s2">&quot;n_words&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_words</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">properties</span>
+
+    <span class="k">def</span> <span class="nf">_set_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_ctfidf</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;use_ctfidf&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_progress_bar</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;progress_bar&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_relevant_pos</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;relevant_pos&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_df</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;min_df&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_df</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;max_df&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spacy_model</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;spacy_model&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_docs</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;n_docs&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;corpus_path&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corpus_path_encoding</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;corpus_path_encoding&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_clustering</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;load_clustering&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkterm</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;checkterm&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_top_clusters</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;n_top_clusters&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cluster_share</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;cluster_share&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clustermethod</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;clustermethod&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_distance_threshold</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;distance_threshold&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_words</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;n_words&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_set_progress_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_progress_bar</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tqdm</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emptyfunc</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_emptyfunc</span><span class="p">(</span><span class="n">array</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">array</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_make_embeddings</span><span class="p">(</span>
+        <span class="n">embeds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="n">checkterm</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">embeds</span><span class="p">,</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">):</span>
+            <span class="n">my_embeds</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="p">(</span>
+                <span class="n">embedding_dict</span><span class="o">=</span><span class="n">embeds</span><span class="p">,</span> <span class="n">testvalue</span><span class="o">=</span><span class="n">checkterm</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">my_embeds</span> <span class="o">=</span> <span class="n">embeds</span>
+        <span class="k">return</span> <span class="n">my_embeds</span>
+
+    <span class="k">def</span> <span class="nf">_filter_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_full_vocab</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="o">.</span><span class="n">filter_terms</span><span class="p">(</span><span class="n">vocab</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_zippath</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.weelex.zip&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.weelex&quot;</span><span class="p">):</span>
+                <span class="n">usepath</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;.zip&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">usepath</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot;.weelex.zip&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">usepath</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="k">return</span> <span class="n">usepath</span>
+
+    <span class="c1"># ---------------------------------------------------------------------------</span>
+    <span class="c1"># properties:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List of words that are considered by the model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: Words in the vocabulary.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lex</span><span class="o">.</span><span class="n">vocabulary</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tfidf</span><span class="o">.</span><span class="n">vocabulary_</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">embedding_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dimensionality of the embedding vectors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Number of dimensions.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embeddings</span><span class="o">.</span><span class="n">dim</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tells whether the model has been fitted already</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Model is fitted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_fit</span>
+
+    <span class="c1"># ---------------------------------------------------------------------------</span>
+    <span class="c1"># classmethods:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;_BasePredictor&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to load a previously saved instance from disk.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Location of saved model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            _BasePredictor: previously saved instance of the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">embeds</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">usepath</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_check_zippath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">ZipFile</span><span class="p">(</span><span class="n">usepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">myzip</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">myzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;properties.json&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">properties</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">_set_properties</span><span class="p">(</span><span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">myzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;embeddings.npz&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">instance</span><span class="o">.</span><span class="n">_embeddings</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">Embeddings</span><span class="o">.</span><span class="n">load_filtered</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">_load_predictprocessor</span><span class="p">(</span><span class="n">myzip</span><span class="p">)</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">_lex</span> <span class="o">=</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;lex/&quot;</span><span class="p">,</span> <span class="n">archive</span><span class="o">=</span><span class="n">myzip</span><span class="p">)</span>
+
+        <span class="n">instance</span><span class="o">.</span><span class="n">_is_fit</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">instance</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, VFMR.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

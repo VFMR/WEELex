@@ -1,5 +1,7 @@
+"""Contains the class for lexica.
+"""
 from dataclasses import dataclass
-from typing import Union, Iterable, Tuple, Dict
+from typing import Union, Iterable, Tuple, Dict, List
 import os
 import json
 import copy
@@ -10,14 +12,34 @@ import numpy as np
 
 
 @dataclass
-class BaseLexicon:
+class _BaseLexicon:
+    """Base class for lexica."""
+
     # TODO: Allow for train_test_split to work
     def __init__(
         self,
         dictionary: Union[dict, str, pd.DataFrame],
         sep: str = None,
         encoding: str = None,
-    ):
+    ) -> None:
+        """
+        Args:
+            dictionary (Union[Dict[str, List[str]], str, pd.DataFrame]):
+                The lexicon to load.
+                can be a dictionary of type {'category': [word1, word2]},
+                a pandas.DataFrame with one column for each category or the
+                path to a csv or excel table with one column for each category
+                and words in rows.
+            sep (str, optional): Separator for the file in case the value for
+                `dictionary` is the path to a file. Defaults to None.
+            encoding (str, optional): Encoding of a file in case the value for
+                `dictionary` is the path to a file. Defaults to None.
+
+        Example:
+            >>> dct = {'animals': ['dog', 'cat'], 'food': ['bread', 'cake']}
+            >>> mylex = _BaseLexicon(dictionary=dct)  # doctest: +SKIP
+            ...
+        """
         self._embeddings = None
         if dictionary is not None:
             self._dictionary_df = self._build_dictionary(dictionary, sep, encoding)
@@ -28,6 +50,15 @@ class BaseLexicon:
         return obj
 
     def copy(self):
+        """Copy the Lexicon
+
+        Example:
+            >>> dct = {'animals': ['dog', 'cat'], 'food': ['bread', 'cake']}
+            >>> mylex = _BaseLexicon(dictionary=dct)
+            >>> mylex_copy = mylex.copy()
+            >>> mylex.keys
+            ['animals', 'food']
+        """
         obj = copy.copy(self)
         return obj
 
@@ -50,7 +81,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = BaseLexicon(my_dct)
+            >>> l = _BaseLexicon(my_dct)
             >>> l._build_dictionary(my_dct)
                A  B
             0  a  c
@@ -85,7 +116,7 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['Test*', 'Te*st', '*test'])
-            >>> BaseLexicon._clean_strings(array)
+            >>> _BaseLexicon._clean_strings(array)
             0    Test
             1    Test
             2    test
@@ -114,7 +145,7 @@ class BaseLexicon:
 
         Example:
             >>> array = pd.Series(['one', 'two', 'three', np.nan, np.nan])
-            >>> BaseLexicon._nonmissarray(array)
+            >>> _BaseLexicon._nonmissarray(array)
             0      one
             1      two
             2    three
@@ -130,6 +161,12 @@ class BaseLexicon:
         return nonmiss
 
     def embed(self, embeddings) -> None:
+        """Retrieve embedding vectors for each of the words in the dictionary.
+
+        Args:
+            embeddings (embeddings.Embeddings):
+                weelex.embeddings.Embeddings instance.
+        """
         dict_df_shape = self._dictionary_df.shape
         embedding_tensor = np.zeros(
             shape=(dict_df_shape[0], dict_df_shape[1], embeddings.dim)
@@ -145,7 +182,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'Food': ['Bread', 'Salad'], 'Animal': ['Dog', 'Cat']}
-            >>> l = BaseLexicon(my_dct)
+            >>> l = _BaseLexicon(my_dct)
             >>> l.get_vocabulary()
             ['Bread', 'Cat', 'Dog', 'Salad']
 
@@ -168,7 +205,7 @@ class BaseLexicon:
 
         Example:
             >>> my_dct = {'A': ['a', 'b'], 'B': ['c', 'd']}
-            >>> l = BaseLexicon(my_dct)
+            >>> l = _BaseLexicon(my_dct)
             >>> l.to_dict()
             {'A': ['a', 'b'], 'B': ['c', 'd']}
 
@@ -185,7 +222,7 @@ class BaseLexicon:
         return properties
 
     def save(self, path: str) -> None:
-        """Save lexicon to disk
+        """Save lexicon to disk.
 
         Args:
             path (str): Output file path
@@ -203,23 +240,44 @@ class BaseLexicon:
     # ------------------------------- Properties
 
     @property
-    def keys(self):
+    def keys(self) -> List[str]:
+        """Dictionary categories
+
+        Returns:
+            List[str]: Iterable with categories
+        """
         return list(self._dictionary_df.columns)
 
     @property
-    def embedding_shape(self):
+    def embedding_shape(self) -> Tuple[int, int]:
+        """
+        Returns:
+            Tuple[int, int]: Shape of the embedding matrix.
+        """
         return self._embeddings.shape
 
     @property
     def embeddings(self):
+        """
+        Returns:
+            embeddings.Embeddings: Embeddings object
+        """
         return self._embeddings
 
     @property
     def vocabulary(self) -> list:
+        """
+        Returns:
+            list: Words in the dictionary
+        """
         return self.get_vocabulary()
 
     @property
     def is_embedded(self) -> bool:
+        """
+        Returns:
+            bool: Tells whether the embedding vectors of the words have been looked up.
+        """
         return self._embeddings is not None
 
     # ------------------------------ Class methods
@@ -230,6 +288,9 @@ class BaseLexicon:
 
         Args:
             path (str): Path of saved Lexicon instance
+            properties (dict, optional): properties can be passed directly.
+                Defaults to None.
+            archive (ZipFile, optional): If lexicon is stored in zip archive.
         """
         if properties is None:
             if archive is None:
@@ -264,13 +325,35 @@ class BaseLexicon:
         return instance
 
 
-class WeightedLexicon(BaseLexicon):
+class WeightedLexicon(_BaseLexicon):
+    """Class for dictionaries with a polarity score."""
+
     def __init__(
         self,
         dictionary: Union[dict, str, pd.DataFrame],
         sep: str = None,
         encoding: str = None,
     ) -> None:
+        """
+        Args:
+            dictionary (Union[Dict[Union[str, int], Union[str, float]], str, pd.DataFrame]):
+                The lexicon to load.
+                can be a dictionary of type
+                {'words': [word1, word2], 'score': [score1, score2]},
+                a pandas.DataFrame with one column for the words and another
+                for the scores or the
+                path to a csv or excel table with one column containing words
+                and another column containing their respective scores.
+            sep (str, optional): Separator for the file in case the value for
+                `dictionary` is the path to a file. Defaults to None.
+            encoding (str, optional): Encoding of a file in case the value for
+                `dictionary` is the path to a file. Defaults to None.
+
+        Example:
+            >>> my_dct = {0: ['a', 'b'], 1: [0.1, 0.2]}
+            >>> my_lex = WeightedLexicon(dictionary=my_dct)  # doctest: +SKIP
+            ...
+        """
         super().__init__(dictionary=dictionary, sep=sep, encoding=encoding)
         if dictionary is not None:
             df, weights = self._build_weighted_dictionary(self._dictionary_df)
@@ -359,9 +442,26 @@ class WeightedLexicon(BaseLexicon):
         return self._word2weight[word]
 
     def to_dict(self) -> Dict[str, Union[float, int]]:
+        """Retrieve the Lexicon as a dictionary
+
+        Example:
+            >>> my_dct = pd.DataFrame({0: ['a', 'b'], 1: [0.1, 0.2]})
+            >>> my_lex = WeightedLexicon(my_dct)
+            >>> my_lex.to_dict()
+            {'a': 0.1, 'b': 0.2}
+
+        Returns:
+            Dict[str, Union[float, int]]: Word-weight mapping
+        """
         return self._word2weight
 
     def embed(self, embeddings) -> None:
+        """Retrieve embedding vectors for each of the words in the dictionary.
+
+        Args:
+            embeddings (embeddings.Embeddings):
+                weelex.embeddings.Embeddings instance.
+        """
         super().embed(embeddings)
         self._embeddings = self._embeddings[:, 0, :]
 
@@ -371,6 +471,11 @@ class WeightedLexicon(BaseLexicon):
         return properties
 
     def save(self, path):
+        """Save lexicon to disk.
+
+        Args:
+            path (str): Output file path
+        """
         super().save(path)
         self._weights.to_csv(
             os.path.join(path, "weights.csv.gz"), compression="gzip", index=False
@@ -379,11 +484,19 @@ class WeightedLexicon(BaseLexicon):
     # ---------------------------------------------------------------------------
     # Properties:
     @property
-    def weights(self):
+    def weights(self) -> np.ndarray:
+        """
+        Returns:
+            numpy.ndarray: Array containing the weights of each word.
+        """
         return self._weights
 
     @property
     def vocabulary(self) -> list:
+        """
+        Returns:
+            list: Words in the dictionary
+        """
         # overwrite such that order is unchanged
         return list(self._dictionary_df.iloc[:, 0])
 
@@ -391,6 +504,14 @@ class WeightedLexicon(BaseLexicon):
     # Classmethods:
     @classmethod
     def load(cls, path, properties, archive: ZipFile = None):
+        """Load a previously saved Lexicon instance
+
+        Args:
+            path (str): Path of saved Lexicon instance
+            properties (dict, optional): properties can be passed directly.
+                Defaults to None.
+            archive (ZipFile, optional): If lexicon is stored in zip archive.
+        """
         instance = super().load(path, properties, archive=archive)
         if archive is None:
             weights = pd.read_csv(os.path.join(path, "weights.csv.gz")).iloc[:, 0]
@@ -407,14 +528,8 @@ class WeightedLexicon(BaseLexicon):
         return instance
 
 
-class Lexicon(BaseLexicon):
-    def __init__(
-        self,
-        dictionary: Union[dict, str, pd.DataFrame],
-        sep: str = None,
-        encoding: str = None,
-    ):
-        super().__init__(dictionary=dictionary, sep=sep, encoding=encoding)
+class Lexicon(_BaseLexicon):
+    """Class for the regular lexicon."""
 
     def __getitem__(self, key: str) -> pd.Series:
         """getter for simple data retrieval
@@ -469,9 +584,37 @@ class Lexicon(BaseLexicon):
 
     def merge(
         self,
-        lexica: Union["BaseLexicon", Iterable["BaseLexicon"]],
+        lexica: Union["Lexicon", Iterable["Lexicon"]],
         inplace: bool = True,
     ) -> None:
+        """Merge one or more other lexicon instances to this one.
+        Currently only supports to add categories from another instance
+        but does not allow to merge different words from the same categories.
+
+        Args:
+            lexica (Union[Lexicon, Iterable[Lexicon]]): Other lexica to
+                include in this one.
+            inplace (bool, optional): If True, nothing is returned and the
+                other lexica are included in the instance.
+                If False, a new instance is returned with all categories.
+                Defaults to True.
+
+        Example:
+            >>> my_lex1 = Lexicon({'animals': ['cat', 'dog']})
+            >>> my_lex2 = Lexicon({'food': ['bread', 'cake']})
+            >>> my_lex1.merge(my_lex2, inplace=True)
+            >>> my_lex1.keys
+            ['animals', 'food']
+
+            >>> my_lex1 = Lexicon({'animals': ['cat', 'dog']})
+            >>> my_lex2 = Lexicon({'food': ['bread', 'cake']})
+            >>> my_lex1.merge(my_lex2, inplace=False)
+              animals   food
+            0     cat  bread
+            1     dog   cake
+            >>> my_lex1.keys
+            ['animals']
+        """
         if inplace:
             obj = self
         else:
@@ -486,7 +629,7 @@ class Lexicon(BaseLexicon):
         if not inplace:
             return obj
 
-    def _merge_one(self, lex: "BaseLexicon") -> None:
+    def _merge_one(self, lex: "_BaseLexicon") -> None:
         old_dct = self._dictionary_df.copy()
         old_keys = old_dct.keys()
         new_keys = lex.keys
@@ -557,6 +700,28 @@ def _list_padding(lst: list, maxlen: int, filler=np.nan) -> list:
 
 
 def merge_lexica(lexica: Iterable[Lexicon]) -> Lexicon:
+    """Combine multiple lexica into one.
+
+    Args:
+        lexica (Iterable[Lexicon]):
+            The lexica that shall be combined.
+
+    Example:
+        >>> my_dct1 = {'animals': ['dog', 'cat']}
+        >>> my_lex1 = Lexicon(my_dct1)
+        >>> my_lex1.keys
+        ['animals']
+        >>> my_dct2 = {'food': ['bread', 'cake']}
+        >>> my_lex2 = Lexicon(my_dct2)
+        >>> my_lex2.keys
+        ['food']
+        >>> combined_lex = merge_lexica([my_lex1, my_lex2])
+        >>> combined_lex.keys
+        ['animals', 'food']
+
+    Returns:
+        Lexicon: Combined lexicon.
+    """
     lex1 = lexica[0]
     if len(lexica) > 1:
         for lex in lexica[1:]:
@@ -567,7 +732,16 @@ def merge_lexica(lexica: Iterable[Lexicon]) -> Lexicon:
 def load(
     path: str,
     archive: ZipFile = None,
-) -> Union["BaseLexicon", "WeightedLexicon", "Lexicon"]:
+) -> Union[_BaseLexicon, WeightedLexicon, Lexicon]:
+    """Load a previously saved Lexicon instance
+
+    Args:
+        path (str): Path of saved Lexicon instance
+        archive (ZipFile, optional): If lexicon is stored in zip archive.
+
+    Returns:
+        Union[_BaseLexicon, WeightedLexicon, Lexicon]: previously saved instance
+    """
     if archive is None:
         with open(os.path.join(path, "properties.json"), "r") as f:
             properties = json.load(f)
@@ -580,8 +754,8 @@ def load(
             properties = json.load(f)
 
     propertyname = properties["name"]
-    if propertyname == "BaseLexicon":
-        instance = BaseLexicon.load(path, properties, archive=archive)
+    if propertyname == "_BaseLexicon":
+        instance = _BaseLexicon.load(path, properties, archive=archive)
     elif propertyname == "WeightedLexicon":
         instance = WeightedLexicon.load(path, properties, archive=archive)
     elif propertyname == "Lexicon":
@@ -589,6 +763,6 @@ def load(
     else:
         raise ValueError(
             f"Attempted to load an instance of {propertyname} when one of"
-            + ' {"BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.'
+            + ' {"_BaseLexicon", "WeightedLexicon", "Lexicon"} was expected.'
         )
     return instance
