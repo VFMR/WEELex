@@ -3,6 +3,7 @@ Contains the main Weelex classifier class.
 """
 from typing import Union, Iterable, Dict, List
 import os
+from zipfile import ZipFile
 
 from sklearn.model_selection import RandomizedSearchCV
 import pandas as pd
@@ -278,22 +279,10 @@ class WEELexClassifier(base.BasePredictor):
         Args:
             path (str): path to write the model to.
         """
-        super().save(path)
+        self._save_objects_to_dir(path)
         if self._support_lex is not None:
             self._support_lex.save(os.path.join(path, "support_lex"))
-
-    @classmethod
-    def load(self, path: str) -> "WEELexClassifier":
-        """Method to load a previously saved instance from disk.
-
-        Args:
-            path (str): Location of saved model.
-
-        Returns:
-            WEELexClassifier: Previously saved instance of the model.
-        """
-        super().load(path)
-        # TODO: load support lex
+        self._clean_save(path)
 
     def _setup_trainprocessor(
         self,
@@ -515,10 +504,6 @@ class WEELexClassifier(base.BasePredictor):
         vects = self._predictprocessor.transform(X)
         return self.predict_proba_words(vects)
 
-    def save(self, path):
-        super().save(path)
-        # TODO: Expand save() method beyond base class
-
     # ---------------------------------------------------------------------------
     # properties
     @property
@@ -539,5 +524,17 @@ class WEELexClassifier(base.BasePredictor):
     # ---------------------------------------------------------------------------
     # classmethods:
     @classmethod
-    def load(cls, path):
-        return super().load(path)
+    def load(cls, path: str) -> "WEELexClassifier":
+        """Method to load a previously saved instance from disk.
+
+        Args:
+            path (str): Location of saved model.
+
+        Returns:
+            WEELexClassifier: Previously saved instance of the model.
+        """
+        instance = super().load(path)
+        usepath = cls._check_zippath(path)
+        with ZipFile(usepath) as myzip:
+            instance._support_lex = lexicon.load(path="support_lex/", archive=myzip)
+        return instance

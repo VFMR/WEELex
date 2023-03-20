@@ -241,6 +241,10 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         Args:
             path (str): path to write the model to.
         """
+        self._save_objects_to_dir(path)
+        self._clean_save(path)
+
+    def _save_objects_to_dir(self, path):
         # TODO: directly write into zip archive instead of rmtree()
         if self._is_fit is False:
             raise NotFittedError(
@@ -266,6 +270,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         if self._scaler is not None:
             joblib.dump(self._scaler, os.path.join(path, "scaler.joblib"))
 
+    def _clean_save(self, path):
         # archiving the created folder
         shutil.make_archive(path + ".weelex", "zip", path)
         shutil.rmtree(path)
