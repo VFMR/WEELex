@@ -14,7 +14,7 @@ from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex import lexicon
 from weelex import embeddings
-from weelex import ensemble
+from weelex import _ensemble
 from weelex import base
 from weelex._trainer import _TrainProcessor
 from weelex.tfidf import BasicTfidf
@@ -142,7 +142,7 @@ class WEELexClassifier(base.BasePredictor):
             distance_threshold=distance_threshold,
             n_words=n_words,
         )
-        self._model = ensemble.FullEnsemble
+        self._model = _ensemble._FullEnsemble
         self._test_size = test_size
         self._train_params = train_params
 
@@ -315,7 +315,7 @@ class WEELexClassifier(base.BasePredictor):
         else:
             fixed_params_dct = {}
         search = RandomizedSearchCV(
-            estimator=ensemble.AugmentedEnsemble(
+            estimator=_ensemble._AugmentedEnsemble(
                 cat,
                 categories=self._main_keys,
                 outside_categories=self._support_keys,

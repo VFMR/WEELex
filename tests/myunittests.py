@@ -10,7 +10,7 @@ from weelex import classifier
 from weelex import lexicon
 from weelex import embeddings
 from weelex import _trainer
-from weelex import ensemble
+from weelex import _ensemble
 from weelex import _predictor
 from weelex import lsx
 import batchprocessing
@@ -358,7 +358,7 @@ class TestModels(GenericTest):
 
     def _setup_augmented2(self):
         self._setup_augmented()
-        model = ensemble.AugmentedEnsemble(
+        model = _ensemble._AugmentedEnsemble(
             category=self.cat,
             categories=self.categories,
             outside_categories=self.support_categories,
@@ -454,7 +454,7 @@ class TestModels(GenericTest):
         shape = (100, 10)
         array = np.random.randn(*shape)
         n = 3
-        new_array = ensemble.make_agg_sample(X=array, n=n)
+        new_array = _ensemble.make_agg_sample(X=array, n=n)
         assert new_array.shape == (shape[1],)
 
     def test(self):
