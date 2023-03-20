@@ -507,15 +507,30 @@ class WEELexClassifier(base.BasePredictor):
     # ---------------------------------------------------------------------------
     # properties
     @property
-    def main_keys(self) -> list:
+    def main_keys(self) -> List[str]:
+        """Main categories to predict.
+
+        Returns:
+            List[str]: Main categories
+        """
         return self._main_keys
 
     @property
-    def support_keys(self) -> list:
+    def support_keys(self) -> List[str]:
+        """Provided support categories that are not being predicted.
+
+        Returns:
+            List[str]: Support categories
+        """
         return self._support_keys
 
     @property
-    def vocabulary(self):
+    def vocabulary(self) -> List[str]:
+        """List of words that are considered by the model.
+
+        Returns:
+            List[str]: Words in the vocabulary.
+        """
         vocab = super().vocabulary
         if self._support_lex is not None:
             vocab += self._support_lex.vocabulary
