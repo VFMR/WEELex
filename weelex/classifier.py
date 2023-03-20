@@ -15,12 +15,12 @@ from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 from weelex import lexicon
 from weelex import embeddings
 from weelex import _ensemble
-from weelex import base
+from weelex import _base
 from weelex._trainer import _TrainProcessor
 from weelex.tfidf import BasicTfidf
 
 
-class WEELexClassifier(base.BasePredictor):
+class WEELexClassifier(_base._BasePredictor):
     """Main Weelex classifier class"""
 
     def __init__(

@@ -12,11 +12,11 @@ from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex import lexicon
 from weelex import embeddings
-from weelex import base
+from weelex import _base
 from weelex.tfidf import BasicTfidf
 
 
-class LatentSemanticScaling(base.BasePredictor):
+class LatentSemanticScaling(_base._BasePredictor):
     def __init__(
         self,
         embeds: Union[dict, embeddings.Embeddings],

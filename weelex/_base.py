@@ -25,7 +25,7 @@ from weelex.tfidf import BasicTfidf
 from weelex._predictor import _PredictionProcessor
 
 
-class BasePredictor(BaseEstimator, TransformerMixin):
+class _BasePredictor(BaseEstimator, TransformerMixin):
     """
     Base prediction class with methods for both the weelex and lsx
     classifiers.
@@ -390,14 +390,14 @@ class BasePredictor(BaseEstimator, TransformerMixin):
     # ---------------------------------------------------------------------------
     # classmethods:
     @classmethod
-    def load(cls, path: str) -> "BasePredictor":
+    def load(cls, path: str) -> "_BasePredictor":
         """Method to load a previously saved instance from disk.
 
         Args:
             path (str): Location of saved model.
 
         Returns:
-            BasePredictor: previously saved instance of the model.
+            _BasePredictor: previously saved instance of the model.
         """
         instance = cls(embeds=None)
         usepath = cls._check_zippath(path)
