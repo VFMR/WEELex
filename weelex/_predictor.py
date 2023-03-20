@@ -1,5 +1,4 @@
 import os
-import random
 from typing import Union, List, Iterable
 import json
 import shutil
@@ -14,7 +13,7 @@ from weelex.tfidf import BasicTfidf
 from weelex import embeddings
 
 
-class PredictionProcessor:
+class _PredictionProcessor:
     def __init__(
         self,
         data: Union[np.ndarray, pd.Series] = None,

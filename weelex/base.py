@@ -22,7 +22,7 @@ from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 from weelex import lexicon
 from weelex import embeddings
 from weelex.tfidf import BasicTfidf
-from weelex.predictor import PredictionProcessor
+from weelex._predictor import _PredictionProcessor
 
 
 class BasePredictor(BaseEstimator, TransformerMixin):
@@ -179,7 +179,7 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         return self.__dict__
 
     def _setup_predictprocessor(self):
-        self._predictprocessor = PredictionProcessor(
+        self._predictprocessor = _PredictionProcessor(
             embeddings=self._embeddings,
             tfidf=self._tfidf,
             ctfidf=self._ctfidf,
@@ -204,13 +204,13 @@ class BasePredictor(BaseEstimator, TransformerMixin):
         )
 
     def _load_predictprocessor(self, zip_archive):
-        # self._predictprocessor = PredictionProcessor(
+        # self._predictprocessor = _PredictionProcessor(
         #     embeddings=self._embeddings
         # )
         # self._predictprocessor.load(os.path.join(path, 'predictprocessor'))
         # # HACK: setting the private _embeddings property is not optimal
         # self._predictprocessor._embeddings = self._embeddings
-        self._predictprocessor = PredictionProcessor.load_from_weelexarchive(
+        self._predictprocessor = _PredictionProcessor.load_from_weelexarchive(
             zip_archive
         )
 

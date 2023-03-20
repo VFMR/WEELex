@@ -16,7 +16,7 @@ from weelex import lexicon
 from weelex import embeddings
 from weelex import ensemble
 from weelex import base
-from weelex.trainer import TrainProcessor
+from weelex._trainer import _TrainProcessor
 from weelex.tfidf import BasicTfidf
 
 
@@ -291,7 +291,7 @@ class WEELexClassifier(base.BasePredictor):
         main_keys: Iterable[str] = None,
         support_keys: Iterable[str] = None,
     ) -> None:
-        self._trainprocessor = TrainProcessor(
+        self._trainprocessor = _TrainProcessor(
             lex=lex,
             support_lex=support_lex,
             main_keys=main_keys,
