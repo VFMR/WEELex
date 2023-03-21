@@ -10,6 +10,8 @@ Welcome to Weelex's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+    modules/index
+
 
 
 Indices and tables
