@@ -17,7 +17,7 @@ setup(
         "spacy",
         "tqdm==4.62.3",
         "nltk>=3.6.6",
-        "batchprocessing @ git+https://github.com/VFMR/batchprocessing.git#egg=batchprocessing-0.1",
+        "batchprocessing @ git+https://github.com/VFMR/batchprocessing.git@afb5985ea4297adb9323280b7b3bfeb035124e94#egg=batchprocessing-0.1",
         "cluster_tfidf @ git+https://github.com/VFMR/cluster_tfidf.git#egg=cluster_tfidf.1",
     ],
     extras_require={

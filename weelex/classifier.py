@@ -20,6 +20,14 @@ from weelex._trainer import _TrainProcessor
 from weelex.tfidf import BasicTfidf
 
 
+processor = batchprocessing.BatchProcessor(
+    n_batches=1,
+    checkpoint_path=os.path.join(TEMPDIR, "mytest"),
+    n_jobs=1,
+    do_load_cp=False,
+)
+
+
 class WEELexClassifier(_base._BasePredictor):
     """Main Weelex classifier class"""
 
