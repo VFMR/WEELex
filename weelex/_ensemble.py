@@ -2,8 +2,7 @@ import random
 import pickle
 import glob
 import os
-from re import I
-from typing import Tuple, Iterable, Union, List
+from typing import Tuple, Union, List
 
 from tqdm import tqdm
 import numpy as np

@@ -16,7 +16,6 @@ import numpy as np
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
 import spacy
-import batchprocessing
 from cluster_tfidf.ctfidf import ClusterTfidfVectorizer
 
 from weelex import lexicon
