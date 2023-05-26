@@ -19,20 +19,33 @@ import cluster_tfidf
 INPUTDIR = "tests/testfiles/"
 TEMPDIR = os.path.join(INPUTDIR, "Temp/")
 
-
-class MyMonkeyPatch:
-    def __init__(self):
-        self.colnames = ["A", "B"]
-        self.df = pd.DataFrame(np.zeros((100, 2)))
-        self.rnd_df = pd.DataFrame(np.random.randn(100, 2))
-        self.df.columns = self.colnames
-        self.rnd_df.columns = self.colnames
-        self.checkpoint_path = os.path.join(TEMPDIR, "mytest")
-        self.fake_cp_path = os.path.join(TEMPDIR, "mytest_fake")
-
-    @batchprocessing.batch_predict
-    def add(self, X, n_batches=None, checkpoint_path=None):
-        return X + 1
+# processor = batchprocessing.BatchProcessor(
+#         n_batches=10,
+#         checkpoint_path=os.path.join(TEMPDIR, 'mytest'),
+#         n_jobs=2,
+#         do_load_cp=False,
+#         )
+#
+# processor_none = batchprocessing.BatchProcessor(
+#         n_batches=1,
+#         checkpoint_path=os.path.join(TEMPDIR, 'mytest'),
+#         n_jobs=1,
+#         do_load_cp=False,
+#         )
+#
+# class MyMonkeyPatch:
+#     def __init__(self):
+#         self.colnames = ["A", "B"]
+#         self.df = pd.DataFrame(np.zeros((100, 2)))
+#         self.rnd_df = pd.DataFrame(np.random.randn(100, 2))
+#         self.df.columns = self.colnames
+#         self.rnd_df.columns = self.colnames
+#         self.checkpoint_path = os.path.join(TEMPDIR, "mytest")
+#         self.fake_cp_path = os.path.join(TEMPDIR, "mytest_fake")
+#
+#     @processor.batch_predict
+#     def add(self, X):
+#         return X + 1
 
 
 class GenericTest(unittest.TestCase):
