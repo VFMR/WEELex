@@ -13,8 +13,6 @@ from weelex import _trainer
 from weelex import _ensemble
 from weelex import _predictor
 from weelex import lsx
-import batchprocessing
-import cluster_tfidf
 
 INPUTDIR = "tests/testfiles/"
 TEMPDIR = os.path.join(INPUTDIR, "Temp/")
