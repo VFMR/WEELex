@@ -241,35 +241,43 @@ class LatentSemanticScaling(_base._BasePredictor):
                 )
         return preds
 
-    @batchprocessing.batch_predict
+    @batchprocessing.BatchProcessor.batch_predict_auto
     def predict_docs(
         self,
         X: Union[pd.Series, np.ndarray],
         n_batches: int = None,
         checkpoint_path: str = None,
         n_jobs: int = 1,
+        do_load_cp: bool = False,
+        progress_bar: bool = True,
     ) -> np.ndarray:
         preds = self._predict_docs_unscaled(X=X)
         return self._scale_results(preds)
 
-    @batchprocessing.batch_predict
+    @batchprocessing.BatchProcessor.batch_predict_auto
     def predict_words(
         self,
         X: Union[pd.Series, np.ndarray],
         n_batches: int = None,
         checkpoint_path: str = None,
+        n_jobs: int = 1,
+        do_load_cp: bool = False,
+        progress_bar: bool = True,
     ) -> np.ndarray:
         vectors = np.zeros((X.shape[0], self._embeddings.dim))
         for i in range(X.shape[0]):
             vectors[i] = self._embeddings[X[i]]
         return self.predict_vectors(X=vectors)
 
-    @batchprocessing.batch_predict
+    @batchprocessing.BatchProcessor.batch_predict_auto
     def predict_vectors(
         self,
         X: Union[pd.Series, np.ndarray],
         n_batches: int = None,
         checkpoint_path: str = None,
+        n_jobs: int = 1,
+        do_load_cp: bool = False,
+        progress_bar: bool = True,
     ) -> np.ndarray:
         lexicon_embeddings = self._lex.embeddings
         weights = self._lex.weights

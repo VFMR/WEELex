@@ -20,14 +20,6 @@ from weelex._trainer import _TrainProcessor
 from weelex.tfidf import BasicTfidf
 
 
-processor = batchprocessing.BatchProcessor(
-    n_batches=1,
-    checkpoint_path=os.path.join(TEMPDIR, "mytest"),
-    n_jobs=1,
-    do_load_cp=False,
-)
-
-
 class WEELexClassifier(_base._BasePredictor):
     """Main Weelex classifier class"""
 
@@ -423,13 +415,16 @@ class WEELexClassifier(_base._BasePredictor):
             catpreds_binary.update({cat: pred})
         return pd.DataFrame(catpreds_binary)
 
-    @batchprocessing.batch_predict
+    @batchprocessing.BatchProcessor.batch_predict_auto
     def predict_words(
         self,
         X: pd.DataFrame,
         cutoff: float = 0.5,
         n_batches: int = None,
         checkpoint_path: str = None,
+        n_jobs: int = 1,
+        do_load_cp: bool = False,
+        progress_bar: bool = True,
     ) -> pd.DataFrame:
         """Method for binary word level prediction of a set of words.
 
@@ -464,13 +459,16 @@ class WEELexClassifier(_base._BasePredictor):
             catpreds.update({cat: preds})
         return catpreds
 
-    @batchprocessing.batch_predict
+    @batchprocessing.BatchProcessor.batch_predict_auto
     def predict_docs(
         self,
         X: pd.DataFrame,
         cutoff: float = 0.5,
         n_batches: int = None,
         checkpoint_path: str = None,
+        n_jobs: int = 1,
+        progress_bar: bool = True,
+        do_load_cp: bool = True,
     ) -> pd.DataFrame:
         """Method for binary document level prediction of a set of documents.
 
